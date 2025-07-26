@@ -78,9 +78,9 @@ def main():
     #3. Start conversations.
     human_input = ""
     display_bot_message(console, greeting_message)
-    while human_input != '/exit':
+    while True:
         human_input = prompt_user()
-        if human_input == '/exit':
+        if human_input.strip() == '/exit':
             break
         reply = bot.invoke(human_input)
         display_bot_message(console, reply)
