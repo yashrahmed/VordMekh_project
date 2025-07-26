@@ -80,8 +80,11 @@ def main():
     display_bot_message(console, greeting_message)
     while True:
         human_input = prompt_user()
-        if human_input.strip() == '/exit':
+        human_input = human_input.strip()
+        if human_input == '/exit':
             break
+        if not len(human_input):
+            continue
         reply = bot.invoke(human_input)
         display_bot_message(console, reply)
 
