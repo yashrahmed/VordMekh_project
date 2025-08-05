@@ -75,6 +75,32 @@
             background-color: #e6f3ff;
             border-color: #4682b4;
         }
+        .add-item-form {
+            display: flex;
+            gap: 10px;
+            align-items: center;
+            margin-bottom: 15px;
+            padding: 10px;
+            background-color: #f8f9fa;
+            border-radius: 5px;
+            border: 1px solid #ddd;
+        }
+        .add-item-form select, .add-item-form input {
+            width: auto;
+            min-width: 120px;
+        }
+        .add-item-form button {
+            background-color: #4682b4;
+            color: white;
+            border: none;
+            padding: 8px 16px;
+            border-radius: 5px;
+            cursor: pointer;
+            font-size: 14px;
+        }
+        .add-item-form button:hover {
+            background-color: #2e5984;
+        }
         .instructions-section {
             margin-top: 20px;
         }
@@ -156,7 +182,16 @@
             <div class="form-group">
                 <label>Inventory:</label>
                 <div id="inventory" class="items-section inventory-section">
-                    <div class="empty-state">No items in inventory yet</div>
+                    <div class="add-item-form">
+                        <select id="addItemSelect">
+                            <option value="">Select item to add...</option>
+                        </select>
+                        <input type="number" id="addItemQuantity" min="0" step="0.125" placeholder="Quantity">
+                        <button type="button" onclick="addToInventory()">Add</button>
+                    </div>
+                    <div id="inventoryItems">
+                        <div class="empty-state">No items in inventory yet</div>
+                    </div>
                 </div>
             </div>
             
@@ -287,9 +322,66 @@
             "Whole Cloves", "Black Peppercorns", "Fennel Seeds", "Saffron Threads",
             "Fresh Mint Leaves", "Dried Rose Petals", "Slivered Almonds"
         ];
+        
+        const allPossibleItems = {
+            // Ingredients
+            "Water": "cup",
+            "Whole Milk": "cup",
+            "Loose Black Tea": "tsp",
+            "Kashmiri Green Tea Leaves": "tsp",
+            "Green Tea Leaves": "tsp",
+            "Grated Fresh Ginger": "tsp",
+            "Ground Cinnamon": "tsp",
+            "Green Cardamom Pods": "pods",
+            "Whole Cloves": "cloves",
+            "Black Peppercorns": "peppercorns",
+            "Fennel Seeds": "tsp",
+            "Saffron Threads": "threads",
+            "Fresh Mint Leaves": "leaves",
+            "Dried Rose Petals": "tsp",
+            "Slivered Almonds": "tbsp",
+            "Jaggery or Sugar": "tsp",
+            "Honey or Jaggery": "tsp",
+            "Honey or Sugar": "tsp",
+            "Lemon Juice": "tsp",
+            "Baking Soda": "tsp",
+            "Ice": "cup",
+            "Salt": "tsp",
+            "Crushed Nuts": "tbsp",
+            // Tools
+            "Medium Pot": null,
+            "Small Pot": null,
+            "Pot": null,
+            "Small Saucean": null,
+            "Mortar and Pestle": null,
+            "Strainer": null,
+            "Whisk or Deep Ladle": null,
+            // Equipment
+            "Gas Stove": null,
+            "Electric Coil Stove": null,
+            "Portable Butane Stove": null,
+            "Induction Cooktop": null,
+            "Campfire": null,
+            // Power sources
+            "Natural Gas/LPG": null,
+            "Power outlet": null,
+            "Butane Canister": null,
+            "Wood/Combustible Materials": null
+        };
 
         let currentRequiredItems = [];
         let currentInventoryItems = [];
+        
+        // Populate the add item dropdown on page load
+        window.addEventListener('load', function() {
+            const addItemSelect = document.getElementById('addItemSelect');
+            Object.keys(allPossibleItems).sort().forEach(itemName => {
+                const option = document.createElement('option');
+                option.value = itemName;
+                option.textContent = itemName;
+                addItemSelect.appendChild(option);
+            });
+        });
 
         document.getElementById('chaiType').addEventListener('change', updateRequiredItems);
         document.getElementById('servings').addEventListener('input', updateRequiredItems);
@@ -329,8 +421,8 @@
             });
 
             recipe.tools.forEach(([name, baseQty, unit]) => {
-                const scaledQty = baseQty * servings;
-                allRequiredItems.push({name, quantity: scaledQty, unit});
+                // Tools don't scale with servings - you always need the same amount
+                allRequiredItems.push({name, quantity: baseQty, unit});
             });
             
             // Add heating equipment and power source
@@ -403,11 +495,11 @@
         }
         
         function updateInventoryDisplay() {
-            const inventoryDiv = document.getElementById('inventory');
-            inventoryDiv.innerHTML = '';
+            const inventoryItemsDiv = document.getElementById('inventoryItems');
+            inventoryItemsDiv.innerHTML = '';
             
             if (currentInventoryItems.length === 0) {
-                inventoryDiv.innerHTML = '<div class="empty-state">No items in inventory yet</div>';
+                inventoryItemsDiv.innerHTML = '<div class="empty-state">No items in inventory yet</div>';
                 return;
             }
 
@@ -424,8 +516,43 @@
                     <label for="inventory_${index}">${item.name}: ${quantityText}${unitText}</label>
                 `;
                 
-                inventoryDiv.appendChild(itemDiv);
+                inventoryItemsDiv.appendChild(itemDiv);
             });
+        }
+        
+        function addToInventory() {
+            const itemSelect = document.getElementById('addItemSelect');
+            const quantityInput = document.getElementById('addItemQuantity');
+            
+            const selectedItem = itemSelect.value;
+            const quantity = parseFloat(quantityInput.value);
+            
+            if (!selectedItem || !quantity || quantity <= 0) {
+                alert('Please select an item and enter a valid quantity.');
+                return;
+            }
+            
+            const unit = allPossibleItems[selectedItem];
+            const existingItem = currentInventoryItems.find(item => item.name === selectedItem);
+            
+            if (existingItem) {
+                existingItem.quantity += quantity;
+                existingItem.quantity = Math.round(existingItem.quantity * 1000) / 1000;
+            } else {
+                currentInventoryItems.push({
+                    name: selectedItem,
+                    quantity: Math.round(quantity * 1000) / 1000,
+                    unit: unit
+                });
+            }
+            
+            // Reset form
+            itemSelect.value = '';
+            quantityInput.value = '';
+            
+            // Update displays - recalculate required items and update both displays
+            updateRequiredItems();
+            checkAllConfirmed();
         }
 
         function moveToInventory(itemName, quantity, unit, checkbox) {
