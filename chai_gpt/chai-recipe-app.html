@@ -441,7 +441,7 @@
             currentRequiredItems = calculateResidualItems(allRequiredItems);
             updateRequiredItemsDisplay();
             updateInventoryDisplay();
-            clearInstructions();
+            checkAllConfirmed();
         }
 
         function calculateResidualItems(allRequiredItems) {
@@ -600,6 +600,8 @@
             
             if (currentRequiredItems.length === 0 && currentInventoryItems.length > 0) {
                 generateInstructions();
+            } else {
+                clearInstructions();
             }
         }
 
@@ -635,41 +637,61 @@
             instructions += "\nPreparation Steps:\n";
             recipe.steps.forEach((step, index) => {
                 let processedStep = step;
-                const waterItem = currentInventoryItems.find(i => i.name === "Water");
-                const milkItem = currentInventoryItems.find(i => i.name === "Whole Milk");
-                const teaItem = currentInventoryItems.find(i => i.name.includes("Tea"));
-                const gingerItem = currentInventoryItems.find(i => i.name === "Grated Fresh Ginger");
-                const cinnamonItem = currentInventoryItems.find(i => i.name === "Ground Cinnamon");
-                const bakingSodaItem = currentInventoryItems.find(i => i.name === "Baking Soda");
-                const iceItem = currentInventoryItems.find(i => i.name === "Ice");
+                
+                // Calculate correct quantities based on servings, not inventory amounts
+                const ingredientQuantities = {};
+                recipe.ingr.forEach(([name, baseQty, unit]) => {
+                    let scaledQty;
+                    if (spicesAndAromatics.includes(name)) {
+                        scaledQty = baseQty * Math.pow(servings, 0.65);
+                    } else {
+                        scaledQty = baseQty * servings;
+                    }
+                    scaledQty = Math.round(scaledQty * 1000) / 1000;
+                    ingredientQuantities[name] = { quantity: scaledQty, unit: unit };
+                });
 
-                if (waterItem) {
-                    const qty = waterItem.quantity % 1 === 0 ? waterItem.quantity : waterItem.quantity.toFixed(3).replace(/\.?0+$/, '');
-                    processedStep = processedStep.replace('{water}', `${qty} ${waterItem.unit || ''}`);
+                // Replace placeholders with correct scaled quantities
+                const waterIngr = ingredientQuantities["Water"];
+                const milkIngr = ingredientQuantities["Whole Milk"];
+                const gingerIngr = ingredientQuantities["Grated Fresh Ginger"];
+                const cinnamonIngr = ingredientQuantities["Ground Cinnamon"];
+                const bakingSodaIngr = ingredientQuantities["Baking Soda"];
+                const iceIngr = ingredientQuantities["Ice"];
+                
+                // Find tea ingredient (different recipes use different tea types)
+                const teaIngr = recipe.ingr.find(([name]) => name.includes("Tea"));
+                
+                if (waterIngr) {
+                    const qty = waterIngr.quantity % 1 === 0 ? waterIngr.quantity : waterIngr.quantity.toFixed(3).replace(/\.?0+$/, '');
+                    processedStep = processedStep.replace('{water}', `${qty} ${waterIngr.unit || ''}`);
                 }
-                if (milkItem) {
-                    const qty = milkItem.quantity % 1 === 0 ? milkItem.quantity : milkItem.quantity.toFixed(3).replace(/\.?0+$/, '');
-                    processedStep = processedStep.replace('{milk}', `${qty} ${milkItem.unit || ''}`);
+                if (milkIngr) {
+                    const qty = milkIngr.quantity % 1 === 0 ? milkIngr.quantity : milkIngr.quantity.toFixed(3).replace(/\.?0+$/, '');
+                    processedStep = processedStep.replace('{milk}', `${qty} ${milkIngr.unit || ''}`);
                 }
-                if (teaItem) {
-                    const qty = teaItem.quantity % 1 === 0 ? teaItem.quantity : teaItem.quantity.toFixed(3).replace(/\.?0+$/, '');
-                    processedStep = processedStep.replace('{tea}', `${qty} ${teaItem.unit || ''}`);
+                if (teaIngr) {
+                    const [name, baseQty, unit] = teaIngr;
+                    let scaledQty = spicesAndAromatics.includes(name) ? baseQty * Math.pow(servings, 0.65) : baseQty * servings;
+                    scaledQty = Math.round(scaledQty * 1000) / 1000;
+                    const qty = scaledQty % 1 === 0 ? scaledQty : scaledQty.toFixed(3).replace(/\.?0+$/, '');
+                    processedStep = processedStep.replace('{tea}', `${qty} ${unit || ''}`);
                 }
-                if (gingerItem) {
-                    const qty = gingerItem.quantity % 1 === 0 ? gingerItem.quantity : gingerItem.quantity.toFixed(3).replace(/\.?0+$/, '');
-                    processedStep = processedStep.replace('{ginger}', `${qty} ${gingerItem.unit || ''}`);
+                if (gingerIngr) {
+                    const qty = gingerIngr.quantity % 1 === 0 ? gingerIngr.quantity : gingerIngr.quantity.toFixed(3).replace(/\.?0+$/, '');
+                    processedStep = processedStep.replace('{ginger}', `${qty} ${gingerIngr.unit || ''}`);
                 }
-                if (cinnamonItem) {
-                    const qty = cinnamonItem.quantity % 1 === 0 ? cinnamonItem.quantity : cinnamonItem.quantity.toFixed(3).replace(/\.?0+$/, '');
-                    processedStep = processedStep.replace('{cinnamon}', `${qty} ${cinnamonItem.unit || ''}`);
+                if (cinnamonIngr) {
+                    const qty = cinnamonIngr.quantity % 1 === 0 ? cinnamonIngr.quantity : cinnamonIngr.quantity.toFixed(3).replace(/\.?0+$/, '');
+                    processedStep = processedStep.replace('{cinnamon}', `${qty} ${cinnamonIngr.unit || ''}`);
                 }
-                if (bakingSodaItem) {
-                    const qty = bakingSodaItem.quantity % 1 === 0 ? bakingSodaItem.quantity : bakingSodaItem.quantity.toFixed(3).replace(/\.?0+$/, '');
-                    processedStep = processedStep.replace('{bakingsoda}', `${qty} ${bakingSodaItem.unit || ''}`);
+                if (bakingSodaIngr) {
+                    const qty = bakingSodaIngr.quantity % 1 === 0 ? bakingSodaIngr.quantity : bakingSodaIngr.quantity.toFixed(3).replace(/\.?0+$/, '');
+                    processedStep = processedStep.replace('{bakingsoda}', `${qty} ${bakingSodaIngr.unit || ''}`);
                 }
-                if (iceItem) {
-                    const qty = iceItem.quantity % 1 === 0 ? iceItem.quantity : iceItem.quantity.toFixed(3).replace(/\.?0+$/, '');
-                    processedStep = processedStep.replace('{ice}', `${qty} ${iceItem.unit || ''}`);
+                if (iceIngr) {
+                    const qty = iceIngr.quantity % 1 === 0 ? iceIngr.quantity : iceIngr.quantity.toFixed(3).replace(/\.?0+$/, '');
+                    processedStep = processedStep.replace('{ice}', `${qty} ${iceIngr.unit || ''}`);
                 }
                 
                 instructions += `${index + 1}. ${processedStep}\n`;
