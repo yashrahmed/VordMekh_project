@@ -43,14 +43,14 @@
             border-color: #8B4513;
             outline: none;
         }
-        .inventory-section {
+        .items-section {
             margin-top: 20px;
             border: 2px solid #ddd;
             border-radius: 5px;
             padding: 15px;
             background-color: #fafafa;
         }
-        .inventory-item {
+        .item {
             display: flex;
             align-items: center;
             margin-bottom: 10px;
@@ -59,13 +59,21 @@
             border-radius: 3px;
             border: 1px solid #eee;
         }
-        .inventory-item input[type="checkbox"] {
+        .item input[type="checkbox"] {
             width: auto;
             margin-right: 10px;
         }
-        .inventory-item.confirmed {
+        .item.confirmed {
             background-color: #e8f5e8;
             border-color: #4CAF50;
+        }
+        .inventory-section {
+            background-color: #f0f8ff;
+            border-color: #4682b4;
+        }
+        .inventory-item {
+            background-color: #e6f3ff;
+            border-color: #4682b4;
         }
         .instructions-section {
             margin-top: 20px;
@@ -136,12 +144,19 @@
             </div>
             
             <div class="form-group">
-                <label>Inventory:</label>
+                <label>Required Items:</label>
                 <button type="button" id="selectAllBtn" class="select-all-btn" onclick="toggleSelectAll()" disabled>
                     Select All
                 </button>
-                <div id="inventory" class="inventory-section">
-                    <div class="empty-state">Select chai type and servings to populate inventory</div>
+                <div id="requiredItems" class="items-section">
+                    <div class="empty-state">Select chai type and servings to populate required items</div>
+                </div>
+            </div>
+            
+            <div class="form-group">
+                <label>Inventory:</label>
+                <div id="inventory" class="items-section inventory-section">
+                    <div class="empty-state">No items in inventory yet</div>
                 </div>
             </div>
             
@@ -273,34 +288,34 @@
             "Fresh Mint Leaves", "Dried Rose Petals", "Slivered Almonds"
         ];
 
-        let currentInventory = [];
-        let currentConfirmedItems = new Set();
+        let currentRequiredItems = [];
+        let currentInventoryItems = [];
 
-        document.getElementById('chaiType').addEventListener('change', updateInventory);
-        document.getElementById('servings').addEventListener('input', updateInventory);
-        document.getElementById('heatingEquipment').addEventListener('change', updateInventory);
+        document.getElementById('chaiType').addEventListener('change', updateRequiredItems);
+        document.getElementById('servings').addEventListener('input', updateRequiredItems);
+        document.getElementById('heatingEquipment').addEventListener('change', updateRequiredItems);
 
-        function updateInventory() {
+        function updateRequiredItems() {
             const chaiType = document.getElementById('chaiType').value;
             const servings = parseFloat(document.getElementById('servings').value);
             const heatingEquipment = document.getElementById('heatingEquipment').value;
             
             if (!heatingEquipment) {
-                document.getElementById('inventory').innerHTML = '<div class="empty-state">Select heating equipment first</div>';
+                document.getElementById('requiredItems').innerHTML = '<div class="empty-state">Select heating equipment first</div>';
                 document.getElementById('instructions').value = '';
                 updateSelectAllButton();
                 return;
             }
             
             if (!chaiType || !servings || servings < 1 || servings > 6) {
-                document.getElementById('inventory').innerHTML = '<div class="empty-state">Select chai type and servings to populate inventory</div>';
+                document.getElementById('requiredItems').innerHTML = '<div class="empty-state">Select chai type and servings to populate required items</div>';
                 document.getElementById('instructions').value = '';
                 updateSelectAllButton();
                 return;
             }
 
             const recipe = recipes[chaiType];
-            const newInventory = [];
+            const allRequiredItems = [];
             
             recipe.ingr.forEach(([name, baseQty, unit]) => {
                 let scaledQty;
@@ -310,12 +325,12 @@
                     scaledQty = baseQty * servings;
                 }
                 scaledQty = Math.round(scaledQty * 1000) / 1000;
-                newInventory.push({name, quantity: scaledQty, unit});
+                allRequiredItems.push({name, quantity: scaledQty, unit});
             });
 
             recipe.tools.forEach(([name, baseQty, unit]) => {
                 const scaledQty = baseQty * servings;
-                newInventory.push({name, quantity: scaledQty, unit});
+                allRequiredItems.push({name, quantity: scaledQty, unit});
             });
             
             // Add heating equipment and power source
@@ -328,51 +343,126 @@
             };
             
             const selectedHeating = heatingEquipmentMap[heatingEquipment];
-            newInventory.push({name: selectedHeating.equipment, quantity: 1, unit: null});
-            newInventory.push({name: selectedHeating.power, quantity: 1, unit: null});
+            allRequiredItems.push({name: selectedHeating.equipment, quantity: 1, unit: null});
+            allRequiredItems.push({name: selectedHeating.power, quantity: 1, unit: null});
 
-            currentInventory = newInventory;
-            updateInventoryDisplay(newInventory);
+            currentRequiredItems = calculateResidualItems(allRequiredItems);
+            updateRequiredItemsDisplay();
+            updateInventoryDisplay();
             clearInstructions();
         }
 
-        function updateInventoryDisplay(newInventory) {
-            const inventoryDiv = document.getElementById('inventory');
-            inventoryDiv.innerHTML = '';
+        function calculateResidualItems(allRequiredItems) {
+            const residualItems = [];
             
-            currentConfirmedItems.clear();
+            allRequiredItems.forEach(requiredItem => {
+                const inventoryItem = currentInventoryItems.find(invItem => invItem.name === requiredItem.name);
+                
+                if (!inventoryItem) {
+                    residualItems.push({...requiredItem});
+                } else if (requiredItem.quantity > inventoryItem.quantity) {
+                    const residualQty = requiredItem.quantity - inventoryItem.quantity;
+                    residualItems.push({
+                        name: requiredItem.name,
+                        quantity: Math.round(residualQty * 1000) / 1000,
+                        unit: requiredItem.unit
+                    });
+                }
+            });
+            
+            return residualItems;
+        }
+        
+        function updateRequiredItemsDisplay() {
+            const requiredItemsDiv = document.getElementById('requiredItems');
+            requiredItemsDiv.innerHTML = '';
+            
+            if (currentRequiredItems.length === 0) {
+                requiredItemsDiv.innerHTML = '<div class="empty-state">All required items are in inventory</div>';
+                updateSelectAllButton();
+                return;
+            }
 
-            newInventory.forEach((item, index) => {
+            currentRequiredItems.forEach((item, index) => {
                 const itemDiv = document.createElement('div');
-                itemDiv.className = 'inventory-item';
+                itemDiv.className = 'item';
                 
                 const unitText = item.unit ? ` ${item.unit}` : '';
                 const quantityText = item.quantity % 1 === 0 ? item.quantity.toString() : item.quantity.toFixed(3).replace(/\.?0+$/, '');
                 
                 itemDiv.innerHTML = `
-                    <input type="checkbox" id="item_${index}" 
-                           onchange="toggleConfirmation('${item.name}', this)">
-                    <label for="item_${index}">${item.name}: ${quantityText}${unitText}</label>
+                    <input type="checkbox" id="required_${index}" 
+                           onchange="moveToInventory('${item.name}', ${item.quantity}, '${item.unit || ''}', this)">
+                    <label for="required_${index}">${item.name}: ${quantityText}${unitText}</label>
                 `;
                 
-                inventoryDiv.appendChild(itemDiv);
+                requiredItemsDiv.appendChild(itemDiv);
             });
             
             updateSelectAllButton();
         }
+        
+        function updateInventoryDisplay() {
+            const inventoryDiv = document.getElementById('inventory');
+            inventoryDiv.innerHTML = '';
+            
+            if (currentInventoryItems.length === 0) {
+                inventoryDiv.innerHTML = '<div class="empty-state">No items in inventory yet</div>';
+                return;
+            }
 
-        function toggleConfirmation(itemName, checkbox) {
-            if (checkbox.checked) {
-                currentConfirmedItems.add(itemName);
-                checkbox.parentElement.classList.add('confirmed');
+            currentInventoryItems.forEach((item, index) => {
+                const itemDiv = document.createElement('div');
+                itemDiv.className = 'item inventory-item';
+                
+                const unitText = item.unit ? ` ${item.unit}` : '';
+                const quantityText = item.quantity % 1 === 0 ? item.quantity.toString() : item.quantity.toFixed(3).replace(/\.?0+$/, '');
+                
+                itemDiv.innerHTML = `
+                    <input type="checkbox" id="inventory_${index}" checked
+                           onchange="moveToRequired('${item.name}', ${item.quantity}, '${item.unit || ''}', this)">
+                    <label for="inventory_${index}">${item.name}: ${quantityText}${unitText}</label>
+                `;
+                
+                inventoryDiv.appendChild(itemDiv);
+            });
+        }
+
+        function moveToInventory(itemName, quantity, unit, checkbox) {
+            if (!checkbox.checked) return;
+            
+            const existingInventoryItem = currentInventoryItems.find(item => item.name === itemName);
+            
+            if (existingInventoryItem) {
+                existingInventoryItem.quantity += quantity;
+                existingInventoryItem.quantity = Math.round(existingInventoryItem.quantity * 1000) / 1000;
             } else {
-                currentConfirmedItems.delete(itemName);
-                checkbox.parentElement.classList.remove('confirmed');
-                clearInstructions();
+                currentInventoryItems.push({
+                    name: itemName,
+                    quantity: quantity,
+                    unit: unit || null
+                });
             }
             
-            updateSelectAllButton();
+            currentRequiredItems = currentRequiredItems.filter(item => item.name !== itemName);
+            
+            updateRequiredItemsDisplay();
+            updateInventoryDisplay();
             checkAllConfirmed();
+        }
+        
+        function moveToRequired(itemName, quantity, unit, checkbox) {
+            if (checkbox.checked) return;
+            
+            const inventoryItem = currentInventoryItems.find(item => item.name === itemName);
+            if (!inventoryItem) return;
+            
+            // Remove from inventory first
+            currentInventoryItems = currentInventoryItems.filter(item => item.name !== itemName);
+            
+            // Recalculate required items based on current recipe needs
+            // This will only add items that are actually needed by the current recipe
+            updateRequiredItems();
         }
 
         function checkAllConfirmed() {
@@ -381,7 +471,7 @@
                 return;
             }
             
-            if (currentInventory.length > 0 && currentConfirmedItems.size === currentInventory.length) {
+            if (currentRequiredItems.length === 0 && currentInventoryItems.length > 0) {
                 generateInstructions();
             }
         }
@@ -408,30 +498,23 @@
             let instructions = `Recipe for ${servings} serving${servings !== 1 ? 's' : ''} of ${chaiType.replace('_', ' ').replace(/\b\w/g, l => l.toUpperCase())}:\n\n`;
             instructions += `Heating Equipment: ${selectedHeating.equipment} (${selectedHeating.power})\n\n`;
             
-            instructions += "Adjusted Ingredients:\n";
-            recipe.ingr.forEach(([name, baseQty, unit]) => {
-                let scaledQty;
-                if (spicesAndAromatics.includes(name)) {
-                    scaledQty = baseQty * Math.pow(servings, 0.65);
-                } else {
-                    scaledQty = baseQty * servings;
-                }
-                scaledQty = Math.round(scaledQty * 1000) / 1000;
-                const quantityText = scaledQty % 1 === 0 ? scaledQty.toString() : scaledQty.toFixed(3).replace(/\.?0+$/, '');
-                const unitText = unit ? ` ${unit}` : '';
-                instructions += `• ${name}: ${quantityText}${unitText}\n`;
+            instructions += "Available Ingredients (from Inventory):\n";
+            currentInventoryItems.forEach(item => {
+                const quantityText = item.quantity % 1 === 0 ? item.quantity.toString() : item.quantity.toFixed(3).replace(/\.?0+$/, '');
+                const unitText = item.unit ? ` ${item.unit}` : '';
+                instructions += `• ${item.name}: ${quantityText}${unitText}\n`;
             });
             
             instructions += "\nPreparation Steps:\n";
             recipe.steps.forEach((step, index) => {
                 let processedStep = step;
-                const waterItem = currentInventory.find(i => i.name === "Water");
-                const milkItem = currentInventory.find(i => i.name === "Whole Milk");
-                const teaItem = currentInventory.find(i => i.name.includes("Tea"));
-                const gingerItem = currentInventory.find(i => i.name === "Grated Fresh Ginger");
-                const cinnamonItem = currentInventory.find(i => i.name === "Ground Cinnamon");
-                const bakingSodaItem = currentInventory.find(i => i.name === "Baking Soda");
-                const iceItem = currentInventory.find(i => i.name === "Ice");
+                const waterItem = currentInventoryItems.find(i => i.name === "Water");
+                const milkItem = currentInventoryItems.find(i => i.name === "Whole Milk");
+                const teaItem = currentInventoryItems.find(i => i.name.includes("Tea"));
+                const gingerItem = currentInventoryItems.find(i => i.name === "Grated Fresh Ginger");
+                const cinnamonItem = currentInventoryItems.find(i => i.name === "Ground Cinnamon");
+                const bakingSodaItem = currentInventoryItems.find(i => i.name === "Baking Soda");
+                const iceItem = currentInventoryItems.find(i => i.name === "Ice");
 
                 if (waterItem) {
                     const qty = waterItem.quantity % 1 === 0 ? waterItem.quantity : waterItem.quantity.toFixed(3).replace(/\.?0+$/, '');
@@ -475,44 +558,36 @@
         function updateSelectAllButton() {
             const selectAllBtn = document.getElementById('selectAllBtn');
             
-            if (currentInventory.length === 0) {
+            if (currentRequiredItems.length === 0) {
                 selectAllBtn.disabled = true;
                 selectAllBtn.textContent = 'Select All';
                 return;
             }
             
             selectAllBtn.disabled = false;
-            
-            if (currentConfirmedItems.size === currentInventory.length) {
-                selectAllBtn.textContent = 'Deselect All';
-            } else {
-                selectAllBtn.textContent = 'Select All';
-            }
+            selectAllBtn.textContent = 'Move All to Inventory';
         }
 
         function toggleSelectAll() {
-            const shouldSelectAll = currentConfirmedItems.size < currentInventory.length;
-            
-            currentInventory.forEach((item, index) => {
-                const checkbox = document.getElementById(`item_${index}`);
-                const itemDiv = checkbox.parentElement;
+            currentRequiredItems.forEach(item => {
+                const existingInventoryItem = currentInventoryItems.find(invItem => invItem.name === item.name);
                 
-                if (shouldSelectAll) {
-                    checkbox.checked = true;
-                    currentConfirmedItems.add(item.name);
-                    itemDiv.classList.add('confirmed');
+                if (existingInventoryItem) {
+                    existingInventoryItem.quantity += item.quantity;
+                    existingInventoryItem.quantity = Math.round(existingInventoryItem.quantity * 1000) / 1000;
                 } else {
-                    checkbox.checked = false;
-                    currentConfirmedItems.delete(item.name);
-                    itemDiv.classList.remove('confirmed');
+                    currentInventoryItems.push({
+                        name: item.name,
+                        quantity: item.quantity,
+                        unit: item.unit
+                    });
                 }
             });
             
-            if (!shouldSelectAll) {
-                clearInstructions();
-            }
+            currentRequiredItems = [];
             
-            updateSelectAllButton();
+            updateRequiredItemsDisplay();
+            updateInventoryDisplay();
             checkAllConfirmed();
         }
     </script>
