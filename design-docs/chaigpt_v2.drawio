@@ -1,0 +1,60 @@
+<mxfile host="app.diagrams.net" agent="Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/137.0.0.0 Safari/537.36" version="28.0.7">
+  <diagram name="Page-1" id="4Q5mHxb8pi_0pUOGYu90">
+    <mxGraphModel dx="1808" dy="547" grid="1" gridSize="10" guides="1" tooltips="1" connect="1" arrows="1" fold="1" page="1" pageScale="1" pageWidth="850" pageHeight="1100" math="0" shadow="0">
+      <root>
+        <mxCell id="0" />
+        <mxCell id="1" parent="0" />
+        <mxCell id="JdeHYtFpn3aFt2i3ZNIl-7" style="edgeStyle=orthogonalEdgeStyle;rounded=0;orthogonalLoop=1;jettySize=auto;html=1;entryX=0;entryY=0.5;entryDx=0;entryDy=0;" parent="1" source="JdeHYtFpn3aFt2i3ZNIl-2" target="JdeHYtFpn3aFt2i3ZNIl-5" edge="1">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+        <mxCell id="JdeHYtFpn3aFt2i3ZNIl-2" value="Chai Recipe (input)" style="rounded=0;whiteSpace=wrap;html=1;" parent="1" vertex="1">
+          <mxGeometry x="60" y="70" width="120" height="60" as="geometry" />
+        </mxCell>
+        <mxCell id="JdeHYtFpn3aFt2i3ZNIl-9" style="edgeStyle=orthogonalEdgeStyle;rounded=0;orthogonalLoop=1;jettySize=auto;html=1;entryX=0.5;entryY=0;entryDx=0;entryDy=0;" parent="1" source="JdeHYtFpn3aFt2i3ZNIl-3" target="JdeHYtFpn3aFt2i3ZNIl-5" edge="1">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+        <mxCell id="JdeHYtFpn3aFt2i3ZNIl-3" value="Serving size (input)" style="rounded=0;whiteSpace=wrap;html=1;" parent="1" vertex="1">
+          <mxGeometry x="260" y="70" width="120" height="60" as="geometry" />
+        </mxCell>
+        <mxCell id="JdeHYtFpn3aFt2i3ZNIl-8" style="edgeStyle=orthogonalEdgeStyle;rounded=0;orthogonalLoop=1;jettySize=auto;html=1;entryX=1;entryY=0.5;entryDx=0;entryDy=0;" parent="1" source="JdeHYtFpn3aFt2i3ZNIl-4" target="JdeHYtFpn3aFt2i3ZNIl-5" edge="1">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+        <mxCell id="JdeHYtFpn3aFt2i3ZNIl-4" value="Heating equipment&lt;br&gt;+&lt;div&gt;power source&lt;br&gt;(input)&lt;/div&gt;" style="rounded=0;whiteSpace=wrap;html=1;" parent="1" vertex="1">
+          <mxGeometry x="460" y="70" width="130" height="70" as="geometry" />
+        </mxCell>
+        <mxCell id="JdeHYtFpn3aFt2i3ZNIl-12" style="edgeStyle=orthogonalEdgeStyle;rounded=0;orthogonalLoop=1;jettySize=auto;html=1;entryX=0.5;entryY=0;entryDx=0;entryDy=0;" parent="1" source="JdeHYtFpn3aFt2i3ZNIl-5" target="JdeHYtFpn3aFt2i3ZNIl-11" edge="1">
+          <mxGeometry relative="1" as="geometry">
+            <mxPoint x="320" y="440" as="targetPoint" />
+          </mxGeometry>
+        </mxCell>
+        <mxCell id="JdeHYtFpn3aFt2i3ZNIl-5" value="Required&lt;div&gt;Inventory items&lt;/div&gt;" style="whiteSpace=wrap;html=1;aspect=fixed;" parent="1" vertex="1">
+          <mxGeometry x="260" y="220" width="120" height="120" as="geometry" />
+        </mxCell>
+        <mxCell id="JdeHYtFpn3aFt2i3ZNIl-11" value="Instructions from the recipe" style="rounded=0;whiteSpace=wrap;html=1;" parent="1" vertex="1">
+          <mxGeometry x="260" y="450" width="120" height="60" as="geometry" />
+        </mxCell>
+        <mxCell id="JdeHYtFpn3aFt2i3ZNIl-14" style="edgeStyle=orthogonalEdgeStyle;rounded=0;orthogonalLoop=1;jettySize=auto;html=1;entryX=1;entryY=0.5;entryDx=0;entryDy=0;" parent="1" source="JdeHYtFpn3aFt2i3ZNIl-13" target="JdeHYtFpn3aFt2i3ZNIl-5" edge="1">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+        <mxCell id="JdeHYtFpn3aFt2i3ZNIl-13" value="Current Inventory items&lt;br&gt;(table and input)" style="whiteSpace=wrap;html=1;aspect=fixed;" parent="1" vertex="1">
+          <mxGeometry x="460" y="220" width="120" height="120" as="geometry" />
+        </mxCell>
+        <mxCell id="JdeHYtFpn3aFt2i3ZNIl-19" value="" style="rounded=0;whiteSpace=wrap;html=1;" parent="1" vertex="1">
+          <mxGeometry x="-130" y="70" width="140" height="430" as="geometry" />
+        </mxCell>
+        <mxCell id="JdeHYtFpn3aFt2i3ZNIl-20" value="1. Selected Chai Recipe - ....." style="text;html=1;align=center;verticalAlign=middle;whiteSpace=wrap;rounded=0;" parent="1" vertex="1">
+          <mxGeometry x="-120" y="80" width="120" height="40" as="geometry" />
+        </mxCell>
+        <mxCell id="JdeHYtFpn3aFt2i3ZNIl-21" value="2. Selected Serving Chai - ....." style="text;html=1;align=center;verticalAlign=middle;whiteSpace=wrap;rounded=0;" parent="1" vertex="1">
+          <mxGeometry x="-120" y="140" width="120" height="40" as="geometry" />
+        </mxCell>
+        <mxCell id="JdeHYtFpn3aFt2i3ZNIl-22" value="3. Selected Heating Eqp / Power Source - ....." style="text;html=1;align=center;verticalAlign=middle;whiteSpace=wrap;rounded=0;" parent="1" vertex="1">
+          <mxGeometry x="-120" y="200" width="120" height="60" as="geometry" />
+        </mxCell>
+        <mxCell id="JdeHYtFpn3aFt2i3ZNIl-23" value="4. Required&amp;nbsp;Items." style="text;html=1;align=center;verticalAlign=middle;whiteSpace=wrap;rounded=0;" parent="1" vertex="1">
+          <mxGeometry x="-120" y="255" width="120" height="60" as="geometry" />
+        </mxCell>
+      </root>
+    </mxGraphModel>
+  </diagram>
+</mxfile>
