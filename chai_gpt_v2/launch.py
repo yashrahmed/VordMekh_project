@@ -7,6 +7,7 @@ from rich.text import Text
 from rich.console import Console
 
 
+
 def display_bot_message(console: Console, message: str):
     text = Text()
     text.append("ChaiGPT: ", style="bold yellow3")
@@ -69,7 +70,7 @@ def main():
         return
 
     #2. Set up chatbot
-    system_prompt = load_prompt_from_file("chai_gpt_sys_prompt_soarv2.txt")
+    system_prompt = load_prompt_from_file("./chai_gpt_v2/chai_gpt_sys_prompt_soarv2.txt")
     greeting_message = "Hello! I am ChaiGPT, your personal assistant for preparing delicious chai. How can I help you today?"
     bot = ChaiGPT(llm, system_prompt, greeting_message)
 
