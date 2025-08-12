@@ -1,6 +1,4 @@
-from langchain_core.language_models.chat_models import BaseChatModel
-from langchain_core.messages import SystemMessage, HumanMessage, AIMessage
-from bot_utils.tools import set_google_api_key, setup_google_model, Conversation, SimpleChatBot
+from bot_utils.tools import set_google_api_key, setup_google_model, SimpleChatBot
 
 from rich.prompt import Prompt
 from rich.text import Text
@@ -58,8 +56,6 @@ def main():
     system_prompt = load_prompt_from_file("./chai_gpt/chai_gpt_sys_prompt_states.md")
     greeting_message = "Hello! I am ChaiGPT, your personal assistant for preparing delicious chai. How can I help you today?"
     bot = SimpleChatBot(llm, system_prompt, greeting_message)
-
-
 
     #3. Start conversations.
     human_input = ""

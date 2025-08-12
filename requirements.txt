@@ -1,0 +1,11 @@
+# Core dependencies for ChatBot functionality
+langchain==0.3.26
+langchain-core==0.3.69
+langchain-openai>=0.1.0
+langchain-google-genai>=0.1.0
+
+# Rich library for terminal UI (not currently installed - will need to be installed)
+rich>=13.0.0
+
+# YAML processing
+PyYAML==6.0.2

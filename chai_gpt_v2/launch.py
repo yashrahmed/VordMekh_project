@@ -1,11 +1,8 @@
-from langchain_core.language_models.chat_models import BaseChatModel
-from langchain_core.messages import SystemMessage, HumanMessage, AIMessage
-from bot_utils.tools import set_google_api_key, setup_google_model, Conversation, SimpleChatBot
+from bot_utils.tools import set_google_api_key, set_open_api_key, setup_google_model, setup_openai_model, SimpleChatBot
 
 from rich.prompt import Prompt
 from rich.text import Text
 from rich.console import Console
-
 
 
 def display_bot_message(console: Console, message: str):
@@ -37,9 +34,6 @@ def load_prompt_from_file(file_path):
 
     return md_text
 
-
-
-
 def main():
     #0. Set up terminal user interface.
     console = Console()
@@ -59,8 +53,6 @@ def main():
     system_prompt = load_prompt_from_file("./chai_gpt_v2/chai_gpt_sys_prompt_soarv2.txt")
     greeting_message = "Hello! I am ChaiGPT, your personal assistant for preparing delicious chai. How can I help you today?"
     bot = SimpleChatBot(llm, system_prompt, greeting_message)
-
-
 
     #3. Start conversations.
     human_input = ""
