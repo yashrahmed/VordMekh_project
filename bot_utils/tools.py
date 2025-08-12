@@ -5,6 +5,7 @@ from langchain.chat_models import init_chat_model
 from langchain_core.language_models.chat_models import BaseChatModel
 from typing import List, Union
 from langchain_core.messages import SystemMessage, HumanMessage, AIMessage, ToolMessage
+from langchain_core.tools import BaseTool
 
 Message = Union[SystemMessage, HumanMessage, AIMessage, ToolMessage]
 
@@ -85,16 +86,32 @@ def setup_openai_model(model_name="gpt-5-mini-2025-08-07", model_provider="opena
 
 
 class SimpleChatBot:
-    def __init__(self, llm: BaseChatModel, system_prompt: str, greeting: str) -> None:
+    def __init__(self, llm: BaseChatModel, system_prompt: str, greeting: str, tools: List[BaseTool] | None = None) -> None:
         system_message = SystemMessage(system_prompt)
         self.conversation = Conversation(system_message)
         self.conversation.add(AIMessage(greeting))
         self.llm = llm
+        self.tool_lookup = {}
+        if tools: # Perform tool binding
+            self.llm = self.llm.bind_tools(tools)
+            for tool in tools:
+                self.tool_lookup[tool.name] = tool
 
     def invoke(self, user_input: str) -> str:
         human_msg = HumanMessage(user_input)
         self.conversation.add(human_msg)
         response = self.llm.invoke(self.conversation.get_messages())
-        ai_msg = AIMessage(response.content)
-        self.conversation.add(ai_msg)
+
+        if hasattr(response, "tool_calls") and len(response.tool_calls):
+            ai_msg = AIMessage(response.content, tool_calls=response.tool_calls)
+            self.conversation.add(ai_msg)
+            for call in response.tool_calls:
+                tool_handle = self.tool_lookup[call["name"]]
+                tool_output = tool_handle.invoke(call["args"])
+                self.conversation.add(ToolMessage(content=str(tool_output), tool_call_id=call["id"]))
+            response = self.llm.invoke(self.conversation.get_messages()) # Invoke again to get the response
+        else:
+            ai_msg = AIMessage(response.content)
+            self.conversation.add(ai_msg)
+
         return response.content
