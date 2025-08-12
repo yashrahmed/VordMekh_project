@@ -2,6 +2,7 @@ import os
 import yaml
 
 from langchain.chat_models import init_chat_model
+from langchain_core.language_models.chat_models import BaseChatModel
 from typing import List, Union
 from langchain_core.messages import SystemMessage, HumanMessage, AIMessage, ToolMessage
 
@@ -64,3 +65,19 @@ def setup_google_model(model_name="gemini-2.5-flash", model_provider="google_gen
     if not os.environ.get(GOOGLE_API_KEY_NAME, "").strip():
         return ValueError(f"Set the API Key `{GOOGLE_API_KEY_NAME}` for Google Gemini API in as an environment variable to use the chat bot."), None
     return None, init_chat_model(model_name, model_provider=model_provider)
+
+
+class SimpleChatBot:
+    def __init__(self, llm: BaseChatModel, system_prompt: str, greeting: str) -> None:
+        system_message = SystemMessage(system_prompt)
+        self.conversation = Conversation(system_message)
+        self.conversation.add(AIMessage(greeting))
+        self.llm = llm
+
+    def invoke(self, user_input: str) -> str:
+        human_msg = HumanMessage(user_input)
+        self.conversation.add(human_msg)
+        response = self.llm.invoke(self.conversation.get_messages())
+        ai_msg = AIMessage(response.content)
+        self.conversation.add(ai_msg)
+        return response.content
