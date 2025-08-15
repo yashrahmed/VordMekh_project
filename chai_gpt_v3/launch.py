@@ -107,7 +107,7 @@ def validate_user_input_step(current_state: ChaiOrderState):
     if current_state.selected_chai_recipe is None:
         problems_with_state.append("Selected chai type is unknown. User must select a chai type that is valid.")
     elif current_state.selected_chai_recipe == "Unsupported chai type":
-        problems_with_state.append("User has selected an unsupported chai type. User must select a chai type that is valid.")
+        problems_with_state.append("User has selected an unsupported chai type. You cannot help with that. User must select a chai type that is valid.")
     
     if current_state.number_of_servings is None:
         problems_with_state.append("Number of servings is unknown and the user needs to select a valid number of servings between 1 and 6 so that the recipe can be correctly calculated.")
