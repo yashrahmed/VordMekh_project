@@ -1,5 +1,6 @@
-from bot_utils.tools import set_open_api_key, setup_openai_model, Conversation
+from bot_utils.tools import set_open_api_key, setup_openai_model
 from langchain_core.messages import SystemMessage, HumanMessage, AIMessage
+from langchain_core.language_models.chat_models import BaseChatModel
 
 from rich.prompt import Prompt
 from rich.text import Text
@@ -32,54 +33,6 @@ class ChaiOrderState(BaseModel):
         False,
         description="True if the user explicitly states that they want to make chai or ask for help making it. False otherwise"
     )
-
-def build_messages_for_order_parsing(current_state: ChaiOrderState, prev_bot_query:str, user_input: str):
-    system_prompt = f"""
-        You are a structured output parser for chai making.  
-        Your job is to read the user’s natural language text and fill in the following state object fields.
-        Take into account you previous query to the user to accurately determine the state. 
-        You must return **only** a JSON object matching the provided schema. Do not include extra commentary.
-
-        The schema represents the current state of the chai making.  
-        Some fields may already be known (non-null). If a value is already filled in, do not overwrite it unless the new input clearly contradicts the previous value.
-        The currently known value are specified in the current state description below.
-        
-        ### Field Requirements:
-
-        1. **selected_chai_recipe** (String)  
-        - Map the chai type from the user input to one of the following values:  
-            "Masala Chai", "Adrak Chai", "Sulaimani Chai", "Kashmiri Chai", "Kahwah", "Unsupported chai type",
-            or `null` if unknown.  
-        - Correct spelling errors and infer from context (e.g., "ginger tea" → `"Adrak Chai"`).  
-        - If user mentions a chai type not in the list or does not specify a specific chai type, set to `"Unsupported chai type"`.
-
-        2. **number_of_servings** (float)  
-        - Extract the numeric value of servings.  
-        - If no serving count is given, set to `null`.
-
-        3. **at_campsite** (boolean | null)  
-        - `true` if the user explicitly confirms they are at a campsite.  
-        - `false` if explicitly confirmed they are NOT at a campsite.  
-        - `null` if location is unknown.
-
-        4. **has_missc_content** (boolean)  
-        - `true` if the user includes content unrelated to making chai in their message, and message is not a blank message.  
-        - `false` otherwise.
-
-        5. **does_user_want_to_make_chai** (boolean)  
-        - `true` if the user explicitly states that they want to make chai or ask for help making it.  
-        - `false` otherwise.
-
-        ### Current State:
-        {current_state.model_dump_json()}
-
-        ### Instructions:
-        - Parse the user’s new input and update only the fields that can be determined.  
-        - Keep the rest unchanged.  
-        - Return only the updated JSON state.
-    """
-    user_input = user_input or " "
-    return [SystemMessage(system_prompt),  AIMessage(prev_bot_query), HumanMessage(user_input)]
 
 
 def display_bot_message(console: Console, message: str):
@@ -126,6 +79,55 @@ def validate_user_input_step(current_state: ChaiOrderState):
     print(current_state)
     return all_relevant_value_known, problems_with_state
 
+def state_parsing_step(current_state: ChaiOrderState, prev_bot_query:str, user_input: str, llm: BaseChatModel):
+    system_prompt = f"""
+        You are a structured output parser for chai making.  
+        Your job is to read the user’s natural language text and fill in the following state object fields.
+        Take into account you previous query to the user to accurately determine the state. 
+        You must return **only** a JSON object matching the provided schema. Do not include extra commentary.
+
+        The schema represents the current state of the chai making.  
+        Some fields may already be known (non-null). If a value is already filled in, do not overwrite it unless the new input clearly contradicts the previous value.
+        The currently known value are specified in the current state description below.
+        
+        ### Field Requirements:
+
+        1. **selected_chai_recipe** (String)  
+        - Map the chai type from the user input to one of the following values:  
+            "Masala Chai", "Adrak Chai", "Sulaimani Chai", "Kashmiri Chai", "Kahwah", "Unsupported chai type",
+            or `null` if unknown.  
+        - Correct spelling errors and infer from context (e.g., "ginger tea" → `"Adrak Chai"`).  
+        - If user mentions a chai type not in the list or does not specify a specific chai type, set to `"Unsupported chai type"`.
+
+        2. **number_of_servings** (float)  
+        - Extract the numeric value of servings.  
+        - If no serving count is given, set to `null`.
+
+        3. **at_campsite** (boolean | null)  
+        - `true` if the user explicitly confirms they are at a campsite.  
+        - `false` if explicitly confirmed they are NOT at a campsite.  
+        - `null` if location is unknown.
+
+        4. **has_missc_content** (boolean)  
+        - `true` if the user includes content unrelated to making chai in their message, and message is not a blank message.  
+        - `false` otherwise.
+
+        5. **does_user_want_to_make_chai** (boolean)  
+        - `true` if the user explicitly states that they want to make chai or ask for help making it.  
+        - `false` otherwise.
+
+        ### Current State:
+        {current_state.model_dump_json()}
+
+        ### Instructions:
+        - Parse the user’s new input and update only the fields that can be determined.  
+        - Keep the rest unchanged.  
+        - Return only the updated JSON state.
+    """
+    user_input = user_input or " "
+    conversation = [SystemMessage(system_prompt),  AIMessage(prev_bot_query), HumanMessage(user_input)]
+    return llm.invoke(conversation)
+
 
 def load_prompt_from_file(file_path):
     md_text = ''
@@ -168,7 +170,7 @@ def main():
             continue
 
         # Step 1 - Parsing the user input.
-        current_state = llm.invoke(build_messages_for_order_parsing(current_state, bot_start_message, user_input))
+        current_state = state_parsing_step(current_state, bot_start_message, user_input, llm)
         x, y = validate_user_input_step(current_state)
         print(x)
         print(y)
