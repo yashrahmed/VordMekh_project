@@ -37,6 +37,12 @@ def display_bot_message(console: Console, message: str):
     text.append(message, style="white")
     console.print(text)
 
+def display_bot_thought(console: Console, message: str):
+    text = Text()
+    text.append("ChaiGPT's Thoughts: ", style="bold gray50")
+    text.append(message, style="white")
+    console.print(text)
+
 
 def display_exit_message(console: Console, message: str):
     text = Text()
@@ -69,7 +75,6 @@ def validate_user_input_step(current_state: ChaiOrderState) -> tuple[bool, List[
     if current_state.has_missc_content:
         problems_with_state.append("User has added unrelated content in their input.")
 
-    print(current_state)
     for i, problem in enumerate(problems_with_state):
         problems_with_state[i] = f"- {problem}"
     return all_relevant_value_known, problems_with_state
@@ -110,7 +115,7 @@ def state_parsing_step(current_state: ChaiOrderState, prev_bot_query:str, user_i
             - The previous query presented to the user.
             - User's input.
         - Parse the user’s new input and update only the fields that can be determined.  
-        - Keep the rest unchanged.
+        - Keep the rest unchanged EXCEPT has_missc_content. This starts with a False value and is set for every user input.
         - Return only the updated JSON state.
     """
 
@@ -221,13 +226,14 @@ def main():
 
         # Step 1 - Parsing the user's input.
         current_state = state_parsing_step(current_state, bot_start_message, user_input, parsing_llm)
+        display_bot_thought(console, str(current_state))
         
         # Step 2 - Validating the user's input.
         all_valid, problems_with_input = validate_user_input_step(current_state)
         
         # Step 3 - Generating a response
         if all_valid:
-            print(f"Here's the recipe for {current_state.selected_chai_recipe}")
+            display_bot_message(console, f"Here's the recipe for {current_state.selected_chai_recipe}")
         else:
             response = respond_to_incomplete_input_step(current_state, problems_with_input, user_input, llm)
             display_bot_message(console, response.content)
