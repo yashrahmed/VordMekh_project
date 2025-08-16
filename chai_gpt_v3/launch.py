@@ -1,5 +1,5 @@
 from bot_utils.tools import set_open_api_key, setup_openai_model, Conversation
-from langchain_core.messages import SystemMessage, HumanMessage
+from langchain_core.messages import SystemMessage, HumanMessage, AIMessage
 
 from rich.prompt import Prompt
 from rich.text import Text
@@ -33,10 +33,11 @@ class ChaiOrderState(BaseModel):
         description="True if the user explicitly states that they want to make chai or ask for help making it. False otherwise"
     )
 
-def build_messages_for_order_parsing(current_state: ChaiOrderState, user_input: str):
+def build_messages_for_order_parsing(current_state: ChaiOrderState, prev_bot_query:str, user_input: str):
     system_prompt = f"""
         You are a structured output parser for chai making.  
-        Your job is to read the user’s natural language text and fill in the following state object fields.  
+        Your job is to read the user’s natural language text and fill in the following state object fields.
+        Take into account you previous query to the user to accurately determine the state. 
         You must return **only** a JSON object matching the provided schema. Do not include extra commentary.
 
         The schema represents the current state of the chai making.  
@@ -69,7 +70,6 @@ def build_messages_for_order_parsing(current_state: ChaiOrderState, user_input: 
         - `true` if the user explicitly states that they want to make chai or ask for help making it.  
         - `false` otherwise.
 
-
         ### Current State:
         {current_state.model_dump_json()}
 
@@ -79,7 +79,7 @@ def build_messages_for_order_parsing(current_state: ChaiOrderState, user_input: 
         - Return only the updated JSON state.
     """
     user_input = user_input or " "
-    return [SystemMessage(system_prompt), HumanMessage(user_input)]
+    return [SystemMessage(system_prompt),  AIMessage(prev_bot_query), HumanMessage(user_input)]
 
 
 def display_bot_message(console: Console, message: str):
@@ -97,6 +97,7 @@ def display_exit_message(console: Console, message: str):
 
 def prompt_user():
     return Prompt.ask("[bold cyan]User[/bold cyan]")
+
 
 def validate_user_input_step(current_state: ChaiOrderState):
     problems_with_state = []
@@ -151,11 +152,12 @@ def main():
         return
     
     llm = llm.with_structured_output(ChaiOrderState)
-    current_state = ChaiOrderState(selected_chai_recipe="Masala Chai")
+    current_state = ChaiOrderState()
     
     user_input = ''
 
-    display_bot_message(console, "Hi there! I am Chai Assistant. Pleased to meet you.")
+    bot_start_message = "Hi there! I am Chai Assistant. Pleased to meet you."
+    display_bot_message(console, bot_start_message)
     while user_input != '/exit':
         user_input = prompt_user()
         cleaned_user_input = user_input.strip().lower()
@@ -166,7 +168,7 @@ def main():
             continue
 
         # Step 1 - Parsing the user input.
-        current_state = llm.invoke(build_messages_for_order_parsing(current_state, user_input))
+        current_state = llm.invoke(build_messages_for_order_parsing(current_state, bot_start_message, user_input))
         x, y = validate_user_input_step(current_state)
         print(x)
         print(y)
