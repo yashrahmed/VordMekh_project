@@ -174,8 +174,10 @@ def respond_to_incomplete_input_step(current_state: ChaiOrderState, problems_wit
             - true if the user explicitly states that they want to make chai or ask for help making it.  
             - false otherwise.
 
-        Considering the current state, the user's input and the problems with it, craft a polite reply for the user in order to collect the required information and to keep the conversation on track.
+        Considering the current state, the user's input and the problems with it, craft a polite reply for the user in order to collect ONLY the required information relevant the above state variables and keep the conversation on track.
         Also, Inform them that you cannot help with anything other than chai if the user has provided miscellaneous content. Be professional but dynamic with your replies.
+
+        Respond only the with the replay that I can relay to the user directly by copy pasting.
     """
 
     command_program_msg_body = f"""
