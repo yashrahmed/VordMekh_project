@@ -21,10 +21,6 @@ class ChaiOrderState(BaseModel):
         None,
         description="Number of chai servings as a float. Null if unknown."
     )
-    at_campsite: Optional[bool] = Field(
-        None,
-        description="True if confirmed at a campsite, false if confirmed not at one, null if unknown."
-    )
     has_missc_content: bool = Field(
         False,
         description="True if unrelated content is included, false otherwise."
@@ -67,10 +63,7 @@ def validate_user_input_step(current_state: ChaiOrderState) -> tuple[bool, List[
         problems_with_state.append("Number of servings is unknown and the user needs to select a valid number of servings between 1 and 6 so that the recipe can be correctly calculated.")
     elif current_state.number_of_servings < 1 or current_state.number_of_servings > 6:
         problems_with_state.append("Number of servings is invalid and the user needs to select a valid number of servings between 1 and 6 so that the recipe can be correctly calculated.")
-    
-    if current_state.at_campsite is None:
-        problems_with_state.append("It is unknown whether is user is at a campsite. This information is requried to properly determine the tools required for chai prep.")
-    
+        
     all_relevant_value_known = len(problems_with_state) == 0 # All relevant values are known given that there are no problems with the state at this point.
 
     if current_state.has_missc_content:
@@ -100,16 +93,11 @@ def state_parsing_step(current_state: ChaiOrderState, prev_bot_query:str, user_i
         - Extract the numeric value of servings.  
         - If no serving count is given, set to `null`.
 
-        3. **at_campsite** (boolean | null)  
-        - `true` if the user explicitly confirms they are at a campsite.  
-        - `false` if explicitly confirmed they are NOT at a campsite.  
-        - `null` if location is unknown.
-
-        4. **has_missc_content** (boolean)  
+        3. **has_missc_content** (boolean)  
         - `true` if the user includes content unrelated to making chai in their message, and message is not a blank message.  
         - `false` otherwise.
 
-        5. **does_user_want_to_make_chai** (boolean)  
+        4. **does_user_want_to_make_chai** (boolean)  
         - `true` if the user explicitly states that they want to make chai or ask for help making it.  
         - `false` otherwise.
 
@@ -161,16 +149,11 @@ def respond_to_incomplete_input_step(current_state: ChaiOrderState, problems_wit
             - Extract the numeric value of servings.  
             - If no serving count is given, set to null.
 
-            3. at_campsite (boolean | null)  
-            - true if the user explicitly confirms they are at a campsite.  
-            - false if explicitly confirmed they are NOT at a campsite.  
-            - null if location is unknown.
-
-            4. has_missc_content (boolean)  
+            3. has_missc_content (boolean)  
             - true if the user includes content unrelated to making chai in their message, and message is not a blank message.  
             - false otherwise.
 
-            5. does_user_want_to_make_chai (boolean)  
+            4. does_user_want_to_make_chai (boolean)  
             - true if the user explicitly states that they want to make chai or ask for help making it.  
             - false otherwise.
 
