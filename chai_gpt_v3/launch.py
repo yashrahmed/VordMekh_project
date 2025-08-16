@@ -7,7 +7,7 @@ from rich.text import Text
 from rich.console import Console
 
 from pydantic import BaseModel, Field
-from typing import Optional
+from typing import Optional, List
 
 class ChaiOrderState(BaseModel):
     selected_chai_recipe: Optional[str] = Field(
@@ -77,11 +77,14 @@ def validate_user_input_step(current_state: ChaiOrderState):
         problems_with_state.append("User has added unrelated content in their input.")
 
     print(current_state)
+    for i, problem in enumerate(problems_with_state):
+        problems_with_state[i] = f"- {problem}"
     return all_relevant_value_known, problems_with_state
+
 
 def state_parsing_step(current_state: ChaiOrderState, prev_bot_query:str, user_input: str, llm: BaseChatModel):
     system_prompt = f"""
-        You are a structured output parser for chai making.  
+        You are a bot for helping users prepare chai. 
         Your job is to read the user’s natural language text and fill in the following state object fields.
         Take into account you previous query to the user to accurately determine the state. 
         You must return **only** a JSON object matching the provided schema. Do not include extra commentary.
@@ -116,17 +119,24 @@ def state_parsing_step(current_state: ChaiOrderState, prev_bot_query:str, user_i
         - `true` if the user explicitly states that they want to make chai or ask for help making it.  
         - `false` otherwise.
 
-        ### Current State:
-        {current_state.model_dump_json()}
-
         ### Instructions:
         - Parse the user’s new input and update only the fields that can be determined.  
         - Keep the rest unchanged.  
         - Return only the updated JSON state.
     """
+
+    bot_message_body = f"""
+        your previous query - {prev_bot_query}
+
+        # Current State:
+        {current_state.model_dump_json()}
+
+    """
     user_input = user_input or " "
-    conversation = [SystemMessage(system_prompt),  AIMessage(prev_bot_query), HumanMessage(user_input)]
+    conversation = [SystemMessage(system_prompt),  AIMessage(bot_message_body), HumanMessage(user_input)]
     return llm.invoke(conversation)
+
+
 
 
 def load_prompt_from_file(file_path):
