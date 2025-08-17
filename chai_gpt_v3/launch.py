@@ -31,16 +31,20 @@ class ChaiOrderState(BaseModel):
     )
 
 
+
 def display_bot_message(console: Console, message: str):
     text = Text()
     text.append("ChaiGPT: ", style="bold yellow3")
     text.append(message, style="white")
     console.print(text)
 
-def display_bot_thought(console: Console, message: str):
+def display_bot_thought(console: Console, current_state: ChaiOrderState):
     text = Text()
-    text.append("ChaiGPT's Thoughts: ", style="bold gray50")
-    text.append(message, style="white")
+    text.append("ChaiGPT's Thoughts: ________________________\n", style="bold gray50")
+    text.append(f"\t- Does user want to make chai? - {current_state.does_user_want_to_make_chai}\n", style="bold gray50")
+    text.append(f"\t- User's chosen Chai recipe - {current_state.selected_chai_recipe}\n", style="bold gray50")
+    text.append(f"\t- Chosen # of servings - {current_state.number_of_servings}\n", style="bold gray50")
+    text.append(f"\t- Does user have miscellaneous content in query? - {current_state.has_missc_content}", style="bold gray50")
     console.print(text)
 
 
@@ -226,7 +230,7 @@ def main():
 
         # Step 1 - Parsing the user's input.
         current_state = state_parsing_step(current_state, bot_start_message, user_input, parsing_llm)
-        display_bot_thought(console, str(current_state))
+        display_bot_thought(console, current_state)
         
         # Step 2 - Validating the user's input.
         all_valid, problems_with_input = validate_user_input_step(current_state)
@@ -234,6 +238,7 @@ def main():
         # Step 3 - Generating a response
         if all_valid:
             display_bot_message(console, f"Here's the recipe for {current_state.selected_chai_recipe}")
+            current_state = ChaiOrderState()
         else:
             response = respond_to_incomplete_input_step(current_state, problems_with_input, user_input, llm)
             display_bot_message(console, response.content)
