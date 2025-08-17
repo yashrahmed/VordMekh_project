@@ -1,4 +1,4 @@
-from bot_utils.tools import set_open_api_key, setup_openai_model
+from bot_utils.tools import set_open_api_key, setup_openai_model, load_yaml
 from langchain_core.messages import SystemMessage, HumanMessage, AIMessage
 from langchain_core.language_models.chat_models import BaseChatModel
 
@@ -8,13 +8,14 @@ from rich.console import Console
 
 from pydantic import BaseModel, Field
 from typing import Optional, List
+import json
 
 class ChaiOrderState(BaseModel):
     selected_chai_recipe: Optional[str] = Field(
         None,
         description=(
-            "Mapped chai type: 'Masala Chai', 'Adrak Chai', 'Sulaimani Chai', "
-            "'Kashmiri Chai', 'Kahwah', 'Unsupported chai type', or null if unknown."
+            "Mapped chai type: 'Masala Chai', 'Adrak Chai', 'Sulaimani Chai',\
+            'Kashmiri Chai', 'Kahwah', 'Unsupported chai type', or null if unknown."
         )
     )
     number_of_servings: Optional[float] = Field(
@@ -31,20 +32,22 @@ class ChaiOrderState(BaseModel):
     )
 
 
-
 def display_bot_message(console: Console, message: str):
     text = Text()
     text.append("ChaiGPT: ", style="bold yellow3")
     text.append(message, style="white")
     console.print(text)
 
-def display_bot_thought(console: Console, current_state: ChaiOrderState):
+
+def display_bot_thought(console: Console, current_state: ChaiOrderState, all_values_valid: bool):
     text = Text()
     text.append("ChaiGPT's Thoughts: ________________________\n", style="bold gray50")
     text.append(f"\t- Does user want to make chai? - {current_state.does_user_want_to_make_chai}\n", style="bold gray50")
     text.append(f"\t- User's chosen Chai recipe - {current_state.selected_chai_recipe}\n", style="bold gray50")
     text.append(f"\t- Chosen # of servings - {current_state.number_of_servings}\n", style="bold gray50")
     text.append(f"\t- Does user have miscellaneous content in query? - {current_state.has_missc_content}", style="bold gray50")
+    if all_values_valid:
+        text.append(f"\n\t- I have all the information I need. I will proceed with building the recipe.", style="bold gray50")
     console.print(text)
 
 
@@ -186,17 +189,26 @@ def respond_to_incomplete_input_step(current_state: ChaiOrderState, problems_wit
     """
     conversation = [SystemMessage(system_prompt),  HumanMessage(command_program_msg_body)]
     return llm.invoke(conversation)
-    
 
-def load_prompt_from_file(file_path):
-    md_text = ''
-    with open(file_path, "r", encoding="utf-8") as f:
-        md_text = f.read()
-    
-    if not md_text.strip():
-        raise ValueError("Markdown file is empty or contains only whitespace.")
 
-    return md_text
+def customize_recipe_to_servings_step(current_state: ChaiOrderState, chai_recipes: dict, llm: BaseChatModel) -> AIMessage:
+    system_prompt = f"""
+        You are an expert chef with extensive knowledge about customizing chai recipes. You can customize based on preference of
+        taste, scale (number of servings), missing ingredients etc..
+    """
+
+    command_program_msg_body = f"""
+        Customize the following recipe for {current_state.selected_chai_recipe} meant for 1 serving (shown as JSON) to {current_state.number_of_servings} servings.
+
+        Format the response such that I can relay it to the user directly by copy pasting. The response must be addressed directly to the user.
+
+        The output must be well formatted natural language text.
+
+        Recipe for a single serving below -
+        {json.dumps(chai_recipes[current_state.selected_chai_recipe], indent=2)}
+    """
+    conversation = [SystemMessage(system_prompt), HumanMessage(command_program_msg_body)]
+    return llm.invoke(conversation)
 
 
 def main():
@@ -212,10 +224,15 @@ def main():
         display_exit_message(console, str(err))
         return
     
+    recipe_err, recipes = load_yaml("./chai_gpt_v3/recipes.yaml")
+    chai_recipes = recipes["chai_recipes"]
+    # return
+
     parsing_llm = llm.with_structured_output(ChaiOrderState)
     current_state = ChaiOrderState()
     
     user_input = ''
+    all_valid = False
 
     bot_start_message = "Hi there! I am Chai Assistant. Pleased to meet you."
     display_bot_message(console, bot_start_message)
@@ -230,14 +247,17 @@ def main():
 
         # Step 1 - Parsing the user's input.
         current_state = state_parsing_step(current_state, bot_start_message, user_input, parsing_llm)
-        display_bot_thought(console, current_state)
-        
+
         # Step 2 - Validating the user's input.
         all_valid, problems_with_input = validate_user_input_step(current_state)
-        
-        # Step 3 - Generating a response
+
+        # Step 3 - Display bot's internal mind state.
+        display_bot_thought(console, current_state, all_valid)
+
+        # Step 4 - Generating a response
         if all_valid:
-            display_bot_message(console, f"Here's the recipe for {current_state.selected_chai_recipe}")
+            response = customize_recipe_to_servings_step(current_state, chai_recipes, llm)
+            display_bot_message(console, response.content)
             current_state = ChaiOrderState()
         else:
             response = respond_to_incomplete_input_step(current_state, problems_with_input, user_input, llm)

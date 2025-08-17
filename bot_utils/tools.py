@@ -22,7 +22,7 @@ class Conversation:
         return self._messages
 
 
-def load_yaml_config(filepath):
+def load_yaml(filepath):
     """
     Loads a YAML file and returns its contents as a dictionary.
     
@@ -39,7 +39,7 @@ def load_yaml_config(filepath):
 
 def set_api_key(key_name, config_file_name):
    ## Load config + read and set api key as an environment variable.
-    err, config = load_yaml_config(config_file_name)
+    err, config = load_yaml(config_file_name)
     if err:
         return ValueError(f"Could not load config file {config_file_name}.")
     if key_name not in config:
