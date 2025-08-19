@@ -1,0 +1,498 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Chai Recipe Search</title>
+    <script src="https://code.jquery.com/jquery-3.6.0.min.js"></script>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+        
+        body {
+            font-family: Arial, sans-serif;
+            background-color: #f5f5f5;
+            padding: 20px;
+        }
+        
+        .container {
+            max-width: 1200px;
+            margin: 0 auto;
+            display: flex;
+            gap: 20px;
+        }
+        
+        .form-section {
+            flex: 1;
+            background: white;
+            padding: 30px;
+            border-radius: 10px;
+            box-shadow: 0 2px 10px rgba(0,0,0,0.1);
+        }
+        
+        .recipe-display {
+            flex: 1;
+            background: #d3d3d3;
+            padding: 20px;
+            border-radius: 10px;
+            min-height: 400px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            color: #666;
+            font-size: 16px;
+        }
+        
+        h1 {
+            text-align: center;
+            margin-bottom: 40px;
+            color: #333;
+            font-size: 28px;
+        }
+        
+        .form-group {
+            margin-bottom: 25px;
+        }
+        
+        .form-group label {
+            display: block;
+            margin-bottom: 8px;
+            font-weight: bold;
+            color: #333;
+            font-size: 16px;
+        }
+        
+        .form-group input,
+        .form-group select {
+            width: 100%;
+            padding: 12px;
+            border: 2px solid #ccc;
+            border-radius: 8px;
+            font-size: 16px;
+            background-color: #e8e8e8;
+        }
+        
+        .form-group input:focus,
+        .form-group select:focus {
+            outline: none;
+            border-color: #007bff;
+            background-color: white;
+        }
+        
+        .submit-btn {
+            width: 100%;
+            padding: 15px;
+            background-color: #007bff;
+            color: white;
+            border: none;
+            border-radius: 8px;
+            font-size: 16px;
+            cursor: pointer;
+            margin-top: 20px;
+        }
+        
+        .submit-btn:hover {
+            background-color: #0056b3;
+        }
+        
+        .chat-section {
+            margin-top: 30px;
+            padding: 20px;
+            background: white;
+            border-radius: 10px;
+            box-shadow: 0 2px 10px rgba(0,0,0,0.1);
+        }
+        
+        .chat-header {
+            text-align: center;
+            margin-bottom: 20px;
+            color: #333;
+            font-size: 18px;
+            font-weight: bold;
+        }
+        
+        .chat-container {
+            border: 1px solid #ddd;
+            border-radius: 10px;
+            background: #f9f9f9;
+        }
+        
+        .chat-messages {
+            background: #f0f0f0;
+            border-radius: 10px 10px 0 0;
+            padding: 20px;
+            min-height: 300px;
+            max-height: 400px;
+            overflow-y: auto;
+        }
+        
+        .message {
+            margin-bottom: 15px;
+            animation: fadeIn 0.3s ease-in;
+        }
+        
+        .message-bot {
+            background: #666;
+            color: white;
+            padding: 15px;
+            border-radius: 15px 15px 15px 5px;
+            line-height: 1.4;
+            margin-right: 60px;
+            position: relative;
+        }
+        
+        .message-user {
+            background: #4a9b8e;
+            color: white;
+            padding: 15px;
+            border-radius: 15px 15px 5px 15px;
+            line-height: 1.4;
+            margin-left: 60px;
+            text-align: right;
+            position: relative;
+        }
+        
+        .message-timestamp {
+            font-size: 11px;
+            opacity: 0.7;
+            margin-top: 5px;
+        }
+        
+        .chat-input-container {
+            background: white;
+            padding: 15px;
+            border-radius: 0 0 10px 10px;
+            border-top: 1px solid #ddd;
+            display: flex;
+            gap: 10px;
+            align-items: center;
+        }
+        
+        .chat-input {
+            flex: 1;
+            padding: 12px 15px;
+            border: 2px solid #ddd;
+            border-radius: 25px;
+            font-size: 14px;
+            outline: none;
+            resize: none;
+            max-height: 100px;
+            min-height: 40px;
+        }
+        
+        .chat-input:focus {
+            border-color: #007bff;
+        }
+        
+        .chat-send-btn {
+            padding: 12px 20px;
+            background: #007bff;
+            color: white;
+            border: none;
+            border-radius: 25px;
+            cursor: pointer;
+            font-size: 14px;
+            min-width: 80px;
+            transition: background-color 0.2s;
+        }
+        
+        .chat-send-btn:hover:not(:disabled) {
+            background: #0056b3;
+        }
+        
+        .chat-send-btn:disabled {
+            background: #ccc;
+            cursor: not-allowed;
+        }
+        
+        .typing-indicator {
+            display: none;
+            background: #666;
+            color: white;
+            padding: 15px;
+            border-radius: 15px 15px 15px 5px;
+            margin-right: 60px;
+            margin-bottom: 15px;
+        }
+        
+        .typing-dots {
+            display: inline-block;
+        }
+        
+        .typing-dots span {
+            display: inline-block;
+            animation: typing 1.4s infinite;
+            margin: 0 1px;
+        }
+        
+        .typing-dots span:nth-child(2) {
+            animation-delay: 0.2s;
+        }
+        
+        .typing-dots span:nth-child(3) {
+            animation-delay: 0.4s;
+        }
+        
+        @keyframes typing {
+            0%, 60%, 100% {
+                transform: translateY(0);
+            }
+            30% {
+                transform: translateY(-10px);
+            }
+        }
+        
+        @keyframes fadeIn {
+            from { opacity: 0; transform: translateY(10px); }
+            to { opacity: 1; transform: translateY(0); }
+        }
+        
+        @media (max-width: 768px) {
+            .container {
+                flex-direction: column;
+            }
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <div class="form-section">
+            <h1>Chai Recipe Search</h1>
+            
+            <form id="chai-recipe-form">
+                <div class="form-group">
+                    <label for="selected-recipe">Selected Recipe</label>
+                    <input type="text" id="selected-recipe" name="selected-recipe" value="Masala Chai" readonly>
+                </div>
+                
+                <div class="form-group">
+                    <label for="servings"># of Servings</label>
+                    <input type="number" id="servings" name="servings" value="2" min="1" max="20">
+                </div>
+                
+                <div class="form-group">
+                    <label for="heating-equipment">Selected Heating Equipment</label>
+                    <select id="heating-equipment" name="heating-equipment">
+                        <option value="gas-lng">Gas Cooking Range | LNG</option>
+                        <option value="electric">Electric Stove</option>
+                        <option value="induction">Induction Cooktop</option>
+                        <option value="microwave">Microwave</option>
+                    </select>
+                </div>
+                
+                <button type="button" class="submit-btn" id="submit-btn">Submit</button>
+            </form>
+        </div>
+        
+        <div class="recipe-display" id="recipe-display">
+            Selected recipe appears here
+        </div>
+    </div>
+    
+    <div class="chat-section">
+        <div class="chat-header">Need help with the form? Let's talk!</div>
+        <div class="chat-container">
+            <div class="chat-messages" id="chat-messages">
+                <div class="message message-bot">
+                    You asked the following the last time....<br>
+                    Here is what I did not understand.....<br>
+                    ...Clarification request 1.<br>
+                    ...Clarification request 2.
+                    <div class="message-timestamp" id="bot-timestamp"></div>
+                </div>
+                <div class="message message-user">
+                    I have 2 cups of water, a bunch of cinnamon, all the required milk.
+                    <div class="message-timestamp" id="user-timestamp"></div>
+                </div>
+                <div class="typing-indicator" id="typing-indicator">
+                    <div class="typing-dots">
+                        <span>•</span><span>•</span><span>•</span>
+                    </div>
+                </div>
+            </div>
+            <div class="chat-input-container">
+                <textarea class="chat-input" id="chat-input" placeholder="Type your message here..." rows="1"></textarea>
+                <button class="chat-send-btn" id="chat-send-btn">Send</button>
+            </div>
+        </div>
+    </div>
+    
+    <script>
+        $(document).ready(function() {
+            // Form interactivity
+            $('#servings').on('input', function() {
+                const servings = $(this).val();
+                if (servings < 1) $(this).val(1);
+                if (servings > 20) $(this).val(20);
+            });
+            
+            $('#heating-equipment').on('change', function() {
+                const equipment = $(this).val();
+                console.log('Heating equipment changed to:', equipment);
+            });
+            
+            // Recipe display interaction
+            $('#selected-recipe').on('click', function() {
+                $('#recipe-display').html('<p>Recipe details for <strong>' + $(this).val() + '</strong> will appear here...</p>');
+            });
+            
+            // Form field focus effects
+            $('input, select').on('focus', function() {
+                $(this).css('border-color', '#007bff');
+                $(this).css('background-color', 'white');
+            });
+            
+            $('input, select').on('blur', function() {
+                $(this).css('border-color', '#ccc');
+                $(this).css('background-color', '#e8e8e8');
+            });
+            
+            // Submit button hover effect
+            $('#submit-btn').hover(
+                function() {
+                    $(this).css('background-color', '#0056b3');
+                },
+                function() {
+                    $(this).css('background-color', '#007bff');
+                }
+            );
+            
+            // Placeholder for submit functionality (not implemented as requested)
+            $('#submit-btn').on('click', function() {
+                alert('Submit functionality will be implemented later.');
+            });
+            
+            // Chat functionality
+            let chatMessages = [];
+            
+            // Initialize timestamps for existing messages
+            function initializeTimestamps() {
+                const now = new Date();
+                $('#bot-timestamp').text('10:30 AM');
+                $('#user-timestamp').text('10:32 AM');
+            }
+            
+            // Auto-resize textarea
+            $('#chat-input').on('input', function() {
+                this.style.height = 'auto';
+                this.style.height = Math.min(this.scrollHeight, 100) + 'px';
+            });
+            
+            // Send message on Enter (but not Shift+Enter)
+            $('#chat-input').on('keydown', function(e) {
+                if (e.key === 'Enter' && !e.shiftKey) {
+                    e.preventDefault();
+                    sendMessage();
+                }
+            });
+            
+            // Send message on button click
+            $('#chat-send-btn').on('click', function() {
+                sendMessage();
+            });
+            
+            // Send message function
+            function sendMessage() {
+                const message = $('#chat-input').val().trim();
+                if (message === '') return;
+                
+                // Add user message to chat
+                addMessage(message, 'user');
+                
+                // Clear input
+                $('#chat-input').val('').css('height', 'auto');
+                
+                // Disable send button and show typing indicator
+                $('#chat-send-btn').prop('disabled', true);
+                $('#typing-indicator').show();
+                
+                // Scroll to bottom
+                scrollToBottom();
+                
+                // Simulate LLM response (replace with actual API call)
+                setTimeout(() => {
+                    const botResponse = generateBotResponse(message);
+                    addMessage(botResponse, 'bot');
+                    
+                    // Hide typing indicator and re-enable send button
+                    $('#typing-indicator').hide();
+                    $('#chat-send-btn').prop('disabled', false);
+                    scrollToBottom();
+                }, Math.random() * 2000 + 1000); // Random delay 1-3 seconds
+            }
+            
+            // Add message to chat
+            function addMessage(text, sender) {
+                const timestamp = new Date().toLocaleTimeString([], {hour: '2-digit', minute:'2-digit'});
+                const messageClass = sender === 'user' ? 'message-user' : 'message-bot';
+                
+                const messageHtml = `
+                    <div class="message ${messageClass}">
+                        ${text}
+                        <div class="message-timestamp">${timestamp}</div>
+                    </div>
+                `;
+                
+                $('#typing-indicator').before(messageHtml);
+                chatMessages.push({text, sender, timestamp});
+                scrollToBottom();
+            }
+            
+            // Scroll chat to bottom
+            function scrollToBottom() {
+                const chatMessages = $('#chat-messages');
+                chatMessages.scrollTop(chatMessages[0].scrollHeight);
+            }
+            
+            // Generate bot response (placeholder - replace with actual LLM API call)
+            function generateBotResponse(userMessage) {
+                const responses = [
+                    "I understand you're asking about " + userMessage + ". Let me help you with that!",
+                    "Based on your message about '" + userMessage + "', here are some suggestions...",
+                    "That's a great question! Regarding " + userMessage + ", I can help you understand...",
+                    "Thanks for sharing! About " + userMessage + ", here's what I recommend...",
+                    "I see you mentioned " + userMessage + ". Let me provide some guidance on this topic."
+                ];
+                return responses[Math.floor(Math.random() * responses.length)];
+            }
+            
+            // Send to LLM API (placeholder function - implement with your preferred LLM service)
+            async function sendToLLM(message, chatHistory) {
+                // Example API call structure - replace with your actual LLM service
+                try {
+                    // const response = await fetch('/api/chat', {
+                    //     method: 'POST',
+                    //     headers: {
+                    //         'Content-Type': 'application/json',
+                    //     },
+                    //     body: JSON.stringify({
+                    //         message: message,
+                    //         history: chatHistory,
+                    //         context: {
+                    //             recipe: $('#selected-recipe').val(),
+                    //             servings: $('#servings').val(),
+                    //             equipment: $('#heating-equipment').val()
+                    //         }
+                    //     })
+                    // });
+                    // const data = await response.json();
+                    // return data.response;
+                    
+                    // Placeholder response for now
+                    return generateBotResponse(message);
+                } catch (error) {
+                    console.error('Error calling LLM API:', error);
+                    return "Sorry, I'm having trouble connecting right now. Please try again.";
+                }
+            }
+            
+            // Initialize chat
+            initializeTimestamps();
+            scrollToBottom();
+        });
+    </script>
+</body>
+</html>
