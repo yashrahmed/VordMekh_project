@@ -21,8 +21,12 @@
         .container {
             max-width: 1200px;
             margin: 0 auto;
+        }
+        
+        .top-section {
             display: flex;
             gap: 20px;
+            margin-bottom: 30px;
         }
         
         .form-section {
@@ -82,24 +86,47 @@
             background-color: white;
         }
         
-        .submit-btn {
-            width: 100%;
+        .button-group {
+            display: flex;
+            gap: 10px;
+            margin-top: 20px;
+        }
+        
+        .submit-btn, .clear-btn {
+            flex: 1;
             padding: 15px;
-            background-color: #007bff;
-            color: white;
             border: none;
             border-radius: 8px;
             font-size: 16px;
             cursor: pointer;
-            margin-top: 20px;
         }
         
-        .submit-btn:hover {
+        .submit-btn {
+            background-color: #007bff;
+            color: white;
+        }
+        
+        .submit-btn:hover:not(:disabled) {
             background-color: #0056b3;
         }
         
+        .submit-btn:disabled {
+            background-color: #ccc;
+            cursor: not-allowed;
+        }
+        
+        .clear-btn {
+            background-color: #dc3545;
+            color: white;
+        }
+        
+        .clear-btn:hover {
+            background-color: #c82333;
+        }
+        
         .chat-section {
-            margin-top: 30px;
+            max-width: 1200px;
+            margin: 30px auto 0;
             padding: 20px;
             background: white;
             border-radius: 10px;
@@ -112,6 +139,29 @@
             color: #333;
             font-size: 18px;
             font-weight: bold;
+            position: relative;
+        }
+        
+        .clear-chat-btn {
+            position: absolute;
+            top: 0;
+            right: 0;
+            background: #dc3545;
+            color: white;
+            border: none;
+            border-radius: 50%;
+            width: 30px;
+            height: 30px;
+            cursor: pointer;
+            font-size: 16px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            transition: background-color 0.2s;
+        }
+        
+        .clear-chat-btn:hover {
+            background: #c82333;
         }
         
         .chat-container {
@@ -259,41 +309,64 @@
 </head>
 <body>
     <div class="container">
-        <div class="form-section">
-            <h1>Chai Recipe Search</h1>
+        <div class="top-section">
+            <div class="form-section">
+                <h1>Chai Recipe Search</h1>
+                
+                <form id="chai-recipe-form">
+                    <div class="form-group">
+                        <label for="selected-recipe">Selected Recipe</label>
+                        <select id="selected-recipe" name="selected-recipe">
+                            <option value="">-- Select Recipe --</option>
+                            <option value="Masala Chai">Masala Chai</option>
+                            <option value="Adrak Chai">Adrak Chai</option>
+                            <option value="Sulaimani Chai">Sulaimani Chai</option>
+                            <option value="Kashmiri Chai">Kashmiri Chai</option>
+                            <option value="Kahwah">Kahwah</option>
+                        </select>
+                    </div>
+                    
+                    <div class="form-group">
+                        <label for="servings"># of Servings</label>
+                        <select id="servings" name="servings">
+                            <option value="">-- Select Servings --</option>
+                            <option value="1">1</option>
+                            <option value="2">2</option>
+                            <option value="3">3</option>
+                            <option value="4">4</option>
+                            <option value="5">5</option>
+                            <option value="6">6</option>
+                        </select>
+                    </div>
+                    
+                    <div class="form-group">
+                        <label for="heating-equipment">Selected Heating Equipment</label>
+                        <select id="heating-equipment" name="heating-equipment">
+                            <option value="">-- Select Heating Equipment --</option>
+                            <option value="Electric stove (Induction or Coil heating)">Electric stove (Induction or Coil heating)</option>
+                            <option value="Propane stove (w Propane Tank)">Propane stove (w Propane Tank)</option>
+                            <option value="Butane stove (w Butane Tank)">Butane stove (w Butane Tank)</option>
+                        </select>
+                    </div>
+                    
+                    <div class="button-group">
+                        <button type="button" class="clear-btn" id="clear-btn">Clear Form</button>
+                        <button type="button" class="submit-btn" id="submit-btn" disabled>Submit</button>
+                    </div>
+                </form>
+            </div>
             
-            <form id="chai-recipe-form">
-                <div class="form-group">
-                    <label for="selected-recipe">Selected Recipe</label>
-                    <input type="text" id="selected-recipe" name="selected-recipe" value="Masala Chai" readonly>
-                </div>
-                
-                <div class="form-group">
-                    <label for="servings"># of Servings</label>
-                    <input type="number" id="servings" name="servings" value="2" min="1" max="20">
-                </div>
-                
-                <div class="form-group">
-                    <label for="heating-equipment">Selected Heating Equipment</label>
-                    <select id="heating-equipment" name="heating-equipment">
-                        <option value="gas-lng">Gas Cooking Range | LNG</option>
-                        <option value="electric">Electric Stove</option>
-                        <option value="induction">Induction Cooktop</option>
-                        <option value="microwave">Microwave</option>
-                    </select>
-                </div>
-                
-                <button type="button" class="submit-btn" id="submit-btn">Submit</button>
-            </form>
-        </div>
-        
-        <div class="recipe-display" id="recipe-display">
-            Selected recipe appears here
+            <div class="recipe-display" id="recipe-display">
+                Recipe details will appear here...
+            </div>
         </div>
     </div>
     
     <div class="chat-section">
-        <div class="chat-header">Need help with the form? Let's talk!</div>
+        <div class="chat-header">
+            Need help with the form? Let's talk!
+            <button class="clear-chat-btn" id="clear-chat-btn" title="Clear chat">×</button>
+        </div>
         <div class="chat-container">
             <div class="chat-messages" id="chat-messages">
                 <div class="message message-bot">
@@ -322,21 +395,38 @@
     
     <script>
         $(document).ready(function() {
+            // Form validation function
+            function validateForm() {
+                const recipe = $('#selected-recipe').val();
+                const servings = $('#servings').val();
+                const equipment = $('#heating-equipment').val();
+                
+                const isValid = recipe !== '' && servings !== '' && equipment !== '';
+                $('#submit-btn').prop('disabled', !isValid);
+            }
+            
             // Form interactivity
-            $('#servings').on('input', function() {
-                const servings = $(this).val();
-                if (servings < 1) $(this).val(1);
-                if (servings > 20) $(this).val(20);
+            $('#selected-recipe, #servings, #heating-equipment').on('change', function() {
+                validateForm();
             });
             
-            $('#heating-equipment').on('change', function() {
-                const equipment = $(this).val();
-                console.log('Heating equipment changed to:', equipment);
+            // Clear form functionality
+            $('#clear-btn').on('click', function() {
+                $('#selected-recipe').val('');
+                $('#servings').val('');
+                $('#heating-equipment').val('');
+                $('#recipe-display').html('Recipe details will appear here...');
+                validateForm();
             });
             
             // Recipe display interaction
-            $('#selected-recipe').on('click', function() {
-                $('#recipe-display').html('<p>Recipe details for <strong>' + $(this).val() + '</strong> will appear here...</p>');
+            $('#selected-recipe').on('change', function() {
+                const selectedRecipe = $(this).val();
+                if (selectedRecipe) {
+                    $('#recipe-display').html('<p>Recipe details for <strong>' + selectedRecipe + '</strong> will appear here...</p>');
+                } else {
+                    $('#recipe-display').html('Recipe details will appear here...');
+                }
             });
             
             // Form field focus effects
@@ -350,15 +440,8 @@
                 $(this).css('background-color', '#e8e8e8');
             });
             
-            // Submit button hover effect
-            $('#submit-btn').hover(
-                function() {
-                    $(this).css('background-color', '#0056b3');
-                },
-                function() {
-                    $(this).css('background-color', '#007bff');
-                }
-            );
+            // Initialize form validation on page load
+            validateForm();
             
             // Placeholder for submit functionality (not implemented as requested)
             $('#submit-btn').on('click', function() {
@@ -488,6 +571,16 @@
                     return "Sorry, I'm having trouble connecting right now. Please try again.";
                 }
             }
+            
+            // Clear chat functionality
+            $('#clear-chat-btn').on('click', function() {
+                // Remove all messages except the typing indicator
+                $('#chat-messages .message').remove();
+                chatMessages = [];
+                
+                // Add a confirmation message
+                addMessage('Hi I am chaiGPT! How can I help? If you have questions about the form, feel free to ask.', 'bot');
+            });
             
             // Initialize chat
             initializeTimestamps();
