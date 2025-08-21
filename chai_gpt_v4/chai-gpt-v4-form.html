@@ -40,14 +40,15 @@
         .recipe-display {
             flex: 1;
             background: #d3d3d3;
-            padding: 20px;
+            padding: 30px;
             border-radius: 10px;
-            min-height: 400px;
             display: flex;
             align-items: center;
             justify-content: center;
             color: #666;
             font-size: 16px;
+            overflow-y: auto;
+            box-shadow: 0 2px 10px rgba(0,0,0,0.1);
         }
         
         h1 {
@@ -369,17 +370,6 @@
         </div>
         <div class="chat-container">
             <div class="chat-messages" id="chat-messages">
-                <div class="message message-bot">
-                    You asked the following the last time....<br>
-                    Here is what I did not understand.....<br>
-                    ...Clarification request 1.<br>
-                    ...Clarification request 2.
-                    <div class="message-timestamp" id="bot-timestamp"></div>
-                </div>
-                <div class="message message-user">
-                    I have 2 cups of water, a bunch of cinnamon, all the required milk.
-                    <div class="message-timestamp" id="user-timestamp"></div>
-                </div>
                 <div class="typing-indicator" id="typing-indicator">
                     <div class="typing-dots">
                         <span>•</span><span>•</span><span>•</span>
@@ -481,7 +471,7 @@
             // Display recipe function
             function displayRecipe(response) {
                 const recipe = response.recipe;
-                let html = `<div style="text-align: left; padding: 10px;">
+                let html = `<div style="text-align: left; width: 100%; align-self: flex-start;">
                     <h3 style="color: #333; margin-bottom: 15px;">${response.selected_chai_recipe}</h3>
                     <p style="margin-bottom: 10px;"><strong>Servings:</strong> ${response.num_servings}</p>
                     <p style="margin-bottom: 15px;"><strong>Equipment:</strong> ${response.heating_equipment}</p>
@@ -518,11 +508,9 @@
             // Chat functionality
             let chatMessages = [];
             
-            // Initialize timestamps for existing messages
-            function initializeTimestamps() {
-                const now = new Date();
-                $('#bot-timestamp').text('10:30 AM');
-                $('#user-timestamp').text('10:32 AM');
+            // Initialize chat with welcome message
+            function initializeChat() {
+                addMessage('Hi I am chaiGPT! How can I help? If you have questions about the form, feel free to ask.', 'bot');
             }
             
             // Auto-resize textarea
@@ -562,16 +550,38 @@
                 // Scroll to bottom
                 scrollToBottom();
                 
-                // Simulate LLM response (replace with actual API call)
-                setTimeout(() => {
-                    const botResponse = generateBotResponse(message);
-                    addMessage(botResponse, 'bot');
-                    
-                    // Hide typing indicator and re-enable send button
-                    $('#typing-indicator').hide();
-                    $('#chat-send-btn').prop('disabled', false);
-                    scrollToBottom();
-                }, Math.random() * 2000 + 1000); // Random delay 1-3 seconds
+                // Prepare chat history for API call
+                const messagesForAPI = chatMessages.map(msg => msg.text);
+                
+                // Call the chat endpoint
+                $.ajax({
+                    url: 'http://127.0.0.1:5000/chat',
+                    method: 'POST',
+                    contentType: 'application/json',
+                    data: JSON.stringify({
+                        messages: messagesForAPI
+                    }),
+                    success: function(response) {
+                        if (response.status === 'success') {
+                            addMessage(response.response, 'bot');
+                        } else {
+                            addMessage('Sorry, I encountered an error. Please try again.', 'bot');
+                        }
+                    },
+                    error: function(xhr, status, error) {
+                        let errorMessage = 'Sorry, I\'m having trouble connecting right now. Please try again.';
+                        if (xhr.responseJSON && xhr.responseJSON.error) {
+                            console.error('Chat API Error:', xhr.responseJSON.error);
+                        }
+                        addMessage(errorMessage, 'bot');
+                    },
+                    complete: function() {
+                        // Hide typing indicator and re-enable send button
+                        $('#typing-indicator').hide();
+                        $('#chat-send-btn').prop('disabled', false);
+                        scrollToBottom();
+                    }
+                });
             }
             
             // Add message to chat
@@ -597,47 +607,7 @@
                 chatMessages.scrollTop(chatMessages[0].scrollHeight);
             }
             
-            // Generate bot response (placeholder - replace with actual LLM API call)
-            function generateBotResponse(userMessage) {
-                const responses = [
-                    "I understand you're asking about " + userMessage + ". Let me help you with that!",
-                    "Based on your message about '" + userMessage + "', here are some suggestions...",
-                    "That's a great question! Regarding " + userMessage + ", I can help you understand...",
-                    "Thanks for sharing! About " + userMessage + ", here's what I recommend...",
-                    "I see you mentioned " + userMessage + ". Let me provide some guidance on this topic."
-                ];
-                return responses[Math.floor(Math.random() * responses.length)];
-            }
             
-            // Send to LLM API (placeholder function - implement with your preferred LLM service)
-            async function sendToLLM(message, chatHistory) {
-                // Example API call structure - replace with your actual LLM service
-                try {
-                    // const response = await fetch('/api/chat', {
-                    //     method: 'POST',
-                    //     headers: {
-                    //         'Content-Type': 'application/json',
-                    //     },
-                    //     body: JSON.stringify({
-                    //         message: message,
-                    //         history: chatHistory,
-                    //         context: {
-                    //             recipe: $('#selected-recipe').val(),
-                    //             servings: $('#servings').val(),
-                    //             equipment: $('#heating-equipment').val()
-                    //         }
-                    //     })
-                    // });
-                    // const data = await response.json();
-                    // return data.response;
-                    
-                    // Placeholder response for now
-                    return generateBotResponse(message);
-                } catch (error) {
-                    console.error('Error calling LLM API:', error);
-                    return "Sorry, I'm having trouble connecting right now. Please try again.";
-                }
-            }
             
             // Clear chat functionality
             $('#clear-chat-btn').on('click', function() {
@@ -650,7 +620,7 @@
             });
             
             // Initialize chat
-            initializeTimestamps();
+            initializeChat();
             scrollToBottom();
         });
     </script>
