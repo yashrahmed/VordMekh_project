@@ -443,10 +443,77 @@
             // Initialize form validation on page load
             validateForm();
             
-            // Placeholder for submit functionality (not implemented as requested)
+            // Submit form functionality
             $('#submit-btn').on('click', function() {
-                alert('Submit functionality will be implemented later.');
+                const formData = {
+                    selected_chai_recipe: $('#selected-recipe').val(),
+                    num_servings: parseInt($('#servings').val()),
+                    heating_equipment: $('#heating-equipment').val()
+                };
+                
+                // Show loading state
+                $(this).prop('disabled', true).text('Loading...');
+                $('#recipe-display').html('<p>Loading recipe...</p>');
+                
+                // Make API call
+                $.ajax({
+                    url: 'http://127.0.0.1:5000/get-recipe',
+                    method: 'POST',
+                    contentType: 'application/json',
+                    data: JSON.stringify(formData),
+                    success: function(response) {
+                        displayRecipe(response);
+                    },
+                    error: function(xhr, status, error) {
+                        let errorMessage = 'An error occurred while fetching the recipe.';
+                        if (xhr.responseJSON && xhr.responseJSON.error) {
+                            errorMessage = xhr.responseJSON.error;
+                        }
+                        $('#recipe-display').html('<p style="color: red;">Error: ' + errorMessage + '</p>');
+                    },
+                    complete: function() {
+                        $('#submit-btn').prop('disabled', false).text('Submit');
+                        validateForm(); // Re-enable if form is still valid
+                    }
+                });
             });
+            
+            // Display recipe function
+            function displayRecipe(response) {
+                const recipe = response.recipe;
+                let html = `<div style="text-align: left; padding: 10px;">
+                    <h3 style="color: #333; margin-bottom: 15px;">${response.selected_chai_recipe}</h3>
+                    <p style="margin-bottom: 10px;"><strong>Servings:</strong> ${response.num_servings}</p>
+                    <p style="margin-bottom: 15px;"><strong>Equipment:</strong> ${response.heating_equipment}</p>
+                    
+                    <h4 style="color: #666; margin-bottom: 10px;">Ingredients:</h4>
+                    <ul style="margin-bottom: 15px;">`;
+                
+                recipe.ingredients.forEach(function(ingredient) {
+                    const [name, amount, unit] = ingredient;
+                    const adjustedAmount = (amount * response.num_servings).toFixed(2);
+                    html += `<li>${adjustedAmount} ${unit || ''} ${name}</li>`;
+                });
+                
+                html += `</ul><h4 style="color: #666; margin-bottom: 10px;">Tools:</h4>
+                    <ul style="margin-bottom: 15px;">`;
+                
+                recipe.tools.forEach(function(tool) {
+                    const [name, quantity] = tool;
+                    html += `<li>${quantity} ${name}</li>`;
+                });
+                
+                html += `</ul><h4 style="color: #666; margin-bottom: 10px;">Instructions:</h4>
+                    <ol>`;
+                
+                recipe.steps.forEach(function(step) {
+                    html += `<li style="margin-bottom: 8px;">${step}</li>`;
+                });
+                
+                html += `</ol></div>`;
+                
+                $('#recipe-display').html(html);
+            }
             
             // Chat functionality
             let chatMessages = [];
