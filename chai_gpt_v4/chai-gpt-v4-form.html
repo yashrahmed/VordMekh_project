@@ -532,6 +532,15 @@
                 sendMessage();
             });
             
+            // Get current form state
+            function getCurrentFormState() {
+                return {
+                    selected_chai_recipe: $('#selected-recipe').val() || null,
+                    num_servings: $('#servings').val() ? parseInt($('#servings').val()) : null,
+                    heating_equipment: $('#heating-equipment').val() || null
+                };
+            }
+
             // Send message function
             function sendMessage() {
                 const message = $('#chat-input').val().trim();
@@ -553,13 +562,17 @@
                 // Prepare chat history for API call
                 const messagesForAPI = chatMessages.map(msg => msg.text);
                 
+                // Get current form state
+                const formState = getCurrentFormState();
+                
                 // Call the chat endpoint
                 $.ajax({
                     url: 'http://127.0.0.1:5000/chat',
                     method: 'POST',
                     contentType: 'application/json',
                     data: JSON.stringify({
-                        messages: messagesForAPI
+                        messages: messagesForAPI,
+                        form_state: formState
                     }),
                     success: function(response) {
                         if (response.status === 'success') {
