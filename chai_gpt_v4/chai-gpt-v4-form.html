@@ -546,8 +546,15 @@
                 const message = $('#chat-input').val().trim();
                 if (message === '') return;
                 
-                // Add user message to chat
-                addMessage(message, 'user');
+                // Get current form state
+                const formState = getCurrentFormState();
+                
+                // Format message with current form state
+                const formattedMessage = `# Current form state : SelectedRecipe=${formState.selected_chai_recipe || 'Not selected'} | Number of Servings=${formState.num_servings || 'Not selected'} | Selected heating equipment=${formState.heating_equipment || 'Not selected'}
+# User's message : ${message}`;
+                
+                // Add user message to chat (display original message, store formatted version)
+                addMessage(message, 'user', formattedMessage);
                 
                 // Clear input
                 $('#chat-input').val('').css('height', 'auto');
@@ -559,11 +566,8 @@
                 // Scroll to bottom
                 scrollToBottom();
                 
-                // Prepare chat history for API call
+                // Prepare chat history for API call (use stored formatted messages)
                 const messagesForAPI = chatMessages.map(msg => msg.text);
-                
-                // Get current form state
-                const formState = getCurrentFormState();
                 
                 // Call the chat endpoint
                 $.ajax({
@@ -571,8 +575,7 @@
                     method: 'POST',
                     contentType: 'application/json',
                     data: JSON.stringify({
-                        messages: messagesForAPI,
-                        form_state: formState
+                        messages: messagesForAPI
                     }),
                     success: function(response) {
                         if (response.status === 'success') {
@@ -598,7 +601,7 @@
             }
             
             // Add message to chat
-            function addMessage(text, sender) {
+            function addMessage(text, sender, formattedText = null) {
                 const timestamp = new Date().toLocaleTimeString([], {hour: '2-digit', minute:'2-digit'});
                 const messageClass = sender === 'user' ? 'message-user' : 'message-bot';
                 
@@ -610,7 +613,15 @@
                 `;
                 
                 $('#typing-indicator').before(messageHtml);
-                chatMessages.push({text, sender, timestamp});
+                
+                // Store the formatted text (with form state) for API calls, but display original text
+                const messageToStore = {
+                    text: formattedText || text, // Use formattedText for API, text for display
+                    displayText: text, // Keep original text for display
+                    sender, 
+                    timestamp
+                };
+                chatMessages.push(messageToStore);
                 scrollToBottom();
             }
             

@@ -78,7 +78,6 @@ def chat():
             return jsonify({'error': 'No JSON data provided'}), 400
         
         messages = data.get('messages')
-        form_state = data.get('form_state', {})
         
         if messages is None:
             return jsonify({'error': 'Missing required field: messages'}), 400
@@ -98,15 +97,10 @@ def chat():
             else:
                 langchain_messages.append(HumanMessage(content=message))
         
-        # Print the langchain messages and form state to the log
+        # Print the langchain messages to the log
         print("Langchain Messages:")
         for i, msg in enumerate(langchain_messages):
             print(f"  {i}: {type(msg).__name__}: {msg.content}")
-        
-        print("Form State:")
-        print(f"  Selected Recipe: {form_state.get('selected_chai_recipe', 'Not selected')}")
-        print(f"  Servings: {form_state.get('num_servings', 'Not specified')}")
-        print(f"  Heating Equipment: {form_state.get('heating_equipment', 'Not selected')}")
         
         # Generate a randomized AI response
         random_responses = [
@@ -128,7 +122,6 @@ def chat():
         return jsonify({
             'response': ai_response.content,
             'message_count': len(langchain_messages),
-            'form_state_received': form_state,
             'status': 'success'
         }), 200
         
