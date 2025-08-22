@@ -541,6 +541,51 @@
                 };
             }
 
+            // Execute form command from AI response
+            function executeFormCommand(commandString) {
+                try {
+                    // Parse the command string: SelectedRecipe=... | Number of Servings=... | Selected heating equipment=...
+                    const parts = commandString.split(' | ');
+                    
+                    parts.forEach(part => {
+                        const [key, value] = part.split('=', 2);
+                        if (key && value) {
+                            const trimmedKey = key.trim();
+                            const trimmedValue = value.trim();
+                            
+                            // Map command keys to form field IDs and update accordingly
+                            if (trimmedKey === 'SelectedRecipe' && trimmedValue !== 'Not selected') {
+                                $('#selected-recipe').val(trimmedValue);
+                            } else if (trimmedKey === 'SelectedRecipe' && trimmedValue === 'Not selected') {
+                                $('#selected-recipe').val('');
+                            } else if (trimmedKey === 'Number of Servings' && trimmedValue !== 'Not selected') {
+                                $('#servings').val(trimmedValue);
+                            } else if (trimmedKey === 'Number of Servings' && trimmedValue === 'Not selected') {
+                                $('#servings').val('');
+                            } else if (trimmedKey === 'Selected heating equipment' && trimmedValue !== 'Not selected') {
+                                $('#heating-equipment').val(trimmedValue);
+                            } else if (trimmedKey === 'Selected heating equipment' && trimmedValue === 'Not selected') {
+                                $('#heating-equipment').val('');
+                            }
+                        }
+                    });
+                    
+                    // Trigger form validation after updating fields
+                    validateForm();
+                    
+                    // Update recipe display if recipe was changed
+                    const selectedRecipe = $('#selected-recipe').val();
+                    if (selectedRecipe) {
+                        $('#recipe-display').html('<p>Recipe details for <strong>' + selectedRecipe + '</strong> will appear here...</p>');
+                    } else {
+                        $('#recipe-display').html('Recipe details will appear here...');
+                    }
+                    
+                } catch (error) {
+                    console.error('Error executing form command:', error);
+                }
+            }
+
             // Send message function
             function sendMessage() {
                 const message = $('#chat-input').val().trim();
@@ -579,7 +624,26 @@
                     }),
                     success: function(response) {
                         if (response.status === 'success') {
-                            addMessage(response.response, 'bot');
+                            // Check for CMD_SET command in the response
+                            const aiResponse = response.response;
+                            const cmdIndex = aiResponse.indexOf('CMD_SET');
+                            
+                            if (cmdIndex !== -1) {
+                                // Extract command and message parts
+                                const messageBeforeCmd = aiResponse.substring(0, cmdIndex).trim();
+                                const commandPart = aiResponse.substring(cmdIndex + 7).trim(); // Skip 'CMD_SET '
+                                
+                                // Parse and execute the command
+                                executeFormCommand(commandPart);
+                                
+                                // Display only the message part (without the command)
+                                if (messageBeforeCmd) {
+                                    addMessage(messageBeforeCmd, 'bot');
+                                }
+                            } else {
+                                // No command, display the full response
+                                addMessage(aiResponse, 'bot');
+                            }
                         } else {
                             addMessage('Sorry, I encountered an error. Please try again.', 'bot');
                         }
