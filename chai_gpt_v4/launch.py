@@ -21,8 +21,21 @@ app = Flask(__name__)
 CORS(app)
 llm_handle = LLMHandle
 
+def create_system_prompt_for_chai_customization():
+    system_prompt = f"""
+    You are ChaiGPT, a helpful LLM assistant and an expert chai chef.
+    You will be given a recipe, the number of servings and the heating equiment that is being used to prepare chai.
+    
+    Your task is to provide a recipe that is tailored to the number of servings and the available heating equipment.
+    
+    Use your expertise to adjust the recipe.
 
-def create_system_prompt():
+    Remember to craft your response in such a way that it is addressed directly to the user as opposed to the program relaying it to you. The reply must be such that the user does not know that his inputs are being relayed.
+    """
+    return SystemMessage(system_prompt)
+
+
+def create_system_prompt_for_chatbot():
     system_prompt = f"""
     You are ChaiGPT, a helpful LLM assistant and an expert chai chef.
     You are located on an html form where user's can search for customized recipes by helping them fill out the form correctly.
@@ -108,23 +121,28 @@ def get_recipe():
         chai_recipes = recipes_data.get('chai_recipes', {})
         
         if selected_chai_recipe not in chai_recipes:
-            available_recipes = list(chai_recipes.keys())
             return jsonify({
                 'error': f'Recipe "{selected_chai_recipe}" not found',
-                'available_recipes': available_recipes
             }), 404
         
         recipe = chai_recipes[selected_chai_recipe]
+
+        customization_req_message_str = f"""
+            #Recipe -
+                {selected_chai_recipe}
+
+            #Number of Servings - {num_servings}
+
+            #Heating Equipment - {heating_equipment}
+
+            Help the user customize the recipe.
+        """
+        messages = [create_system_prompt_for_chai_customization(), HumanMessage(customization_req_message_str)]
+
+        response = llm_handle.llm.invoke(messages)
         
         response_data = {
-            'num_servings': num_servings,
-            'selected_chai_recipe': selected_chai_recipe,
-            'heating_equipment': heating_equipment,
-            'recipe': {
-                'ingredients': recipe.get('ingr', []),
-                'tools': recipe.get('tools', []),
-                'steps': recipe.get('steps', [])
-            },
+            'response': response.content,
             'status': 'success'
         }
         
@@ -151,7 +169,7 @@ def chat():
             return jsonify({'error': 'messages must be a list'}), 400
         
         # Convert messages to Langchain objects
-        langchain_messages = [create_system_prompt()]
+        langchain_messages = [create_system_prompt_for_chatbot()]
         for i, message in enumerate(messages):
             if not isinstance(message, str):
                 return jsonify({'error': f'Message at index {i} must be a string'}), 400
@@ -166,7 +184,6 @@ def chat():
         
         # Print the AI response to the log
         # print(f"AI Response: {ai_response.content}")
-        
         return jsonify({
             'response': ai_response.content,
             'message_count': len(langchain_messages),

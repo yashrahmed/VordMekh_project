@@ -301,6 +301,21 @@
             to { opacity: 1; transform: translateY(0); }
         }
         
+        .loading-spinner {
+            width: 40px;
+            height: 40px;
+            border: 4px solid #f3f3f3;
+            border-top: 4px solid #007bff;
+            border-radius: 50%;
+            animation: spin 1s linear infinite;
+            margin: 0 auto;
+        }
+        
+        @keyframes spin {
+            0% { transform: rotate(0deg); }
+            100% { transform: rotate(360deg); }
+        }
+        
         @media (max-width: 768px) {
             .container {
                 flex-direction: column;
@@ -441,9 +456,16 @@
                     heating_equipment: $('#heating-equipment').val()
                 };
                 
-                // Show loading state
+                // Show loading state with spinner
                 $(this).prop('disabled', true).text('Loading...');
-                $('#recipe-display').html('<p>Loading recipe...</p>');
+                $('#recipe-display').html(`
+                    <div style="display: flex; align-items: center; justify-content: center; min-height: 100px;">
+                        <div style="text-align: center;">
+                            <div class="loading-spinner"></div>
+                            <p style="margin-top: 15px; color: #666;">ChaiGPT is customizing your recipe...</p>
+                        </div>
+                    </div>
+                `);
                 
                 // Make API call
                 $.ajax({
@@ -452,7 +474,11 @@
                     contentType: 'application/json',
                     data: JSON.stringify(formData),
                     success: function(response) {
-                        displayRecipe(response);
+                        if (response.status === 'success') {
+                            displayRecipe(response);
+                        } else {
+                            $('#recipe-display').html('<p style=\"color: red;\">Error: Unable to generate recipe</p>');
+                        }
                     },
                     error: function(xhr, status, error) {
                         let errorMessage = 'An error occurred while fetching the recipe.';
@@ -470,37 +496,10 @@
             
             // Display recipe function
             function displayRecipe(response) {
-                const recipe = response.recipe;
-                let html = `<div style="text-align: left; width: 100%; align-self: flex-start;">
-                    <h3 style="color: #333; margin-bottom: 15px;">${response.selected_chai_recipe}</h3>
-                    <p style="margin-bottom: 10px;"><strong>Servings:</strong> ${response.num_servings}</p>
-                    <p style="margin-bottom: 15px;"><strong>Equipment:</strong> ${response.heating_equipment}</p>
-                    
-                    <h4 style="color: #666; margin-bottom: 10px;">Ingredients:</h4>
-                    <ul style="margin-bottom: 15px;">`;
-                
-                recipe.ingredients.forEach(function(ingredient) {
-                    const [name, amount, unit] = ingredient;
-                    const adjustedAmount = (amount * response.num_servings).toFixed(2);
-                    html += `<li>${adjustedAmount} ${unit || ''} ${name}</li>`;
-                });
-                
-                html += `</ul><h4 style="color: #666; margin-bottom: 10px;">Tools:</h4>
-                    <ul style="margin-bottom: 15px;">`;
-                
-                recipe.tools.forEach(function(tool) {
-                    const [name, quantity] = tool;
-                    html += `<li>${quantity} ${name}</li>`;
-                });
-                
-                html += `</ul><h4 style="color: #666; margin-bottom: 10px;">Instructions:</h4>
-                    <ol>`;
-                
-                recipe.steps.forEach(function(step) {
-                    html += `<li style="margin-bottom: 8px;">${step}</li>`;
-                });
-                
-                html += `</ol></div>`;
+                // Format the LLM response with proper styling
+                const html = `<div style="text-align: left; width: 100%; align-self: flex-start; white-space: pre-line; line-height: 1.6;">
+                    ${response.response.replace(/\n/g, '<br>')}
+                </div>`;
                 
                 $('#recipe-display').html(html);
             }
