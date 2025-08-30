@@ -1,0 +1,105 @@
+Network (DAG)
+
+[Water Quality]
+        │
+        ▼
+[Tea Base Selection]     [Spice Blend Composition]     [Milk Choice & Fat Content]          [Sweetener Type]
+          │                         │                              │                                │
+          └───────────────┬─────────┴───────────┬──────────────────┘                                │
+                          ▼                     ▼                                                   │
+                    [Liquid Ratios]        [Brew Method]                                            │
+                          │                     │                                                   │
+                          └───────────────┬─────┴───────────────┬───────────────────────────────────┘
+                                          ▼                     ▼
+                                   [Sequence of Steps]   (filters/limits options)
+                                          │
+                                          ▼
+                                 [Heat & Duration Settings]
+                                          │
+                                          ▼
+                              [Straining & Serving Preferences]
+
+Node purposes + key dependencies
+	1.	Water Quality → affects extraction aggressiveness and milk behavior
+
+	•	Outputs: hardness/ppm class (soft/medium/hard), chlorine note (yes/no)
+	•	Feeds: Tea Base Selection (strength bias), Brew Method (steep vs boil bias), Heat & Duration (tweak times)
+
+	2.	Tea Base Selection → caffeine/tannin ceiling, base strength target
+
+	•	Outputs: tea type, leaf grade, baseline grams/tsp per cup
+	•	Feeds: Liquid Ratios (needed milk/water to hit target), Brew Method (some teas hate long boils), Heat & Duration
+
+	3.	Spice Blend Composition → oil content & grind control extraction speed
+
+	•	Outputs: spice list, grind, per-cup grams
+	•	Feeds: Brew Method (boil vs steep viability), Heat & Duration (time to express oils), Straining (mesh vs cloth)
+
+	4.	Milk Choice & Fat Content → emulsification, curdle risk, body
+
+	•	Outputs: milk type, fat %, boil-tolerance flag
+	•	Feeds: Liquid Ratios (milk fraction), Brew Method/Sequence (early vs late milk), Heat & Duration (avoid scorching)
+
+	5.	Sweetener Type (timing set later)
+
+	•	Outputs: sweetener kind, sweetness target
+	•	Feeds: Sequence (when to add), Heat & Duration (jaggery often earlier)
+
+	6.	Liquid Ratios (needs tea + milk decisions)
+
+	•	Inputs: Tea Base, Milk Choice
+	•	Outputs: water:milk:tea ratios, target TDS/strength
+	•	Feeds: Sequence (when milk enters), Heat & Duration (longer for higher milk)
+
+	7.	Brew Method (constrains viable sequences)
+
+	•	Inputs: Water Quality, Tea Base, Spice Blend
+	•	Outputs: method = simmer/boil/steep/pressure; compatible step patterns
+	•	Feeds: Sequence (filters options), Heat & Duration (baseline time/heat envelopes)
+
+	8.	Sequence of Steps (choose from curated patterns)
+
+	•	Inputs: Brew Method, Liquid Ratios, Sweetener Type (for timing)
+	•	Outputs: ordered stages (spices→tea→milk→sweetener, etc.)
+	•	Feeds: Heat & Duration (step-level timing/heat), Straining (what needs catching)
+
+	9.	Heat & Duration Settings (numerical schedule)
+
+	•	Inputs: Water Quality, Tea Base, Spice Blend, Liquid Ratios, Brew Method, Sequence
+	•	Outputs: stepwise minutes + heat levels, stirring cadence
+	•	Feeds: Straining & Serving (when to pull, foam control hints)
+
+	10.	Straining & Serving Preferences
+
+	•	Inputs: Spice grind, Sequence, Heat & Duration
+	•	Outputs: strainer type, pour method/froth target, serving temp, batch scaling
+
+⸻
+
+Edge rules (how to compute downstream defaults)
+	•	Water Quality → Heat & Duration: hard water ⇒ +30–60s simmer; chlorine flagged ⇒ recommend filtered.
+	•	Tea Base → Liquid Ratios: strong CTC defaults to lower tea grams if long-boiled; delicate Darjeeling biases toward later milk.
+	•	Spice Blend → Brew Method/Sequence: powdered spices enable shorter spice stage; whole spices prefer earlier, longer simmer.
+	•	Milk Choice → Sequence: high-fat dairy can enter earlier; oat/almond prefer later to avoid separation.
+	•	Sweetener Type → Sequence: jaggery early (integration), honey late (aroma preservation).
+	•	Liquid Ratios → Heat & Duration: higher milk % ⇒ longer total time and slightly lower peak heat.
+	•	Brew Method → Sequence options: “steep” removes “all-together rolling boil” from choices; “pressure” offers short, fixed sequences.
+
+⸻
+
+Data contracts (what each node exposes)
+	•	Tea Base: {tea_type, leaf_grade, grams_per_cup}
+	•	Spice Blend: {spices: [{name, grind, grams}], oiliness_score}
+	•	Milk Choice: {milk_type, fat_pct, boil_tolerance}
+	•	Sweetener Type: {kind, target_sweetness}
+	•	Water Quality: {hardness_class, chlorine_flag}
+	•	Liquid Ratios: {water_ml, milk_ml, tea_grams}
+	•	Brew Method: {method, compatible_sequences[]}
+	•	Sequence of Steps: {steps: [{stage, order}], sweetener_timing}
+	•	Heat & Duration: {schedule: [{stage, minutes, heat_level, stir}]}
+	•	Straining & Serving: {strainer, pour_style, froth_level, serving_temp, batch_multiplier}
+
+Features - 
+	1. In each of the forms the LLM must use the state to provide suggestions and corrections.
+	2. Sensible defaults must be available.
+	
