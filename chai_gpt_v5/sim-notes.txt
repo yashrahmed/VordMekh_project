@@ -1,0 +1,87 @@
+⸻
+
+1. Ingredients
+	•	Water (in pot, plus source: sink faucet, filtered pitcher, or fridge dispenser)
+	•	Full-fat milk (carton or glass bottle)
+	•	Kashmiri green tea leaves (loose in a tin/jar)
+	•	Baking soda (small container or spoon portion)
+	•	Green cardamom pods (whole, some lightly crushed)
+	•	Salt (salt cellar or small dish)
+	•	Saffron strands (in a little dish or soaking in milk)
+	•	Slivered pistachios
+	•	Slivered almonds
+	•	Sugar (sugar bowl) or honey (jar)
+	•	Unsalted butter (stick/pat on a plate) or ghee jar
+
+⸻
+
+2. Objects in the recipe (tools, cookware, serving items)
+	•	Medium saucepan (sized above liquid volume, on stovetop)
+	•	Whisk (or ladle, possibly both)
+	•	Stove burner (active)
+	•	Measuring spoons (for baking soda, salt, sugar)
+	•	Strainer (for pouring into cups)
+	•	Serving cups (3, possibly decorated)
+	•	Small bowls/dishes for garnishes (nuts, saffron)
+	•	Spoon for stirring
+	•	Mortar & pestle or small knife/cutting board (for crushing cardamom)
+	•	Jug or small bowl for saffron-soaked milk
+
+⸻
+
+3. Objects not mentioned in the recipe (kitchen context + atmosphere)
+	•	Kitchen counter (stone/laminate)
+	•	Modern stovetop (gas or electric range)
+	•	Range hood
+	•	Cabinets/drawers
+	•	Sink faucet (if used as water source)
+	•	Filtered water pitcher (if used as water source)
+	•	Refrigerator with dispenser (if used as water source)
+	•	Refrigerator (milk source regardless)
+	•	Overhead lighting
+	•	Tray to carry cups
+	•	Coasters under cups
+	•	Kitchen towel/hand towel (on oven door or nearby)
+	•	Spoon rest (with slightly tea-stained spoon)
+	•	Cutting board (if not using mortar & pestle)
+	•	Spice rack/jars in background (cardamom, saffron context)
+	•	Kettle (optional, background prop)
+	•	Chairs/breakfast nook, window, backsplash (scene grounding)
+	•	Small spills or droplets on counter near pot or milk jug (realism)
+	•	Steam rising from saucepan (particle effect)
+	•	Foam layer on tea after baking soda addition
+
+⸻
+
+For the person, you’ll want something simple but functional for skeletal rigging and object interaction:
+	•	Human base mesh: adult figure, proportioned for a suburban home kitchen.
+	•	Skeletal rig: standard biped rig with IK chains for arms/hands and legs.
+	•	Hands: modeled with enough topology for finger curling and grip poses (to hold whisk, ladle, saucepan handle, cup).
+	•	Facial detail: can be minimal if expression isn’t the focus — just enough topology to avoid looking flat.
+	•	Clothing: casual kitchen wear (t-shirt, jeans/apron), modeled separately to allow simple cloth simulation or parenting to the rig.
+	•	Props for interaction: simple grip targets on whisk handle, saucepan handle, cup, and pitcher/faucet knob for hand alignment.
+
+This way you can test both skeletal articulation (elbow bend while stirring, wrist pronation while pouring) and grasping mechanics without getting lost in character detail.
+
+Want me to mock up a short list of core grasping poses (e.g., stir, pour, lift, pinch) that would cover most of the chai-making motions?
+
+
+-----
+
+@Todo
+
+KB design - 
+- Initialize object list for two scenes (Deliberately left incomplete).
+- Initialize a context dependent made of object list and a Knowledge graph (Why?? This is only helpful when object list is missing)
+- KB must account for different states of the object e.g. a broken saucepan without handles, a stove without a heat source etc.
+
+Form design -
+- Select Scene and edit details.
+- Select chai type and number of servings.
+- Use KB to find missing items.
+- Once they are accounted for, customize the preparation steps.
+
+Notes for V6 --
+- Context transmission workbenches can be performed using apps with multiple tabs.
+- The LLM must be aware about the state of the form in each of the tabs and must have the knowledge to navigate between them.
+- The workbench can be at the top of the tabbed apps, serving as a buffer to hold content.
