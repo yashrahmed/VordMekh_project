@@ -85,3 +85,97 @@ Notes for V6 --
 - Context transmission workbenches can be performed using apps with multiple tabs.
 - The LLM must be aware about the state of the form in each of the tabs and must have the knowledge to navigate between them.
 - The workbench can be at the top of the tabbed apps, serving as a buffer to hold content.
+
+
+-------------------- Process for setting up a Kitchen scene ---------------------
+> Take pictures of the Kitchen and the items there in.
+> Extract objects using a VLM.
+> Read the SayCan paper (https://say-can.github.io/)
+
+Example Chai scene |
+
+	Scene |
+		- pot
+		- pot without a handle (...requires )
+		- butane stove
+		- the cook.    
+
+	butane stove | 
+		- Burner head
+		- Ignition system
+		- Gas nozzle/jet
+		- Air vent/air mixer
+		- Control knob/regulator valve
+		- Butane canister compartment
+		- Canister locking lever
+		- Fuel inlet/connector
+		- Safety shutoff mechanism
+		- Body housing
+		- Pot stand/trivet
+		- Drip pan/spill tray
+		- Wind guard
+
+	Burner head
+		- Burner cap / ring
+		- Flame spreader plate
+		- Gas outlet ports
+		- Mounting screws / brackets
+
+	Canister locking lever
+		- Lever arm
+		- Pivot pin / hinge
+		- Locking cam / latch
+		- Return spring
+		- Plastic grip / cover
+
+
+SayCan setup example -
+
+-- Scene setup	
+	-- Objects in their canonical states (Including the room).
+	-- List of scene specific skills.
+	-- Text based plan --> decomposed into a sequence of skills using the SayCan method.
+	-- The affordance model only takes into account the physical feasibility of the object and not the state of the object, i.e. is it broken or unusable.
+	-- If I can determine that a skill choice was rejected because of an object state, what can I do with that information?
+
+Here is an example of a skelton of a conventional plan -
+
+Goal: tea_prep
+Sub Goal:
+	Prep Ingredients;
+		boil_water:
+			needs_a_pot
+			needs_water
+			needs_burner_or_stove
+		prepare_additives:
+			chop_ginger:
+				needs_knife
+				needs_ginger
+				needs_chopping_board
+				(maybe for storage? needs_small_bowl)
+			crush_cloves:
+				needs_cloves
+				needs_mortar
+				needs_pestle
+				(maybe for storage? needs_small_bowl)
+		main_prep:
+			add_tea_powder:
+				needs_tea_powder
+				is_water_boiled
+				needs_a_spoon
+			add_additives:
+				is_cloves_crushed
+				is_ginger_chopped
+				needs_a_spoon
+			boil_and_wait: -
+			serve:
+				has_cups
+				has_sieve
+				has_coasters
+	
+Given a hierarchy of goals that are generated from a hierarchical planner, can a LLM or an affordance model be used to evaluate the likehood of that goal given the state of the world and the current progress of the plan? How can I find the objects that I haven't accounted for that are missing from the scene? Do I need to have subgoals specific to finding objects?
+
+This system looks like it is made of three components (for now) -
+	- A 3d scene (but only described as text)
+	- A goal tree from a planner. Can an LLM be used to determine primitive actions??
+	- An LLM used to determine affordance. 
