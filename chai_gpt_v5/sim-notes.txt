@@ -1,181 +1,153 @@
-⸻
+Goal: Return the painting back to the store (starting from home).
 
-1. Ingredients
-	•	Water (in pot, plus source: sink faucet, filtered pitcher, or fridge dispenser)
-	•	Full-fat milk (carton or glass bottle)
-	•	Kashmiri green tea leaves (loose in a tin/jar)
-	•	Baking soda (small container or spoon portion)
-	•	Green cardamom pods (whole, some lightly crushed)
-	•	Salt (salt cellar or small dish)
-	•	Saffron strands (in a little dish or soaking in milk)
-	•	Slivered pistachios
-	•	Slivered almonds
-	•	Sugar (sugar bowl) or honey (jar)
-	•	Unsalted butter (stick/pat on a plate) or ghee jar
+Breakdown 1:
+Pick up the painting.
+Drive to the store.
+Return the painting to the store.
 
-⸻
+Breakdown 2:
+Pick up the painting
+Load the painting into the car.
+Get in the car.
+Drive to the store.
+Get out of the car.
+Unload the painting from the car.
+Return the painting to the store.
 
-2. Objects in the recipe (tools, cookware, serving items)
-	•	Medium saucepan (sized above liquid volume, on stovetop)
-	•	Whisk (or ladle, possibly both)
-	•	Stove burner (active)
-	•	Measuring spoons (for baking soda, salt, sugar)
-	•	Strainer (for pouring into cups)
-	•	Serving cups (3, possibly decorated)
-	•	Small bowls/dishes for garnishes (nuts, saffron)
-	•	Spoon for stirring
-	•	Mortar & pestle or small knife/cutting board (for crushing cardamom)
-	•	Jug or small bowl for saffron-soaked milk
+Breakdown 3:
+Unmount the painting from the wall.
+Open the trunk.
+Load the painting into the car.
+Close the trunk.
+Open the driver's side door.
+Get in the car.
+Close the driver's side door.
+Start the engine.
+Drive to the store.***
+Turn off the engine.
+Open the driver's side door.
+Get out the car.
+Close the driver's side door.
+Open the trunk
+Unload the painting from the car.
+Close the trunk.
+Return the painting to the store.
 
-⸻
+Breakdown 4:
+Unmount the painting from the wall.
+Open the trunk.
+Load the painting into the car.
+Close the trunk.
+Open the driver's side door.
+Get in the car.
+Close the driver's side door.
+Start the engine.
+Drive to the store.
+Find a parking spot.
+Park at a parking spot.
+Turn off the engine.
+Open the driver's side door.
+Get out the car.
+Close the driver's side door.
+Find a flatbed cart for the painting.
+Bring the flatbed cart for the painting.
+Open the trunk
+Unload the painting from the car onto the cart.
+Close the trunk.
+Return the painting to the store.
 
-3. Objects not mentioned in the recipe (kitchen context + atmosphere)
-	•	Kitchen counter (stone/laminate)
-	•	Modern stovetop (gas or electric range)
-	•	Range hood
-	•	Cabinets/drawers
-	•	Sink faucet (if used as water source)
-	•	Filtered water pitcher (if used as water source)
-	•	Refrigerator with dispenser (if used as water source)
-	•	Refrigerator (milk source regardless)
-	•	Overhead lighting
-	•	Tray to carry cups
-	•	Coasters under cups
-	•	Kitchen towel/hand towel (on oven door or nearby)
-	•	Spoon rest (with slightly tea-stained spoon)
-	•	Cutting board (if not using mortar & pestle)
-	•	Spice rack/jars in background (cardamom, saffron context)
-	•	Kettle (optional, background prop)
-	•	Chairs/breakfast nook, window, backsplash (scene grounding)
-	•	Small spills or droplets on counter near pot or milk jug (realism)
-	•	Steam rising from saucepan (particle effect)
-	•	Foam layer on tea after baking soda addition
+-- Tips for writing a HTN.
+Pick a scene.
+Limit the objects within it (and maybe their states).
+Goal Decomposition must be explicitly added for the required level of detail. A parts hierarchy can be useful for this.
+For now, there isn't an autonomous way to do this. To do so would require a "phyics foundation model" and a parts tree.
 
-⸻
+_______
 
-For the person, you’ll want something simple but functional for skeletal rigging and object interaction:
-	•	Human base mesh: adult figure, proportioned for a suburban home kitchen.
-	•	Skeletal rig: standard biped rig with IK chains for arms/hands and legs.
-	•	Hands: modeled with enough topology for finger curling and grip poses (to hold whisk, ladle, saucepan handle, cup).
-	•	Facial detail: can be minimal if expression isn’t the focus — just enough topology to avoid looking flat.
-	•	Clothing: casual kitchen wear (t-shirt, jeans/apron), modeled separately to allow simple cloth simulation or parenting to the rig.
-	•	Props for interaction: simple grip targets on whisk handle, saucepan handle, cup, and pitcher/faucet knob for hand alignment.
+Goal: Prep Masala chai (Serves 1).
 
-This way you can test both skeletal articulation (elbow bend while stirring, wrist pronation while pouring) and grasping mechanics without getting lost in character detail.
+Here’s the same content, with numbers swapped out for bullet points:
 
-Want me to mock up a short list of core grasping poses (e.g., stir, pour, lift, pinch) that would cover most of the chai-making motions?
+Decomposition #0 (Reference)
+	•	Peel and finely grate about ½ teaspoon of fresh ginger from a raw chunk.
+	•	Lightly crush the cardamom pods, cloves, peppercorns, and fennel seeds together in a mortar and pestle.
+	•	In a medium pot, add the grated ginger, crushed spices, ground cinnamon, and ¾ cup water. Bring to a boil, then cover and simmer for 5–6 minutes.
+	•	Stir in 1 teaspoon loose black tea and simmer another 2–3 minutes.
+	•	Pour in ½ cup whole milk and heat until just before boiling.
+	•	Strain into a cup and stir in jaggery or sugar to taste.
 
+Decomposition #1
+Scene: Yashraj’s Chelsea Manor Home as of Sep 14, 2025.
+	•	Peel the ginger.
+	•	Grate the ginger.
+	•	Crush the cardamom pods, cloves, peppercorns, and fennel seeds.
+	•	Add water into the pot.
+	•	Add the grated ginger, crushed spices, ground cinnamon into the pot.
+	•	Bring the water to a boil.
+	•	Cover the vessel. Reduce heat and simmer.
+	•	Add 1 tbsp black tea into the pot and stir for 3 minutes.
+	•	Pour in ½ cup whole milk and heat until just before boiling.
+	•	Stir in 1 tsp sugar.
+	•	Strain into a cup.
 
------
+Decomposition #2
+Scene: Yashraj’s Chelsea Manor Home as of Sep 14, 2025.
+	•	Find a peeler
+	•	Peel the ginger.
+	•	Find a grater.
+	•	Grate the ginger.
+	•	Find a pestle and a mortar.
+	•	Add cardamom pods into the mortar.
+	•	Add cloves into the mortar.
+	•	Add peppercorns into the mortar.
+	•	Add fennel seeds the mortar.
+	•	Crush the cardamom pods, cloves, peppercorns, and fennel seeds in the mortar with a pestle.
+	•	Find a medium cooking pot.
+	•	Add ¾ cup water into the pot.
+	•	Pour the crushed cardamom pods, cloves, peppercorns, and fennel seeds into the pot.
+	•	Turn on the kitchen stove.
+	•	Bring the water to a boil.
+	•	Reduce heat and simmer.
+	•	Find a lid for the pot.
+	•	Cover the vessel with the lid.
+	•	Wait for 6 minutes.
+	•	Remove the lid.
+	• 	Find a tablespoon.
+	•	Find 1 tbsp loose black tea.
+	•	Add 1 tbsp black tea into the pot.
+	•	Stir for 3 minutes.
+	•	Find ½ cup whole milk.
+	•	Pour in ½ cup whole milk into the pot.
+	•	Heat until just before boiling.
+	•	Turn off the kitchen stove.
+	•	Stir in 1 tbsp sugar.
+	•	Find a cup.
+	•	Find a tea strainer.
+	•	Strain into a cup.
 
-@Todo
-
-KB design - 
-- Initialize object list for two scenes (Deliberately left incomplete).
-- Initialize a context dependent made of object list and a Knowledge graph (Why?? This is only helpful when object list is missing)
-- KB must account for different states of the object e.g. a broken saucepan without handles, a stove without a heat source etc.
-
-Form design -
-- Select Scene and edit details.
-- Select chai type and number of servings.
-- Use KB to find missing items.
-- Once they are accounted for, customize the preparation steps.
-
-Notes for V6 --
-- Context transmission workbenches can be performed using apps with multiple tabs.
-- The LLM must be aware about the state of the form in each of the tabs and must have the knowledge to navigate between them.
-- The workbench can be at the top of the tabbed apps, serving as a buffer to hold content.
-
-
--------------------- Process for setting up a Kitchen scene ---------------------
-> Take pictures of the Kitchen and the items there in.
-> Extract objects using a VLM.
-> Read the SayCan paper (https://say-can.github.io/)
-
-Example Chai scene |
-
-	Scene |
-		- pot
-		- pot without a handle (...requires )
-		- butane stove
-		- the cook.    
-
-	butane stove | 
-		- Burner head
-		- Ignition system
-		- Gas nozzle/jet
-		- Air vent/air mixer
-		- Control knob/regulator valve
-		- Butane canister compartment
-		- Canister locking lever
-		- Fuel inlet/connector
-		- Safety shutoff mechanism
-		- Body housing
-		- Pot stand/trivet
-		- Drip pan/spill tray
-		- Wind guard
-
-	Burner head
-		- Burner cap / ring
-		- Flame spreader plate
-		- Gas outlet ports
-		- Mounting screws / brackets
-
-	Canister locking lever
-		- Lever arm
-		- Pivot pin / hinge
-		- Locking cam / latch
-		- Return spring
-		- Plastic grip / cover
-
-
-SayCan setup example -
-
--- Scene setup	
-	-- Objects in their canonical states (Including the room).
-	-- List of scene specific skills.
-	-- Text based plan --> decomposed into a sequence of skills using the SayCan method.
-	-- The affordance model only takes into account the physical feasibility of the object and not the state of the object, i.e. is it broken or unusable.
-	-- If I can determine that a skill choice was rejected because of an object state, what can I do with that information?
-
-Here is an example of a skelton of a conventional plan -
-
-Goal: tea_prep
-Sub Goal:
-	Prep Ingredients;
-		boil_water:
-			needs_a_pot
-			needs_water
-			needs_burner_or_stove
-		prepare_additives:
-			chop_ginger:
-				needs_knife
-				needs_ginger
-				needs_chopping_board
-				(maybe for storage? needs_small_bowl)
-			crush_cloves:
-				needs_cloves
-				needs_mortar
-				needs_pestle
-				(maybe for storage? needs_small_bowl)
-		main_prep:
-			add_tea_powder:
-				needs_tea_powder
-				is_water_boiled
-				needs_a_spoon
-			add_additives:
-				is_cloves_crushed
-				is_ginger_chopped
-				needs_a_spoon
-			boil_and_wait: -
-			serve:
-				has_cups
-				has_sieve
-				has_coasters
+Introspection on how I add details -
+	•	Pick a step in the plan.
+	•	Read all previous steps.
+	•	Pick a plausible scene for this step while taking into account all previous steps.
+	•	Infer a set of objects involved in that step from the scene context. This step could result in multiple sets of objects.
+		-	How can I do this without a world foundation model? ***
+	•	Add extra steps to account for the interactions of some of the objects from the previous step with other objects in the scene.
+		-	How can I do this without a world foundation model? ***
+	•	Use the previous two steps to 
+		-	add extra steps to account for objects not mentioned in the step.
+	•	Use a parts graph to 
+		-	add extra steps to account for object part.	
+		-	add extra steps to account for some possible interaction of the parts with other objects in the scene (or their parts).
+			-	How can I do this without a world foundation model? ***
 	
-Given a hierarchy of goals that are generated from a hierarchical planner, can a LLM or an affordance model be used to evaluate the likehood of that goal given the state of the world and the current progress of the plan? How can I find the objects that I haven't accounted for that are missing from the scene? Do I need to have subgoals specific to finding objects?
+	This can be applied recursively.
+Note - For simplicity, I will treat the state value of objects e.g. a damaged burner on the stove as an "additonal object". Perhaps, I ought to call it a state entry.
 
-This system looks like it is made of three components (for now) -
-	- A 3d scene (but only described as text)
-	- A goal tree from a planner. Can an LLM be used to determine primitive actions??
-	- An LLM used to determine affordance. 
+Notes from GPT 5's critique - 
+•	Use affordance libraries: tiny lists of “verb → typical tools/objects.” (“Grate → grater,” “boil → pot + heat source,” etc.)
+•	Use frame semantics: a frame like “Cooking” expects roles like Agent, Ingredient, Tool, Heat Source. Fill them in from the current scene.
+•	Use commonsense templates: not learned from scratch, just baked-in: “container needs contents,” “tool requires agent to operate,” “heat source has control.
+
+
+I think the goal is a little bit more clear. ChaiGPT v5 should be a program + LLM combo that implements the above algorithm to add details and generate higher resolution decompositions.
+
