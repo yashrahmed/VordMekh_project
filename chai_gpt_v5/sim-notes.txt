@@ -1,3 +1,5 @@
+------------
+
 Goal: Return the painting back to the store (starting from home).
 
 Breakdown 1:
@@ -103,6 +105,7 @@ Scene: Yashraj’s Chelsea Manor Home as of Sep 14, 2025.
 	•	Add fennel seeds the mortar.
 	•	Crush the cardamom pods, cloves, peppercorns, and fennel seeds in the mortar with a pestle.
 	•	Find a medium cooking pot.
+	•	Move the cooking pot to the top of the stove.
 	•	Add ¾ cup water into the pot.
 	•	Pour the crushed cardamom pods, cloves, peppercorns, and fennel seeds into the pot.
 	•	Turn on the kitchen stove.
@@ -128,20 +131,23 @@ Scene: Yashraj’s Chelsea Manor Home as of Sep 14, 2025.
 Introspection on how I add details -
 	•	Pick a step in the plan.
 	•	Read all previous steps.
-	•	Pick a plausible scene for this step while taking into account all previous steps.
-	•	Infer a set of objects involved in that step from the scene context. This step could result in multiple sets of objects.
-		-	How can I do this without a world foundation model? ***
-	•	Add extra steps to account for the interactions of some of the objects from the previous step with other objects in the scene.
-		-	How can I do this without a world foundation model? ***
-	•	Use the previous two steps to 
-		-	add extra steps to account for objects not mentioned in the step.
-	•	Use a parts graph to 
-		-	add extra steps to account for object part.	
-		-	add extra steps to account for some possible interaction of the parts with other objects in the scene (or their parts).
-			-	How can I do this without a world foundation model? ***
+	•	Make a list of plausible scenes/frames with objects and constraints for this step while taking into account all previous steps.
+		- I take into account different parts of objects and how they interact with other objects in the scene.
+		- How different variants of objects would interact with each other in the scene or behave in the conditions in the scene.
+	•	Now the problem becomes a problem of automatically generating this frame if we want to rely on LLMs to generate it.
 	
-	This can be applied recursively.
-Note - For simplicity, I will treat the state value of objects e.g. a damaged burner on the stove as an "additonal object". Perhaps, I ought to call it a state entry.
+Example of expanding a step using different frame/decompositions - 
+Goal - 	
+	•	Move the cooking pot to the top of the stove.
+
+Plausible frames/decompositions -
+	•	Frame with a person, a cooking pot being moved from one location to the top of the stove.
+	•	Frame with a person, a cooking pot being moved from one location to the top of the stove but the pot must fit on the burner.
+	•	Frame with a person, a cooking pot being moved from one location to the top of the stove but the stove top has to be cleared.
+	•	Frame with a person, a cooking pot being moved from one location to the top of the stove but the stove needed to be clean first.
+	•	Frame with a person, a cooking pot being moved from one location to the top of the stove but he needs to get a ladder to fetch the pot from the top shelf.
+
+
 
 Notes from GPT 5's critique - 
 •	Use affordance libraries: tiny lists of “verb → typical tools/objects.” (“Grate → grater,” “boil → pot + heat source,” etc.)
@@ -150,4 +156,6 @@ Notes from GPT 5's critique -
 
 
 I think the goal is a little bit more clear. ChaiGPT v5 should be a program + LLM combo that implements the above algorithm to add details and generate higher resolution decompositions.
+
+----- What if I had millions of high res chai making plan decomposition in different scenes?
 
