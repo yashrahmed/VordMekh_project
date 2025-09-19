@@ -155,7 +155,17 @@ Notes from GPT 5's critique -
 •	Use commonsense templates: not learned from scratch, just baked-in: “container needs contents,” “tool requires agent to operate,” “heat source has control.
 
 
-I think the goal is a little bit more clear. ChaiGPT v5 should be a program + LLM combo that implements the above algorithm to add details and generate higher resolution decompositions.
+Project Goal (v5) - Given a high level recipe step and details about preparation context (i.e. known scene information), ground the recipe steps to a list of pre built scripts and use that to provide advice about items that the user may overlook.
 
------ What if I had millions of high res chai making plan decomposition in different scenes?
+Project Goal (v6) - Given a high level recipe step and details about preparation context (i.e. known scene information), ground the recipe steps to a list of automatically generated scripts and use that to provide advice about items that the user may overlook.
+
+-- Here is what I think.
+	•	Init scene with 3d position / states using an phyics KB e.g.
+		•	medium pot A -- [can be placed on] --> kitchen island
+		•	bronze spoon -- [can be placed in] --> left kitchen drawer
+	•	I will need a skills library like in SayCan...should it be parametrized to different objects be be one skill per object?**
+	•	There will be an affordance function that outputs how likely an action is to succeed based on the inputs. (See SayCan affordance function).
+	•	I will then ask the LLM to break down each step into a list of steps where each step is pre-selected from the list of skills.
+	•	I will then use a verifier that verifies the list of steps.
+
 
