@@ -156,10 +156,15 @@ Notes from GPT 5's critique -
 
 
 Project Goal (v5) - Given a high level recipe step and details about preparation context (i.e. known scene information), ground the recipe steps to a list of pre built scripts and use that to provide advice about items that the user may overlook.
-
+-- V5 Notes
+	•	Pre built scripts are written at the level of individual saycan skills and not in a pyradmidal low to high resolution.
+	•	How will recipes + context be matched to a script?
+		- Have the LLM match it?
+		- Given that each recipe has its own set of scripts, match by object search??
+		
 Project Goal (v6) - Given a high level recipe step and details about preparation context (i.e. known scene information), ground the recipe steps to a list of automatically generated scripts and use that to provide advice about items that the user may overlook.
 
--- Here is what I think.
+-- V6 Notes
 	•	Init scene with 3d position / states using an phyics KB e.g.
 		•	medium pot A -- [can be placed on] --> kitchen island
 		•	bronze spoon -- [can be placed in] --> left kitchen drawer
