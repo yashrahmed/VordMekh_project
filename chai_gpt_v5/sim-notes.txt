@@ -1,36 +1,3 @@
-------------
-
-Goal: Return the painting back to the store (starting from home).
-
-High level plan -
-Pick up the painting.
-Drive to the store.
-Return the painting to the store.
-
-Grounded plan -
-Unmount the painting from the wall.
-Open the trunk.
-Load the painting into the car.
-Close the trunk.
-Open the driver's side door.
-Get in the car.
-Close the driver's side door.
-Start the engine.
-Drive to the store.
-Find a parking spot.
-Park at a parking spot.
-Turn off the engine.
-Open the driver's side door.
-Get out the car.
-Close the driver's side door.
-Find a flatbed cart for the painting.
-Bring the flatbed cart for the painting.
-Open the trunk
-Unload the painting from the car onto the cart.
-Close the trunk.
-Return the painting to the store.
-_______
-
 Goal: Prep Masala chai (Serves 1).
 
 High level plan -
@@ -96,9 +63,11 @@ Notes from GPT 5's critique -
 •	Use commonsense templates: not learned from scratch, just baked-in: “container needs contents,” “tool requires agent to operate,” “heat source has control.
 
 
-Project Goal (v5) - Given a high level recipe step and details about preparation context (i.e. known scene information), ground the recipe steps to a list of pre built scripts and use that to provide advice about items that the user may overlook.
+Project Goal (v5) - Given a high level recipe step and details about preparation context (i.e. known scene information), ground the recipe steps to a list of pre built scripts (primitive embodied reasoning) and use that to provide advice about items that the user may overlook.
 -- V5 Notes
 	•	Pre built scripts are written at the level of individual saycan skills and not in a pyradmidal low to high resolution.
+		•	Use an action lib (+ constraints) to write low level scripts. Different scripts will require different starting states.
+		•	Start only with Masala chai??
 	•	How will recipes + context be matched to a script?
 		- Have the LLM match it?
 		- Given that each recipe has its own set of scripts, match by object search??
@@ -113,5 +82,10 @@ Project Goal (v6) - Given a high level recipe step and details about preparation
 	•	There will be an affordance function that outputs how likely an action is to succeed based on the inputs. (See SayCan affordance function).
 	•	I will then ask the LLM to break down each step into a list of steps where each step is pre-selected from the list of skills.
 	•	I will then use a verifier that verifies the list of steps.
+	•	Can the following process be used?
+		•	Initialize a plausible scene.
+		•	Generate plan for the goal of preparing chai using low level actions.
+		•	Repeat N times.
+		The question then becomes as to how can a machine set up the planning constraints at the low level!
 
 

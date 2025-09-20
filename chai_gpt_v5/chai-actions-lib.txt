@@ -1,0 +1,41 @@
+Chai action library - 
+
+Here’s the finalized primitive action library—clean, unified, and ready to script chai workflows. I’ve folded Wait into WaitUntil, added Garnish, and expanded Hold to support tool-assisted grips. No cover/remove-cover.
+
+Object location & control
+	•	Locate(X) — find/identify object X so it can be used next.
+	•	Hold(X) — grasp/stabilize X with bare hands for precise manipulation.
+	•	Hold(X, Tool) — grasp/stabilize X using Tool (mitts, towel, tongs) when heat/slip risk exists.
+	•	Release(X) — cease holding X.
+	•	Move(X, Y) — relocate intact solid X to location Y (pots, lids, tools, cups). Not for pourables.
+
+Measuring & portioning
+	•	Measure(Substance, Quantity, Unit, Vessel) — portion Substance into Vessel with the specified amount (does not deposit into the final container yet).
+
+Substance vs. solid movement
+	•	Transfer(Substance, Source, Target) — move pourable/scoopable matter (liquid, powder, grated items, leaves) from Source to Target.
+Disambiguation: use Move for intact solids; use Transfer for anything that flows or is a portioned mass.
+
+Ingredient preparation
+	•	Peel(Object, Tool) — remove outer layer with Tool.
+	•	Grate(Object, Tool) — reduce to small particles with Tool.
+	•	Crush(Objects, Tool) — crack/break spices or similar with Tool.
+
+Mixing & agitation
+	•	Stir(Container, Tool) — low-shear mixing; distribute contents with a tool.
+	•	Whisk(Container, Tool) — rapid, continuous tool-driven mixing to entrain air (turbulence created by the tool inside the liquid).
+	•	Aerate(Container, Tool) — entrain air by lifting/pouring the liquid (e.g., with a ladle) so it falls back in from a height; air added via motion between container and air.
+
+Heat control (simplified)
+	•	TurnOn(Stove) — supply heat to burner.
+	•	TurnOff(Stove) — cut heat to burner.
+	•	SetHeat(Stove, Level) — set burner to low/medium/high (or equivalent discrete levels).
+
+Timing & conditions
+	•	WaitUntil(Condition) — pause until a condition holds.
+Examples: 5 minutes elapsed, Boiling, LiquidReducedByHalf, SteepTime(3m).
+
+Separation, disposal, finishing
+	•	Strain(Source, Strainer, Target) — pass liquid from Source through Strainer into Target to remove solids.
+	•	Discard(Object, Trashcan) — place unwanted Object into a trashcan (explicit disposal).
+	•	Garnish(Target, Ingredient) — place finishing Ingredient onto/into Target without mixing (visual/texture accent; not stirred in).
