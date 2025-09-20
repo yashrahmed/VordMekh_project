@@ -2,40 +2,12 @@
 
 Goal: Return the painting back to the store (starting from home).
 
-Breakdown 1:
+High level plan -
 Pick up the painting.
 Drive to the store.
 Return the painting to the store.
 
-Breakdown 2:
-Pick up the painting
-Load the painting into the car.
-Get in the car.
-Drive to the store.
-Get out of the car.
-Unload the painting from the car.
-Return the painting to the store.
-
-Breakdown 3:
-Unmount the painting from the wall.
-Open the trunk.
-Load the painting into the car.
-Close the trunk.
-Open the driver's side door.
-Get in the car.
-Close the driver's side door.
-Start the engine.
-Drive to the store.***
-Turn off the engine.
-Open the driver's side door.
-Get out the car.
-Close the driver's side door.
-Open the trunk
-Unload the painting from the car.
-Close the trunk.
-Return the painting to the store.
-
-Breakdown 4:
+Grounded plan -
 Unmount the painting from the wall.
 Open the trunk.
 Load the painting into the car.
@@ -57,20 +29,11 @@ Open the trunk
 Unload the painting from the car onto the cart.
 Close the trunk.
 Return the painting to the store.
-
--- Tips for writing a HTN.
-Pick a scene.
-Limit the objects within it (and maybe their states).
-Goal Decomposition must be explicitly added for the required level of detail. A parts hierarchy can be useful for this.
-For now, there isn't an autonomous way to do this. To do so would require a "phyics foundation model" and a parts tree.
-
 _______
 
 Goal: Prep Masala chai (Serves 1).
 
-Here’s the same content, with numbers swapped out for bullet points:
-
-Decomposition #0 (Reference)
+High level plan -
 	•	Peel and finely grate about ½ teaspoon of fresh ginger from a raw chunk.
 	•	Lightly crush the cardamom pods, cloves, peppercorns, and fennel seeds together in a mortar and pestle.
 	•	In a medium pot, add the grated ginger, crushed spices, ground cinnamon, and ¾ cup water. Bring to a boil, then cover and simmer for 5–6 minutes.
@@ -78,21 +41,7 @@ Decomposition #0 (Reference)
 	•	Pour in ½ cup whole milk and heat until just before boiling.
 	•	Strain into a cup and stir in jaggery or sugar to taste.
 
-Decomposition #1
-Scene: Yashraj’s Chelsea Manor Home as of Sep 14, 2025.
-	•	Peel the ginger.
-	•	Grate the ginger.
-	•	Crush the cardamom pods, cloves, peppercorns, and fennel seeds.
-	•	Add water into the pot.
-	•	Add the grated ginger, crushed spices, ground cinnamon into the pot.
-	•	Bring the water to a boil.
-	•	Cover the vessel. Reduce heat and simmer.
-	•	Add 1 tbsp black tea into the pot and stir for 3 minutes.
-	•	Pour in ½ cup whole milk and heat until just before boiling.
-	•	Stir in 1 tsp sugar.
-	•	Strain into a cup.
-
-Decomposition #2
+Grounded plan -
 Scene: Yashraj’s Chelsea Manor Home as of Sep 14, 2025.
 	•	Find a peeler
 	•	Peel the ginger.
@@ -128,25 +77,17 @@ Scene: Yashraj’s Chelsea Manor Home as of Sep 14, 2025.
 	•	Find a tea strainer.
 	•	Strain into a cup.
 
-Introspection on how I add details -
-	•	Pick a step in the plan.
-	•	Read all previous steps.
-	•	Make a list of plausible scenes/frames with objects and constraints for this step while taking into account all previous steps.
-		- I take into account different parts of objects and how they interact with other objects in the scene.
-		- How different variants of objects would interact with each other in the scene or behave in the conditions in the scene.
-	•	Now the problem becomes a problem of automatically generating this frame if we want to rely on LLMs to generate it.
 	
-Example of expanding a step using different frame/decompositions - 
+Example of grounding a step - 
 Goal - 	
 	•	Move the cooking pot to the top of the stove.
 
-Plausible frames/decompositions -
+Plausible groundings -
 	•	Frame with a person, a cooking pot being moved from one location to the top of the stove.
 	•	Frame with a person, a cooking pot being moved from one location to the top of the stove but the pot must fit on the burner.
 	•	Frame with a person, a cooking pot being moved from one location to the top of the stove but the stove top has to be cleared.
 	•	Frame with a person, a cooking pot being moved from one location to the top of the stove but the stove needed to be clean first.
 	•	Frame with a person, a cooking pot being moved from one location to the top of the stove but he needs to get a ladder to fetch the pot from the top shelf.
-
 
 
 Notes from GPT 5's critique - 
