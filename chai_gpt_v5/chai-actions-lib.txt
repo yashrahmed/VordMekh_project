@@ -1,7 +1,5 @@
 Chai action library - 
 
-Here’s the finalized primitive action library—clean, unified, and ready to script chai workflows. I’ve folded Wait into WaitUntil, added Garnish, and expanded Hold to support tool-assisted grips. No cover/remove-cover.
-
 Object location & control
 	•	Locate(X) — find/identify object X so it can be used next.
 	•	Hold(X) — grasp/stabilize X with bare hands for precise manipulation.
@@ -19,7 +17,7 @@ Disambiguation: use Move for intact solids; use Transfer for anything that flows
 Ingredient preparation
 	•	Peel(Object, Tool) — remove outer layer with Tool.
 	•	Grate(Object, Tool) — reduce to small particles with Tool.
-	•	Crush(Objects, Tool) — crack/break spices or similar with Tool.
+	•	Crush([Object], Tool) — crack/break spices or similar with Tool.
 
 Mixing & agitation
 	•	Stir(Container, Tool) — low-shear mixing; distribute contents with a tool.
@@ -37,5 +35,5 @@ Examples: 5 minutes elapsed, Boiling, LiquidReducedByHalf, SteepTime(3m).
 
 Separation, disposal, finishing
 	•	Strain(Source, Strainer, Target) — pass liquid from Source through Strainer into Target to remove solids.
-	•	Discard(Object, Trashcan) — place unwanted Object into a trashcan (explicit disposal).
+	•	Discard(Object, TrashContainer) — place unwanted Object into a TrashContainer (explicit disposal).
 	•	Garnish(Target, Ingredient) — place finishing Ingredient onto/into Target without mixing (visual/texture accent; not stirred in).

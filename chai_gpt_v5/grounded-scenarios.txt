@@ -1,0 +1,274 @@
+--------
+Masala Chai — grounded action sequence  
+Scenario - Chai preparation at home and the pot does not have a handle and cannot be handled with bare hands.
+
+Prep aromatics  
+1. Locate(Ginger Root).  
+2. Hold(Ginger Root).  
+3. Locate(Peeler).  
+4. Peel(Ginger Root, Peeler).  
+5. Locate(Grater).  
+6. Grate(Ginger Root, Grater).  
+7. Release(Ginger Root).  
+8. Discard(Ginger Root Remnant, TrashContainer).  
+9. Locate(Teaspoon).  
+10. Measure(Grated Ginger, 0.5, tsp, Teaspoon).  
+11. Locate(Cardamom Pods).  
+12. Locate(Cloves).  
+13. Locate(Peppercorns).  
+14. Locate(Fennel Seeds).  
+15. Locate(Mortar).  
+16. Locate(Pestle).  
+17. Crush([Cardamom Pods, Cloves, Peppercorns, Fennel Seeds], Mortar and Pestle).  
+
+Build base in pot  
+18. Locate(Pot).  
+19. Locate(Stove).  
+20. Move(Pot, Stove).  
+21. TurnOn(Stove).  
+22. SetHeat(Stove, High).  
+23. Locate(Measuring Cup).  
+24. Locate(Water).  
+25. Measure(Water, 0.75, cup, Measuring Cup).  
+26. Transfer(Water, Measuring Cup, Pot).  
+27. Transfer(Grated Ginger, Teaspoon, Pot).  
+28. Transfer(Crushed Spices, Mortar, Pot).  
+29. Locate(Ground Cinnamon).  
+30. Locate(Cinnamon Jar).  
+31. Measure(Ground Cinnamon, 0.25, tsp, Teaspoon).  
+32. Transfer(Ground Cinnamon, Teaspoon, Pot).  
+33. Locate(Spoon).  
+34. Hold(Spoon).  
+35. Stir(Pot, Spoon).  
+36. WaitUntil(Boiling).  
+37. SetHeat(Stove, Low).  
+38. WaitUntil(TimeElapsed(5m)).  
+
+Tea step  
+39. Locate(Loose Black Tea).  
+40. Measure(Loose Black Tea, 1, tsp, Teaspoon).  
+41. Transfer(Loose Black Tea, Teaspoon, Pot).  
+42. Stir(Pot, Spoon).  
+43. WaitUntil(TimeElapsed(2m)).  
+
+Milk heat  
+44. Locate(Whole Milk).  
+45. Measure(Whole Milk, 0.5, cup, Measuring Cup).  
+46. Transfer(Whole Milk, Measuring Cup, Pot).  
+47. SetHeat(Stove, Medium).  
+48. WaitUntil(JustBeforeBoiling).  
+49. TurnOff(Stove).  
+
+Strain & sweeten  
+50. Locate(Mitts).  
+51. Hold(Pot, Mitts).  
+52. Move(Pot, Countertop).  
+53. Locate(Strainer).  
+54. Hold(Strainer).  
+55. Locate(Cup).  
+56. Strain(Pot, Strainer, Cup).  
+57. Release(Strainer).  
+58. Release(Pot).  
+59. Locate(Jaggery).  
+60. Locate(Jaggery Container).  
+61. Measure(Jaggery, 1, tsp, Teaspoon).  
+62. Transfer(Jaggery, Teaspoon, Cup).  
+63. Stir(Cup, Spoon).  
+64. Release(Spoon).  
+65. WaitUntil(SweetenerDissolved).  
+
+Cleanup  
+66. Locate(TrashContainer).  
+67. Hold(Strainer).  
+68. Discard(Residues In Strainer, TrashContainer).  
+69. Release(Strainer).  
+
+---
+
+Masala Chai — grounded action sequence (campsite, 7–9 am, 16 °C)  
+Scenario - (campsite, 7–9 am, 16 °C with Butane Stove, pot does not have a handle).
+
+Setup at campsite  
+1. Locate(Butane Stove).  
+2. Locate(Pot).  
+3. Move(Pot, Butane Stove).  
+4. Locate(Butane Canister).  
+5. Hold(Butane Stove).  
+6. Move(Butane Canister, Butane Stove).  
+7. Release(Butane Stove).  
+8. TurnOn(Butane Stove).  
+9. SetHeat(Butane Stove, High).  
+
+Prep aromatics (on picnic table / flat surface)  
+10. Locate(Ginger Root).  
+11. Hold(Ginger Root).  
+12. Locate(Peeler).  
+13. Peel(Ginger Root, Peeler).  
+14. Locate(Grater).  
+15. Grate(Ginger Root, Grater).  
+16. Release(Ginger Root).  
+17. Discard(Ginger Root Remnant, TrashContainer).  
+18. Locate(Teaspoon).  
+19. Measure(Grated Ginger, 0.5, tsp, Teaspoon).  
+20. Locate(Cardamom Pods).  
+21. Locate(Cloves).  
+22. Locate(Peppercorns).  
+23. Locate(Fennel Seeds).  
+24. Locate(Mortar).  
+25. Locate(Pestle).  
+26. Crush([Cardamom Pods, Cloves, Peppercorns, Fennel Seeds], Mortar and Pestle).  
+
+Build base in pot  
+27. Locate(Water).  
+28. Locate(Measuring Cup).  
+29. Measure(Water, 0.75, cup, Measuring Cup).  
+30. Transfer(Water, Measuring Cup, Pot).  
+31. Transfer(Grated Ginger, Teaspoon, Pot).  
+32. Transfer(Crushed Spices, Mortar, Pot).  
+33. Locate(Ground Cinnamon).  
+34. Locate(Cinnamon Jar).  
+35. Measure(Ground Cinnamon, 0.25, tsp, Teaspoon).  
+36. Transfer(Ground Cinnamon, Teaspoon, Pot).  
+37. Locate(Spoon).  
+38. Hold(Spoon).  
+39. Stir(Pot, Spoon).  
+40. WaitUntil(Boiling).  
+41. SetHeat(Butane Stove, Low).  
+42. WaitUntil(TimeElapsed(5m)).  
+
+Tea steep  
+43. Locate(Loose Black Tea).  
+44. Measure(Loose Black Tea, 1, tsp, Teaspoon).  
+45. Transfer(Loose Black Tea, Teaspoon, Pot).  
+46. Stir(Pot, Spoon).  
+47. WaitUntil(TimeElapsed(2m)).  
+
+Milk heat  
+48. Locate(Whole Milk).  
+49. Measure(Whole Milk, 0.5, cup, Measuring Cup).  
+50. Transfer(Whole Milk, Measuring Cup, Pot).  
+51. SetHeat(Butane Stove, Medium).  
+52. WaitUntil(JustBeforeBoiling).  
+53. TurnOff(Butane Stove).  
+
+Strain & sweeten (with pot mitts)  
+54. Locate(Mitts).  
+55. Hold(Pot, Mitts).  
+56. Move(Pot, Campsite Table).  
+57. Locate(Strainer).  
+58. Hold(Strainer).  
+59. Locate(Cup).  
+60. Strain(Pot, Strainer, Cup).  
+61. Release(Strainer).  
+62. Release(Pot).  
+63. Locate(Jaggery).  
+64. Locate(Jaggery Container).  
+65. Measure(Jaggery, 1, tsp, Teaspoon).  
+66. Transfer(Jaggery, Teaspoon, Cup).  
+67. Stir(Cup, Spoon).  
+68. Release(Spoon).  
+69. WaitUntil(SweetenerDissolved).  
+
+Cleanup  
+70. Locate(TrashContainer).  
+71. Hold(Strainer).  
+72. Discard(Residues In Strainer, TrashContainer).  
+73. Release(Strainer).  
+
+---
+
+Masala Chai — grounded action sequence (campsite, 7–9 am, 16 °C)  
+Scenario - (campsite, 7–9 am, 16 °C with Butane Stove; with rain prep and a table; pot does not have a handle).
+
+Setup  
+1. Locate(Rainfly).  
+2. Move(Rainfly, Cooking Area).  
+3. Locate(Table).  
+4. Move(Table, Cooking Area).  
+5. Locate(Butane Stove).  
+6. Locate(Pot).  
+7. Move(Butane Stove, Table).  
+8. Move(Pot, Butane Stove).  
+9. Locate(Butane Canister).  
+10. Hold(Butane Stove).  
+11. Move(Butane Canister, Butane Stove).  
+12. Release(Butane Stove).  
+13. TurnOn(Butane Stove).  
+14. SetHeat(Butane Stove, High).  
+
+Prep aromatics (on table)  
+15. Locate(Ginger Root).  
+16. Hold(Ginger Root).  
+17. Locate(Peeler).  
+18. Peel(Ginger Root, Peeler).  
+19. Locate(Grater).  
+20. Grate(Ginger Root, Grater).  
+21. Release(Ginger Root).  
+22. Discard(Ginger Root Remnant, TrashContainer).  
+23. Locate(Teaspoon).  
+24. Measure(Grated Ginger, 0.5, tsp, Teaspoon).  
+25. Locate(Cardamom Pods).  
+26. Locate(Cloves).  
+27. Locate(Peppercorns).  
+28. Locate(Fennel Seeds).  
+29. Locate(Mortar).  
+30. Locate(Pestle).  
+31. Crush([Cardamom Pods, Cloves, Peppercorns, Fennel Seeds], Mortar and Pestle).  
+
+Build base in pot  
+32. Locate(Water).  
+33. Locate(Measuring Cup).  
+34. Measure(Water, 0.75, cup, Measuring Cup).  
+35. Transfer(Water, Measuring Cup, Pot).  
+36. Transfer(Grated Ginger, Teaspoon, Pot).  
+37. Transfer(Crushed Spices, Mortar, Pot).  
+38. Locate(Ground Cinnamon).  
+39. Locate(Cinnamon Jar).  
+40. Measure(Ground Cinnamon, 0.25, tsp, Teaspoon).  
+41. Transfer(Ground Cinnamon, Teaspoon, Pot).  
+42. Locate(Spoon).  
+43. Hold(Spoon).  
+44. Stir(Pot, Spoon).  
+45. WaitUntil(Boiling).  
+46. SetHeat(Butane Stove, Low).  
+47. WaitUntil(TimeElapsed(5m)).  
+
+Tea steep  
+48. Locate(Loose Black Tea).  
+49. Measure(Loose Black Tea, 1, tsp, Teaspoon).  
+50. Transfer(Loose Black Tea, Teaspoon, Pot).  
+51. Stir(Pot, Spoon).  
+52. WaitUntil(TimeElapsed(2m)).  
+
+Milk heat  
+53. Locate(Whole Milk).  
+54. Measure(Whole Milk, 0.5, cup, Measuring Cup).  
+55. Transfer(Whole Milk, Measuring Cup, Pot).  
+56. SetHeat(Butane Stove, Medium).  
+57. WaitUntil(JustBeforeBoiling).  
+58. TurnOff(Butane Stove).  
+
+Strain & sweeten (pot without handles)  
+59. Locate(Mitts).  
+60. Hold(Pot, Mitts).  
+61. Locate(Strainer).  
+62. Hold(Strainer).  
+63. Locate(Cup).  
+64. Strain(Pot, Strainer, Cup).  
+65. Release(Strainer).  
+66. Release(Pot).  
+67. Locate(Jaggery).  
+68. Locate(Jaggery Container).  
+69. Measure(Jaggery, 1, tsp, Teaspoon).  
+70. Transfer(Jaggery, Teaspoon, Cup).  
+71. Stir(Cup, Spoon).  
+72. Release(Spoon).  
+73. WaitUntil(SweetenerDissolved).  
+
+Cleanup  
+74. Locate(TrashContainer).  
+75. Hold(Strainer).  
+76. Discard(Residues In Strainer, TrashContainer).  
+77. Release(Strainer).  
+
+---
