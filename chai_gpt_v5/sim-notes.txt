@@ -67,7 +67,7 @@ Project Goal (v5) - Given a high level recipe step and details about preparation
 -- V5 Notes
 	•	Pre built scripts are written at the level of individual saycan skills and not in a pyradmidal low to high resolution.
 		•	Use an action lib (+ constraints) to write low level scripts. Different scripts will require different starting states.
-		•	Start only with Masala chai??
+		•	Start only with Masala chai.
 	•	How will recipes + context be matched to a script?
 		- Have the LLM match it?
 		- Given that each recipe has its own set of scripts, match by object search??
