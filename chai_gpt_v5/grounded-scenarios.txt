@@ -272,3 +272,99 @@ Cleanup
 77. Release(Strainer).  
 
 ---
+
+
+Masala Chai — grounded action sequence (pre-dawn, no light source)  
+Scenario - (Chai in the Dark at 4:30 am before sunrise with Butane Stove, pot without handles, and Camping Lantern; limited visibility requires stable lighting from lantern for every Locate and Transfer, with slower, deliberate movements).
+
+Setup lighting and campsite  
+1. Locate(Camping Lantern).  
+2. TurnOn(Camping Lantern).  
+3. Locate(Butane Stove).  
+4. Locate(Pot).  
+5. Move(Pot, Butane Stove).  
+6. Locate(Butane Canister).  
+7. Hold(Butane Stove).  
+8. Move(Butane Canister, Butane Stove).  
+9. Release(Butane Stove).  
+10. TurnOn(Butane Stove).  
+11. SetHeat(Butane Stove, High).  
+
+Prep aromatics (under lantern light)  
+12. Locate(Ginger Root).  
+13. Hold(Ginger Root).  
+14. Locate(Peeler).  
+15. Peel(Ginger Root, Peeler).  
+16. Locate(Grater).  
+17. Grate(Ginger Root, Grater).  
+18. Release(Ginger Root).  
+19. Discard(Ginger Root Remnant, TrashContainer).  
+20. Locate(Teaspoon).  
+21. Measure(Grated Ginger, 0.5, tsp, Teaspoon).  
+22. Locate(Cardamom Pods).  
+23. Locate(Cloves).  
+24. Locate(Peppercorns).  
+25. Locate(Fennel Seeds).  
+26. Locate(Mortar).  
+27. Locate(Pestle).  
+28. Crush([Cardamom Pods, Cloves, Peppercorns, Fennel Seeds], Mortar and Pestle).  
+
+Build base in pot  
+29. Locate(Water).  
+30. Locate(Measuring Cup).  
+31. Measure(Water, 0.75, cup, Measuring Cup).  
+32. Transfer(Water, Measuring Cup, Pot).  
+33. Transfer(Grated Ginger, Teaspoon, Pot).  
+34. Transfer(Crushed Spices, Mortar, Pot).  
+35. Locate(Ground Cinnamon).  
+36. Locate(Cinnamon Jar).  
+37. Measure(Ground Cinnamon, 0.25, tsp, Teaspoon).  
+38. Transfer(Ground Cinnamon, Teaspoon, Pot).  
+39. Locate(Spoon).  
+40. Hold(Spoon).  
+41. Stir(Pot, Spoon).  
+42. WaitUntil(Boiling).  
+43. SetHeat(Butane Stove, Low).  
+44. WaitUntil(TimeElapsed(5m)).  
+
+Tea steep  
+45. Locate(Loose Black Tea).  
+46. Measure(Loose Black Tea, 1, tsp, Teaspoon).  
+47. Transfer(Loose Black Tea, Teaspoon, Pot).  
+48. Stir(Pot, Spoon).  
+49. WaitUntil(TimeElapsed(2m)).  
+
+Milk heat  
+50. Locate(Whole Milk).  
+51. Measure(Whole Milk, 0.5, cup, Measuring Cup).  
+52. Transfer(Whole Milk, Measuring Cup, Pot).  
+53. SetHeat(Butane Stove, Medium).  
+54. WaitUntil(JustBeforeBoiling).  
+55. TurnOff(Butane Stove).  
+
+Strain & sweeten (with pot mitts)  
+56. Locate(Mitts).  
+57. Hold(Pot, Mitts).  
+58. Move(Pot, Campsite Table).  
+59. Locate(Strainer).  
+60. Hold(Strainer).  
+61. Locate(Cup).  
+62. Strain(Pot, Strainer, Cup).  
+63. Release(Strainer).  
+64. Release(Pot).  
+65. Locate(Jaggery).  
+66. Locate(Jaggery Container).  
+67. Measure(Jaggery, 1, tsp, Teaspoon).  
+68. Transfer(Jaggery, Teaspoon, Cup).  
+69. Stir(Cup, Spoon).  
+70. Release(Spoon).  
+71. WaitUntil(SweetenerDissolved).  
+
+Cleanup  
+72. Locate(TrashContainer).  
+73. Hold(Strainer).  
+74. Discard(Residues In Strainer, TrashContainer).  
+75. Release(Strainer).  
+76. TurnOff(Camping Lantern).  
+
+---
