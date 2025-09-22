@@ -1,0 +1,740 @@
+Masala Chai:
+  home_preparation:
+    description: Chai preparation at home and the pot does not have a handle and cannot be handled with bare hands.
+    steps:
+      - 1. Locate(Ginger Root).
+      - 2. Hold(Ginger Root).
+      - 3. Locate(Peeler).
+      - 4. Peel(Ginger Root, Peeler).
+      - 5. Locate(Grater).
+      - 6. Grate(Ginger Root, Grater).
+      - 7. Release(Ginger Root).
+      - 8. Discard(Ginger Root Remnant, TrashContainer).
+      - 9. Locate(Teaspoon).
+      - 10. Measure(Grated Ginger, 0.5, tsp, Teaspoon).
+      - 11. Locate(Cardamom Pods).
+      - 12. Locate(Cloves).
+      - 13. Locate(Peppercorns).
+      - 14. Locate(Fennel Seeds).
+      - 15. Locate(Mortar).
+      - 16. Locate(Pestle).
+      - 17. Crush([Cardamom Pods, Cloves, Peppercorns, Fennel Seeds], Mortar and Pestle).
+      - 18. Locate(Pot).
+      - 19. Locate(Stove).
+      - 20. Move(Pot, Stove).
+      - 21. TurnOn(Stove).
+      - 22. SetHeat(Stove, High).
+      - 23. Locate(Measuring Cup).
+      - 24. Locate(Water).
+      - 25. Measure(Water, 0.75, cup, Measuring Cup).
+      - 26. Transfer(Water, Measuring Cup, Pot).
+      - 27. Transfer(Grated Ginger, Teaspoon, Pot).
+      - 28. Transfer(Crushed Spices, Mortar, Pot).
+      - 29. Locate(Ground Cinnamon).
+      - 30. Locate(Cinnamon Jar).
+      - 31. Measure(Ground Cinnamon, 0.25, tsp, Teaspoon).
+      - 32. Transfer(Ground Cinnamon, Teaspoon, Pot).
+      - 33. Locate(Spoon).
+      - 34. Hold(Spoon).
+      - 35. Stir(Pot, Spoon).
+      - 36. WaitUntil(Boiling).
+      - 37. SetHeat(Stove, Low).
+      - 38. WaitUntil(TimeElapsed(5m)).
+      - 39. Locate(Loose Black Tea).
+      - 40. Measure(Loose Black Tea, 1, tsp, Teaspoon).
+      - 41. Transfer(Loose Black Tea, Teaspoon, Pot).
+      - 42. Stir(Pot, Spoon).
+      - 43. WaitUntil(TimeElapsed(2m)).
+      - 44. Locate(Whole Milk).
+      - 45. Measure(Whole Milk, 0.5, cup, Measuring Cup).
+      - 46. Transfer(Whole Milk, Measuring Cup, Pot).
+      - 47. SetHeat(Stove, Medium).
+      - 48. WaitUntil(JustBeforeBoiling).
+      - 49. TurnOff(Stove).
+      - 50. Locate(Mitts).
+      - 51. Hold(Pot, Mitts).
+      - 52. Move(Pot, Countertop).
+      - 53. Locate(Strainer).
+      - 54. Hold(Strainer).
+      - 55. Locate(Cup).
+      - 56. Strain(Pot, Strainer, Cup).
+      - 57. Release(Strainer).
+      - 58. Release(Pot).
+      - 59. Locate(Jaggery).
+      - 60. Locate(Jaggery Container).
+      - 61. Measure(Jaggery, 1, tsp, Teaspoon).
+      - 62. Transfer(Jaggery, Teaspoon, Cup).
+      - 63. Stir(Cup, Spoon).
+      - 64. Release(Spoon).
+      - 65. WaitUntil(SweetenerDissolved).
+      - 66. Locate(TrashContainer).
+      - 67. Hold(Strainer).
+      - 68. Discard(Residues In Strainer, TrashContainer).
+      - 69. Release(Strainer).
+  campsite_morning:
+    description: (campsite, 7–9 am, 16 °C with Butane Stove, pot does not have a handle).
+    steps:
+      - 1. Locate(Butane Stove).
+      - 2. Locate(Pot).
+      - 3. Move(Pot, Butane Stove).
+      - 4. Locate(Butane Canister).
+      - 5. Hold(Butane Stove).
+      - 6. Move(Butane Canister, Butane Stove).
+      - 7. Release(Butane Stove).
+      - 8. TurnOn(Butane Stove).
+      - 9. SetHeat(Butane Stove, High).
+      - 10. Locate(Ginger Root).
+      - 11. Hold(Ginger Root).
+      - 12. Locate(Peeler).
+      - 13. Peel(Ginger Root, Peeler).
+      - 14. Locate(Grater).
+      - 15. Grate(Ginger Root, Grater).
+      - 16. Release(Ginger Root).
+      - 17. Discard(Ginger Root Remnant, TrashContainer).
+      - 18. Locate(Teaspoon).
+      - 19. Measure(Grated Ginger, 0.5, tsp, Teaspoon).
+      - 20. Locate(Cardamom Pods).
+      - 21. Locate(Cloves).
+      - 22. Locate(Peppercorns).
+      - 23. Locate(Fennel Seeds).
+      - 24. Locate(Mortar).
+      - 25. Locate(Pestle).
+      - 26. Crush([Cardamom Pods, Cloves, Peppercorns, Fennel Seeds], Mortar and Pestle).
+      - 27. Locate(Water).
+      - 28. Locate(Measuring Cup).
+      - 29. Measure(Water, 0.75, cup, Measuring Cup).
+      - 30. Transfer(Water, Measuring Cup, Pot).
+      - 31. Transfer(Grated Ginger, Teaspoon, Pot).
+      - 32. Transfer(Crushed Spices, Mortar, Pot).
+      - 33. Locate(Ground Cinnamon).
+      - 34. Locate(Cinnamon Jar).
+      - 35. Measure(Ground Cinnamon, 0.25, tsp, Teaspoon).
+      - 36. Transfer(Ground Cinnamon, Teaspoon, Pot).
+      - 37. Locate(Spoon).
+      - 38. Hold(Spoon).
+      - 39. Stir(Pot, Spoon).
+      - 40. WaitUntil(Boiling).
+      - 41. SetHeat(Butane Stove, Low).
+      - 42. WaitUntil(TimeElapsed(5m)).
+      - 43. Locate(Loose Black Tea).
+      - 44. Measure(Loose Black Tea, 1, tsp, Teaspoon).
+      - 45. Transfer(Loose Black Tea, Teaspoon, Pot).
+      - 46. Stir(Pot, Spoon).
+      - 47. WaitUntil(TimeElapsed(2m)).
+      - 48. Locate(Whole Milk).
+      - 49. Measure(Whole Milk, 0.5, cup, Measuring Cup).
+      - 50. Transfer(Whole Milk, Measuring Cup, Pot).
+      - 51. SetHeat(Butane Stove, Medium).
+      - 52. WaitUntil(JustBeforeBoiling).
+      - 53. TurnOff(Butane Stove).
+      - 54. Locate(Mitts).
+      - 55. Hold(Pot, Mitts).
+      - 56. Move(Pot, Campsite Table).
+      - 57. Locate(Strainer).
+      - 58. Hold(Strainer).
+      - 59. Locate(Cup).
+      - 60. Strain(Pot, Strainer, Cup).
+      - 61. Release(Strainer).
+      - 62. Release(Pot).
+      - 63. Locate(Jaggery).
+      - 64. Locate(Jaggery Container).
+      - 65. Measure(Jaggery, 1, tsp, Teaspoon).
+      - 66. Transfer(Jaggery, Teaspoon, Cup).
+      - 67. Stir(Cup, Spoon).
+      - 68. Release(Spoon).
+      - 69. WaitUntil(SweetenerDissolved).
+      - 70. Locate(TrashContainer).
+      - 71. Hold(Strainer).
+      - 72. Discard(Residues In Strainer, TrashContainer).
+      - 73. Release(Strainer).
+  campsite_morning_rain_prep:
+    description: (campsite, 7–9 am, 16 °C with Butane Stove; with rain prep and a table; pot does not have a handle).
+    steps:
+      - 1. Locate(Rainfly).
+      - 2. Move(Rainfly, Cooking Area).
+      - 3. Locate(Table).
+      - 4. Move(Table, Cooking Area).
+      - 5. Locate(Butane Stove).
+      - 6. Locate(Pot).
+      - 7. Move(Butane Stove, Table).
+      - 8. Move(Pot, Butane Stove).
+      - 9. Locate(Butane Canister).
+      - 10. Hold(Butane Stove).
+      - 11. Move(Butane Canister, Butane Stove).
+      - 12. Release(Butane Stove).
+      - 13. TurnOn(Butane Stove).
+      - 14. SetHeat(Butane Stove, High).
+      - 15. Locate(Ginger Root).
+      - 16. Hold(Ginger Root).
+      - 17. Locate(Peeler).
+      - 18. Peel(Ginger Root, Peeler).
+      - 19. Locate(Grater).
+      - 20. Grate(Ginger Root, Grater).
+      - 21. Release(Ginger Root).
+      - 22. Discard(Ginger Root Remnant, TrashContainer).
+      - 23. Locate(Teaspoon).
+      - 24. Measure(Grated Ginger, 0.5, tsp, Teaspoon).
+      - 25. Locate(Cardamom Pods).
+      - 26. Locate(Cloves).
+      - 27. Locate(Peppercorns).
+      - 28. Locate(Fennel Seeds).
+      - 29. Locate(Mortar).
+      - 30. Locate(Pestle).
+      - 31. Crush([Cardamom Pods, Cloves, Peppercorns, Fennel Seeds], Mortar and Pestle).
+      - 32. Locate(Water).
+      - 33. Locate(Measuring Cup).
+      - 34. Measure(Water, 0.75, cup, Measuring Cup).
+      - 35. Transfer(Water, Measuring Cup, Pot).
+      - 36. Transfer(Grated Ginger, Teaspoon, Pot).
+      - 37. Transfer(Crushed Spices, Mortar, Pot).
+      - 38. Locate(Ground Cinnamon).
+      - 39. Locate(Cinnamon Jar).
+      - 40. Measure(Ground Cinnamon, 0.25, tsp, Teaspoon).
+      - 41. Transfer(Ground Cinnamon, Teaspoon, Pot).
+      - 42. Locate(Spoon).
+      - 43. Hold(Spoon).
+      - 44. Stir(Pot, Spoon).
+      - 45. WaitUntil(Boiling).
+      - 46. SetHeat(Butane Stove, Low).
+      - 47. WaitUntil(TimeElapsed(5m)).
+      - 48. Locate(Loose Black Tea).
+      - 49. Measure(Loose Black Tea, 1, tsp, Teaspoon).
+      - 50. Transfer(Loose Black Tea, Teaspoon, Pot).
+      - 51. Stir(Pot, Spoon).
+      - 52. WaitUntil(TimeElapsed(2m)).
+      - 53. Locate(Whole Milk).
+      - 54. Measure(Whole Milk, 0.5, cup, Measuring Cup).
+      - 55. Transfer(Whole Milk, Measuring Cup, Pot).
+      - 56. SetHeat(Butane Stove, Medium).
+      - 57. WaitUntil(JustBeforeBoiling).
+      - 58. TurnOff(Butane Stove).
+      - 59. Locate(Mitts).
+      - 60. Hold(Pot, Mitts).
+      - 61. Locate(Strainer).
+      - 62. Hold(Strainer).
+      - 63. Locate(Cup).
+      - 64. Strain(Pot, Strainer, Cup).
+      - 65. Release(Strainer).
+      - 66. Release(Pot).
+      - 67. Locate(Jaggery).
+      - 68. Locate(Jaggery Container).
+      - 69. Measure(Jaggery, 1, tsp, Teaspoon).
+      - 70. Transfer(Jaggery, Teaspoon, Cup).
+      - 71. Stir(Cup, Spoon).
+      - 72. Release(Spoon).
+      - 73. WaitUntil(SweetenerDissolved).
+      - 74. Locate(TrashContainer).
+      - 75. Hold(Strainer).
+      - 76. Discard(Residues In Strainer, TrashContainer).
+      - 77. Release(Strainer).
+  pre_dawn_dark_campsite:
+    description: (Chai in the Dark at 4:30 am before sunrise with Butane Stove, pot without handles, and Camping Lantern; limited visibility requires stable lighting from lantern for every Locate and Transfer, with slower, deliberate movements).
+    steps:
+      - 1. Locate(Camping Lantern).
+      - 2. TurnOn(Camping Lantern).
+      - 3. Locate(Butane Stove).
+      - 4. Locate(Pot).
+      - 5. Move(Pot, Butane Stove).
+      - 6. Locate(Butane Canister).
+      - 7. Hold(Butane Stove).
+      - 8. Move(Butane Canister, Butane Stove).
+      - 9. Release(Butane Stove).
+      - 10. TurnOn(Butane Stove).
+      - 11. SetHeat(Butane Stove, High).
+      - 12. Locate(Ginger Root).
+      - 13. Hold(Ginger Root).
+      - 14. Locate(Peeler).
+      - 15. Peel(Ginger Root, Peeler).
+      - 16. Locate(Grater).
+      - 17. Grate(Ginger Root, Grater).
+      - 18. Release(Ginger Root).
+      - 19. Discard(Ginger Root Remnant, TrashContainer).
+      - 20. Locate(Teaspoon).
+      - 21. Measure(Grated Ginger, 0.5, tsp, Teaspoon).
+      - 22. Locate(Cardamom Pods).
+      - 23. Locate(Cloves).
+      - 24. Locate(Peppercorns).
+      - 25. Locate(Fennel Seeds).
+      - 26. Locate(Mortar).
+      - 27. Locate(Pestle).
+      - 28. Crush([Cardamom Pods, Cloves, Peppercorns, Fennel Seeds], Mortar and Pestle).
+      - 29. Locate(Water).
+      - 30. Locate(Measuring Cup).
+      - 31. Measure(Water, 0.75, cup, Measuring Cup).
+      - 32. Transfer(Water, Measuring Cup, Pot).
+      - 33. Transfer(Grated Ginger, Teaspoon, Pot).
+      - 34. Transfer(Crushed Spices, Mortar, Pot).
+      - 35. Locate(Ground Cinnamon).
+      - 36. Locate(Cinnamon Jar).
+      - 37. Measure(Ground Cinnamon, 0.25, tsp, Teaspoon).
+      - 38. Transfer(Ground Cinnamon, Teaspoon, Pot).
+      - 39. Locate(Spoon).
+      - 40. Hold(Spoon).
+      - 41. Stir(Pot, Spoon).
+      - 42. WaitUntil(Boiling).
+      - 43. SetHeat(Butane Stove, Low).
+      - 44. WaitUntil(TimeElapsed(5m)).
+      - 45. Locate(Loose Black Tea).
+      - 46. Measure(Loose Black Tea, 1, tsp, Teaspoon).
+      - 47. Transfer(Loose Black Tea, Teaspoon, Pot).
+      - 48. Stir(Pot, Spoon).
+      - 49. WaitUntil(TimeElapsed(2m)).
+      - 50. Locate(Whole Milk).
+      - 51. Measure(Whole Milk, 0.5, cup, Measuring Cup).
+      - 52. Transfer(Whole Milk, Measuring Cup, Pot).
+      - 53. SetHeat(Butane Stove, Medium).
+      - 54. WaitUntil(JustBeforeBoiling).
+      - 55. TurnOff(Butane Stove).
+      - 56. Locate(Mitts).
+      - 57. Hold(Pot, Mitts).
+      - 58. Move(Pot, Campsite Table).
+      - 59. Locate(Strainer).
+      - 60. Hold(Strainer).
+      - 61. Locate(Cup).
+      - 62. Strain(Pot, Strainer, Cup).
+      - 63. Release(Strainer).
+      - 64. Release(Pot).
+      - 65. Locate(Jaggery).
+      - 66. Locate(Jaggery Container).
+      - 67. Measure(Jaggery, 1, tsp, Teaspoon).
+      - 68. Transfer(Jaggery, Teaspoon, Cup).
+      - 69. Stir(Cup, Spoon).
+      - 70. Release(Spoon).
+      - 71. WaitUntil(SweetenerDissolved).
+      - 72. Locate(TrashContainer).
+      - 73. Hold(Strainer).
+      - 74. Discard(Residues In Strainer, TrashContainer).
+      - 75. Release(Strainer).
+      - 76. TurnOff(Camping Lantern).
+  daylight_campsite_high_winds:
+    description: (Campsite in daylight with no rain, high winds requiring a windshield, Butane Stove, and pot with plastic handle).
+    steps:
+      - 1. Locate(Butane Stove).
+      - 2. Locate(Windshield).
+      - 3. Move(Windshield, Butane Stove).
+      - 4. Locate(Pot).
+      - 5. Move(Pot, Butane Stove).
+      - 6. Locate(Butane Canister).
+      - 7. Hold(Butane Stove).
+      - 8. Move(Butane Canister, Butane Stove).
+      - 9. Release(Butane Stove).
+      - 10. TurnOn(Butane Stove).
+      - 11. SetHeat(Butane Stove, High).
+      - 12. Locate(Ginger Root).
+      - 13. Hold(Ginger Root).
+      - 14. Locate(Peeler).
+      - 15. Peel(Ginger Root, Peeler).
+      - 16. Locate(Grater).
+      - 17. Grate(Ginger Root, Grater).
+      - 18. Release(Ginger Root).
+      - 19. Discard(Ginger Root Remnant, TrashContainer).
+      - 20. Locate(Teaspoon).
+      - 21. Measure(Grated Ginger, 0.5, tsp, Teaspoon).
+      - 22. Locate(Cardamom Pods).
+      - 23. Locate(Cloves).
+      - 24. Locate(Peppercorns).
+      - 25. Locate(Fennel Seeds).
+      - 26. Locate(Mortar).
+      - 27. Locate(Pestle).
+      - 28. Crush([Cardamom Pods, Cloves, Peppercorns, Fennel Seeds], Mortar and Pestle).
+      - 29. Locate(Water).
+      - 30. Locate(Measuring Cup).
+      - 31. Measure(Water, 0.75, cup, Measuring Cup).
+      - 32. Transfer(Water, Measuring Cup, Pot).
+      - 33. Transfer(Grated Ginger, Teaspoon, Pot).
+      - 34. Transfer(Crushed Spices, Mortar, Pot).
+      - 35. Locate(Ground Cinnamon).
+      - 36. Locate(Cinnamon Jar).
+      - 37. Measure(Ground Cinnamon, 0.25, tsp, Teaspoon).
+      - 38. Transfer(Ground Cinnamon, Teaspoon, Pot).
+      - 39. Locate(Spoon).
+      - 40. Hold(Spoon).
+      - 41. Stir(Pot, Spoon).
+      - 42. WaitUntil(Boiling).
+      - 43. SetHeat(Butane Stove, Low).
+      - 44. WaitUntil(TimeElapsed(5m)).
+      - 45. Locate(Loose Black Tea).
+      - 46. Measure(Loose Black Tea, 1, tsp, Teaspoon).
+      - 47. Transfer(Loose Black Tea, Teaspoon, Pot).
+      - 48. Stir(Pot, Spoon).
+      - 49. WaitUntil(TimeElapsed(2m)).
+      - 50. Locate(Whole Milk).
+      - 51. Measure(Whole Milk, 0.5, cup, Measuring Cup).
+      - 52. Transfer(Whole Milk, Measuring Cup, Pot).
+      - 53. SetHeat(Butane Stove, Medium).
+      - 54. WaitUntil(JustBeforeBoiling).
+      - 55. TurnOff(Butane Stove).
+      - 56. Hold(Pot).
+      - 57. Move(Pot, Campsite Table).
+      - 58. Locate(Strainer).
+      - 59. Hold(Strainer).
+      - 60. Locate(Cup).
+      - 61. Strain(Pot, Strainer, Cup).
+      - 62. Release(Strainer).
+      - 63. Release(Pot).
+      - 64. Locate(Jaggery).
+      - 65. Locate(Jaggery Container).
+      - 66. Measure(Jaggery, 1, tsp, Teaspoon).
+      - 67. Transfer(Jaggery, Teaspoon, Cup).
+      - 68. Stir(Cup, Spoon).
+      - 69. Release(Spoon).
+      - 70. WaitUntil(SweetenerDissolved).
+      - 71. Locate(TrashContainer).
+      - 72. Hold(Strainer).
+      - 73. Discard(Residues In Strainer, TrashContainer).
+      - 74. Release(Strainer).
+Kashmiri Chai:
+  home_preparation:
+    description: Chai preparation at home and the pot does not have a handle and cannot be handled with bare hands.
+    steps:
+      - 1. Locate(Green Cardamom Pods).
+      - 2. Locate(Mortar).
+      - 3. Locate(Pestle).
+      - 4. Crush(Green Cardamom Pods, Mortar and Pestle).
+      - 5. Locate(Pot).
+      - 6. Locate(Stove).
+      - 7. Move(Pot, Stove).
+      - 8. TurnOn(Stove).
+      - 9. SetHeat(Stove, High).
+      - 10. Locate(Measuring Cup).
+      - 11. Locate(Water).
+      - 12. Measure(Water, 1.5, cup, Measuring Cup).
+      - 13. Transfer(Water, Measuring Cup, Pot).
+      - 14. Locate(Kashmiri Green Tea Leaves).
+      - 15. Locate(Teaspoon).
+      - 16. Measure(Kashmiri Green Tea Leaves, 1, tsp, Teaspoon).
+      - 17. Transfer(Kashmiri Green Tea Leaves, Teaspoon, Pot).
+      - 18. Locate(Baking Soda).
+      - 19. Measure(Baking Soda, 0.125, tsp, Teaspoon).
+      - 20. Transfer(Baking Soda, Teaspoon, Pot).
+      - 21. Locate(Spoon).
+      - 22. Hold(Spoon).
+      - 23. Stir(Pot, Spoon).
+      - 24. WaitUntil(Boiling).
+      - 25. SetHeat(Stove, Low).
+      - 26. WaitUntil(LiquidReducedByHalf).
+      - 27. Locate(Ice).
+      - 28. Measure(Ice, 0.5, cup, Measuring Cup).
+      - 29. Transfer(Ice, Measuring Cup, Pot).
+      - 30. Locate(Deep Ladle).
+      - 31. Hold(Deep Ladle).
+      - 32. Aerate(Pot, Deep Ladle).
+      - 33. Release(Deep Ladle).
+      - 34. Locate(Whole Milk).
+      - 35. Measure(Whole Milk, 0.75, cup, Measuring Cup).
+      - 36. Transfer(Whole Milk, Measuring Cup, Pot).
+      - 37. Transfer(Crushed Green Cardamom Pods, Mortar, Pot).
+      - 38. SetHeat(Stove, Low).
+      - 39. Stir(Pot, Spoon).
+      - 40. WaitUntil(ColorPink).
+      - 41. Locate(Salt).
+      - 42. Measure(Salt, 0.5, tsp, Teaspoon).
+      - 43. Transfer(Salt, Teaspoon, Pot).
+      - 44. Stir(Pot, Spoon).
+      - 45. Release(Spoon).
+      - 46. TurnOff(Stove).
+      - 47. Locate(Mitts).
+      - 48. Hold(Pot, Mitts).
+      - 49. Move(Pot, Countertop).
+      - 50. Locate(Strainer).
+      - 51. Hold(Strainer).
+      - 52. Locate(Cup).
+      - 53. Strain(Pot, Strainer, Cup).
+      - 54. Release(Strainer).
+      - 55. Release(Pot).
+      - 56. Locate(Crushed Nuts).
+      - 57. Locate(Tablespoon).
+      - 58. Measure(Crushed Nuts, 0.5, tbsp, Tablespoon).
+      - 59. Garnish(Cup, Crushed Nuts).
+      - 60. Locate(TrashContainer).
+      - 61. Hold(Strainer).
+      - 62. Discard(Residues In Strainer, TrashContainer).
+      - 63. Release(Strainer).
+  campsite_morning:
+    description: (campsite, 7–9 am, 16 °C with Butane Stove; pot without handles).
+    steps:
+      - 1. Locate(Butane Stove).
+      - 2. Locate(Pot).
+      - 3. Move(Pot, Butane Stove).
+      - 4. Locate(Butane Canister).
+      - 5. Hold(Butane Stove).
+      - 6. Move(Butane Canister, Butane Stove).
+      - 7. Release(Butane Stove).
+      - 8. TurnOn(Butane Stove).
+      - 9. SetHeat(Butane Stove, High).
+      - 10. Locate(Green Cardamom Pods).
+      - 11. Locate(Mortar).
+      - 12. Locate(Pestle).
+      - 13. Crush(Green Cardamom Pods, Mortar and Pestle).
+      - 14. Locate(Water).
+      - 15. Locate(Measuring Cup).
+      - 16. Measure(Water, 1.5, cup, Measuring Cup).
+      - 17. Transfer(Water, Measuring Cup, Pot).
+      - 18. Locate(Kashmiri Green Tea Leaves).
+      - 19. Locate(Teaspoon).
+      - 20. Measure(Kashmiri Green Tea Leaves, 1, tsp, Teaspoon).
+      - 21. Transfer(Kashmiri Green Tea Leaves, Teaspoon, Pot).
+      - 22. Locate(Baking Soda).
+      - 23. Measure(Baking Soda, 0.125, tsp, Teaspoon).
+      - 24. Transfer(Baking Soda, Teaspoon, Pot).
+      - 25. Locate(Spoon).
+      - 26. Hold(Spoon).
+      - 27. Stir(Pot, Spoon).
+      - 28. WaitUntil(Boiling).
+      - 29. SetHeat(Butane Stove, Low).
+      - 30. WaitUntil(LiquidReducedByHalf).
+      - 31. Locate(Ice).
+      - 32. Measure(Ice, 0.5, cup, Measuring Cup).
+      - 33. Transfer(Ice, Measuring Cup, Pot).
+      - 34. Locate(Deep Ladle).
+      - 35. Hold(Deep Ladle).
+      - 36. Aerate(Pot, Deep Ladle).
+      - 37. Release(Deep Ladle).
+      - 38. Locate(Whole Milk).
+      - 39. Measure(Whole Milk, 0.75, cup, Measuring Cup).
+      - 40. Transfer(Whole Milk, Measuring Cup, Pot).
+      - 41. Transfer(Crushed Green Cardamom Pods, Mortar, Pot).
+      - 42. SetHeat(Butane Stove, Low).
+      - 43. Stir(Pot, Spoon).
+      - 44. WaitUntil(ColorPink).
+      - 45. Locate(Salt).
+      - 46. Measure(Salt, 0.5, tsp, Teaspoon).
+      - 47. Transfer(Salt, Teaspoon, Pot).
+      - 48. Stir(Pot, Spoon).
+      - 49. Release(Spoon).
+      - 50. TurnOff(Butane Stove).
+      - 51. Locate(Mitts).
+      - 52. Hold(Pot, Mitts).
+      - 53. Move(Pot, Campsite Table).
+      - 54. Locate(Strainer).
+      - 55. Hold(Strainer).
+      - 56. Locate(Cup).
+      - 57. Strain(Pot, Strainer, Cup).
+      - 58. Release(Strainer).
+      - 59. Release(Pot).
+      - 60. Locate(Crushed Nuts).
+      - 61. Locate(Tablespoon).
+      - 62. Measure(Crushed Nuts, 0.5, tbsp, Tablespoon).
+      - 63. Garnish(Cup, Crushed Nuts).
+      - 64. Locate(TrashContainer).
+      - 65. Hold(Strainer).
+      - 66. Discard(Residues In Strainer, TrashContainer).
+      - 67. Release(Strainer).
+  campsite_morning_rain_prep:
+    description: (campsite, 7–9 am, 16 °C with Butane Stove; with rain prep and a table; pot without handles).
+    steps:
+      - 1. Locate(Rainfly).
+      - 2. Move(Rainfly, Cooking Area).
+      - 3. Locate(Table).
+      - 4. Move(Table, Cooking Area).
+      - 5. Locate(Butane Stove).
+      - 6. Locate(Pot).
+      - 7. Move(Butane Stove, Table).
+      - 8. Move(Pot, Butane Stove).
+      - 9. Locate(Butane Canister).
+      - 10. Hold(Butane Stove).
+      - 11. Move(Butane Canister, Butane Stove).
+      - 12. Release(Butane Stove).
+      - 13. TurnOn(Butane Stove).
+      - 14. SetHeat(Butane Stove, High).
+      - 15. Locate(Green Cardamom Pods).
+      - 16. Locate(Mortar).
+      - 17. Locate(Pestle).
+      - 18. Crush(Green Cardamom Pods, Mortar and Pestle).
+      - 19. Locate(Water).
+      - 20. Locate(Measuring Cup).
+      - 21. Measure(Water, 1.5, cup, Measuring Cup).
+      - 22. Transfer(Water, Measuring Cup, Pot).
+      - 23. Locate(Kashmiri Green Tea Leaves).
+      - 24. Locate(Teaspoon).
+      - 25. Measure(Kashmiri Green Tea Leaves, 1, tsp, Teaspoon).
+      - 26. Transfer(Kashmiri Green Tea Leaves, Teaspoon, Pot).
+      - 27. Locate(Baking Soda).
+      - 28. Measure(Baking Soda, 0.125, tsp, Teaspoon).
+      - 29. Transfer(Baking Soda, Teaspoon, Pot).
+      - 30. Locate(Spoon).
+      - 31. Hold(Spoon).
+      - 32. Stir(Pot, Spoon).
+      - 33. WaitUntil(Boiling).
+      - 34. SetHeat(Butane Stove, Low).
+      - 35. WaitUntil(LiquidReducedByHalf).
+      - 36. Locate(Ice).
+      - 37. Measure(Ice, 0.5, cup, Measuring Cup).
+      - 38. Transfer(Ice, Measuring Cup, Pot).
+      - 39. Locate(Deep Ladle).
+      - 40. Hold(Deep Ladle).
+      - 41. Aerate(Pot, Deep Ladle).
+      - 42. Release(Deep Ladle).
+      - 43. Locate(Whole Milk).
+      - 44. Measure(Whole Milk, 0.75, cup, Measuring Cup).
+      - 45. Transfer(Whole Milk, Measuring Cup, Pot).
+      - 46. Transfer(Crushed Green Cardamom Pods, Mortar, Pot).
+      - 47. SetHeat(Butane Stove, Low).
+      - 48. Stir(Pot, Spoon).
+      - 49. WaitUntil(ColorPink).
+      - 50. Locate(Salt).
+      - 51. Measure(Salt, 0.5, tsp, Teaspoon).
+      - 52. Transfer(Salt, Teaspoon, Pot).
+      - 53. Stir(Pot, Spoon).
+      - 54. Release(Spoon).
+      - 55. TurnOff(Butane Stove).
+      - 56. Locate(Mitts).
+      - 57. Hold(Pot, Mitts).
+      - 58. Locate(Strainer).
+      - 59. Hold(Strainer).
+      - 60. Locate(Cup).
+      - 61. Strain(Pot, Strainer, Cup).
+      - 62. Release(Strainer).
+      - 63. Release(Pot).
+      - 64. Locate(Crushed Nuts).
+      - 65. Locate(Tablespoon).
+      - 66. Measure(Crushed Nuts, 0.5, tbsp, Tablespoon).
+      - 67. Garnish(Cup, Crushed Nuts).
+      - 68. Locate(TrashContainer).
+      - 69. Hold(Strainer).
+      - 70. Discard(Residues In Strainer, TrashContainer).
+      - 71. Release(Strainer).
+  pre_dawn_dark_campsite:
+    description: (Chai in the Dark at 4:30 am before sunrise with Butane Stove, pot without handles, and Camping Lantern; limited visibility requires stable lighting from lantern for every Locate and Transfer, with slower, deliberate movements).
+    steps:
+      - 1. Locate(Camping Lantern).
+      - 2. TurnOn(Camping Lantern).
+      - 3. Locate(Butane Stove).
+      - 4. Locate(Pot).
+      - 5. Move(Pot, Butane Stove).
+      - 6. Locate(Butane Canister).
+      - 7. Hold(Butane Stove).
+      - 8. Move(Butane Canister, Butane Stove).
+      - 9. Release(Butane Stove).
+      - 10. TurnOn(Butane Stove).
+      - 11. SetHeat(Butane Stove, High).
+      - 12. Locate(Green Cardamom Pods).
+      - 13. Locate(Mortar).
+      - 14. Locate(Pestle).
+      - 15. Crush(Green Cardamom Pods, Mortar and Pestle).
+      - 16. Locate(Water).
+      - 17. Locate(Measuring Cup).
+      - 18. Measure(Water, 1.5, cup, Measuring Cup).
+      - 19. Transfer(Water, Measuring Cup, Pot).
+      - 20. Locate(Kashmiri Green Tea Leaves).
+      - 21. Locate(Teaspoon).
+      - 22. Measure(Kashmiri Green Tea Leaves, 1, tsp, Teaspoon).
+      - 23. Transfer(Kashmiri Green Tea Leaves, Teaspoon, Pot).
+      - 24. Locate(Baking Soda).
+      - 25. Measure(Baking Soda, 0.125, tsp, Teaspoon).
+      - 26. Transfer(Baking Soda, Teaspoon, Pot).
+      - 27. Locate(Spoon).
+      - 28. Hold(Spoon).
+      - 29. Stir(Pot, Spoon).
+      - 30. WaitUntil(Boiling).
+      - 31. SetHeat(Butane Stove, Low).
+      - 32. WaitUntil(LiquidReducedByHalf).
+      - 33. Locate(Ice).
+      - 34. Measure(Ice, 0.5, cup, Measuring Cup).
+      - 35. Transfer(Ice, Measuring Cup, Pot).
+      - 36. Locate(Deep Ladle).
+      - 37. Hold(Deep Ladle).
+      - 38. Aerate(Pot, Deep Ladle).
+      - 39. Release(Deep Ladle).
+      - 40. Locate(Whole Milk).
+      - 41. Measure(Whole Milk, 0.75, cup, Measuring Cup).
+      - 42. Transfer(Whole Milk, Measuring Cup, Pot).
+      - 43. Transfer(Crushed Green Cardamom Pods, Mortar, Pot).
+      - 44. SetHeat(Butane Stove, Low).
+      - 45. Stir(Pot, Spoon).
+      - 46. WaitUntil(ColorPink).
+      - 47. Locate(Salt).
+      - 48. Measure(Salt, 0.5, tsp, Teaspoon).
+      - 49. Transfer(Salt, Teaspoon, Pot).
+      - 50. Stir(Pot, Spoon).
+      - 51. Release(Spoon).
+      - 52. TurnOff(Butane Stove).
+      - 53. Locate(Mitts).
+      - 54. Hold(Pot, Mitts).
+      - 55. Move(Pot, Campsite Table).
+      - 56. Locate(Strainer).
+      - 57. Hold(Strainer).
+      - 58. Locate(Cup).
+      - 59. Strain(Pot, Strainer, Cup).
+      - 60. Release(Strainer).
+      - 61. Release(Pot).
+      - 62. Locate(Crushed Nuts).
+      - 63. Locate(Tablespoon).
+      - 64. Measure(Crushed Nuts, 0.5, tbsp, Tablespoon).
+      - 65. Garnish(Cup, Crushed Nuts).
+      - 66. Locate(TrashContainer).
+      - 67. Hold(Strainer).
+      - 68. Discard(Residues In Strainer, TrashContainer).
+      - 69. Release(Strainer).
+      - 70. TurnOff(Camping Lantern).
+  daylight_campsite_high_winds:
+    description: (Campsite in daylight with no rain, high winds requiring a windshield, Butane Stove, and pot with plastic handle).
+    steps:
+      - 1. Locate(Butane Stove).
+      - 2. Locate(Windshield).
+      - 3. Move(Windshield, Butane Stove).
+      - 4. Locate(Pot).
+      - 5. Move(Pot, Butane Stove).
+      - 6. Locate(Butane Canister).
+      - 7. Hold(Butane Stove).
+      - 8. Move(Butane Canister, Butane Stove).
+      - 9. Release(Butane Stove).
+      - 10. TurnOn(Butane Stove).
+      - 11. SetHeat(Butane Stove, High).
+      - 12. Locate(Green Cardamom Pods).
+      - 13. Locate(Mortar).
+      - 14. Locate(Pestle).
+      - 15. Crush(Green Cardamom Pods, Mortar and Pestle).
+      - 16. Locate(Water).
+      - 17. Locate(Measuring Cup).
+      - 18. Measure(Water, 1.5, cup, Measuring Cup).
+      - 19. Transfer(Water, Measuring Cup, Pot).
+      - 20. Locate(Kashmiri Green Tea Leaves).
+      - 21. Locate(Teaspoon).
+      - 22. Measure(Kashmiri Green Tea Leaves, 1, tsp, Teaspoon).
+      - 23. Transfer(Kashmiri Green Tea Leaves, Teaspoon, Pot).
+      - 24. Locate(Baking Soda).
+      - 25. Measure(Baking Soda, 0.125, tsp, Teaspoon).
+      - 26. Transfer(Baking Soda, Teaspoon, Pot).
+      - 27. Locate(Spoon).
+      - 28. Hold(Spoon).
+      - 29. Stir(Pot, Spoon).
+      - 30. WaitUntil(Boiling).
+      - 31. SetHeat(Butane Stove, Low).
+      - 32. WaitUntil(LiquidReducedByHalf).
+      - 33. Locate(Ice).
+      - 34. Measure(Ice, 0.5, cup, Measuring Cup).
+      - 35. Transfer(Ice, Measuring Cup, Pot).
+      - 36. Locate(Deep Ladle).
+      - 37. Hold(Deep Ladle).
+      - 38. Aerate(Pot, Deep Ladle).
+      - 39. Release(Deep Ladle).
+      - 40. Locate(Whole Milk).
+      - 41. Measure(Whole Milk, 0.75, cup, Measuring Cup).
+      - 42. Transfer(Whole Milk, Measuring Cup, Pot).
+      - 43. Transfer(Crushed Green Cardamom Pods, Mortar, Pot).
+      - 44. SetHeat(Butane Stove, Low).
+      - 45. Stir(Pot, Spoon).
+      - 46. WaitUntil(ColorPink).
+      - 47. Locate(Salt).
+      - 48. Measure(Salt, 0.5, tsp, Teaspoon).
+      - 49. Transfer(Salt, Teaspoon, Pot).
+      - 50. Stir(Pot, Spoon).
+      - 51. Release(Spoon).
+      - 52. TurnOff(Butane Stove).
+      - 53. Hold(Pot).
+      - 54. Move(Pot, Campsite Table).
+      - 55. Locate(Strainer).
+      - 56. Hold(Strainer).
+      - 57. Locate(Cup).
+      - 58. Strain(Pot, Strainer, Cup).
+      - 59. Release(Strainer).
+      - 60. Release(Pot).
+      - 61. Locate(Crushed Nuts).
+      - 62. Locate(Tablespoon).
+      - 63. Measure(Crushed Nuts, 0.5, tbsp, Tablespoon).
+      - 64. Garnish(Cup, Crushed Nuts).
+      - 65. Locate(TrashContainer).
+      - 66. Hold(Strainer).
+      - 67. Discard(Residues In Strainer, TrashContainer).
+      - 68. Release(Strainer).
