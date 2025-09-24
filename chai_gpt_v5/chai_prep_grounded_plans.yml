@@ -71,6 +71,78 @@ Masala Chai:
       - 67. Hold(Strainer).
       - 68. Discard(Residues In Strainer, TrashContainer).
       - 69. Release(Strainer).
+  home_preparation_muslin:
+    description: Variant of home preparation using Muslin cloth instead of strainer. Chai preparation at home and the pot does not have a handle and cannot be handled with bare hands.
+    steps:
+      - 1. Locate(Ginger Root).
+      - 2. Hold(Ginger Root).
+      - 3. Locate(Peeler).
+      - 4. Peel(Ginger Root, Peeler).
+      - 5. Locate(Grater).
+      - 6. Grate(Ginger Root, Grater).
+      - 7. Release(Ginger Root).
+      - 8. Discard(Ginger Root Remnant, TrashContainer).
+      - 9. Locate(Teaspoon).
+      - 10. Measure(Grated Ginger, 0.5, tsp, Teaspoon).
+      - 11. Locate(Cardamom Pods).
+      - 12. Locate(Cloves).
+      - 13. Locate(Peppercorns).
+      - 14. Locate(Fennel Seeds).
+      - 15. Locate(Mortar).
+      - 16. Locate(Pestle).
+      - 17. Crush([Cardamom Pods, Cloves, Peppercorns, Fennel Seeds], Mortar and Pestle).
+      - 18. Locate(Pot).
+      - 19. Locate(Stove).
+      - 20. Move(Pot, Stove).
+      - 21. TurnOn(Stove).
+      - 22. SetHeat(Stove, High).
+      - 23. Locate(Measuring Cup).
+      - 24. Locate(Water).
+      - 25. Measure(Water, 0.75, cup, Measuring Cup).
+      - 26. Transfer(Water, Measuring Cup, Pot).
+      - 27. Transfer(Grated Ginger, Teaspoon, Pot).
+      - 28. Transfer(Crushed Spices, Mortar, Pot).
+      - 29. Locate(Ground Cinnamon).
+      - 30. Locate(Cinnamon Jar).
+      - 31. Measure(Ground Cinnamon, 0.25, tsp, Teaspoon).
+      - 32. Transfer(Ground Cinnamon, Teaspoon, Pot).
+      - 33. Locate(Spoon).
+      - 34. Hold(Spoon).
+      - 35. Stir(Pot, Spoon).
+      - 36. WaitUntil(Boiling).
+      - 37. SetHeat(Stove, Low).
+      - 38. WaitUntil(TimeElapsed(5m)).
+      - 39. Locate(Loose Black Tea).
+      - 40. Measure(Loose Black Tea, 1, tsp, Teaspoon).
+      - 41. Transfer(Loose Black Tea, Teaspoon, Pot).
+      - 42. Stir(Pot, Spoon).
+      - 43. WaitUntil(TimeElapsed(2m)).
+      - 44. Locate(Whole Milk).
+      - 45. Measure(Whole Milk, 0.5, cup, Measuring Cup).
+      - 46. Transfer(Whole Milk, Measuring Cup, Pot).
+      - 47. SetHeat(Stove, Medium).
+      - 48. WaitUntil(JustBeforeBoiling).
+      - 49. TurnOff(Stove).
+      - 50. Locate(Mitts).
+      - 51. Hold(Pot, Mitts).
+      - 52. Move(Pot, Countertop).
+      - 53. Locate(Muslin Cloth).
+      - 54. Hold(Muslin Cloth).
+      - 55. Locate(Cup).
+      - 56. Strain(Pot, Muslin Cloth, Cup).
+      - 57. Release(Muslin Cloth).
+      - 58. Release(Pot).
+      - 59. Locate(Jaggery).
+      - 60. Locate(Jaggery Container).
+      - 61. Measure(Jaggery, 1, tsp, Teaspoon).
+      - 62. Transfer(Jaggery, Teaspoon, Cup).
+      - 63. Stir(Cup, Spoon).
+      - 64. Release(Spoon).
+      - 65. WaitUntil(SweetenerDissolved).
+      - 66. Locate(TrashContainer).
+      - 67. Hold(Muslin Cloth).
+      - 68. Discard(Residues In Muslin Cloth, TrashContainer).
+      - 69. Release(Muslin Cloth).
   campsite_morning:
     description: (campsite, 7–9 am, 16 °C with Butane Stove, pot does not have a handle).
     steps:
@@ -450,6 +522,72 @@ Kashmiri Chai:
       - 61. Hold(Strainer).
       - 62. Discard(Residues In Strainer, TrashContainer).
       - 63. Release(Strainer).
+  home_preparation_muslin:
+    description: Variant of home preparation using Muslin cloth instead of strainer. Chai preparation at home and the pot does not have a handle and cannot be handled with bare hands.
+    steps:
+      - 1. Locate(Green Cardamom Pods).
+      - 2. Locate(Mortar).
+      - 3. Locate(Pestle).
+      - 4. Crush(Green Cardamom Pods, Mortar and Pestle).
+      - 5. Locate(Pot).
+      - 6. Locate(Stove).
+      - 7. Move(Pot, Stove).
+      - 8. TurnOn(Stove).
+      - 9. SetHeat(Stove, High).
+      - 10. Locate(Measuring Cup).
+      - 11. Locate(Water).
+      - 12. Measure(Water, 1.5, cup, Measuring Cup).
+      - 13. Transfer(Water, Measuring Cup, Pot).
+      - 14. Locate(Kashmiri Green Tea Leaves).
+      - 15. Locate(Teaspoon).
+      - 16. Measure(Kashmiri Green Tea Leaves, 1, tsp, Teaspoon).
+      - 17. Transfer(Kashmiri Green Tea Leaves, Teaspoon, Pot).
+      - 18. Locate(Baking Soda).
+      - 19. Measure(Baking Soda, 0.125, tsp, Teaspoon).
+      - 20. Transfer(Baking Soda, Teaspoon, Pot).
+      - 21. Locate(Spoon).
+      - 22. Hold(Spoon).
+      - 23. Stir(Pot, Spoon).
+      - 24. WaitUntil(Boiling).
+      - 25. SetHeat(Stove, Low).
+      - 26. WaitUntil(LiquidReducedByHalf).
+      - 27. Locate(Ice).
+      - 28. Measure(Ice, 0.5, cup, Measuring Cup).
+      - 29. Transfer(Ice, Measuring Cup, Pot).
+      - 30. Locate(Deep Ladle).
+      - 31. Hold(Deep Ladle).
+      - 32. Aerate(Pot, Deep Ladle).
+      - 33. Release(Deep Ladle).
+      - 34. Locate(Whole Milk).
+      - 35. Measure(Whole Milk, 0.75, cup, Measuring Cup).
+      - 36. Transfer(Whole Milk, Measuring Cup, Pot).
+      - 37. Transfer(Crushed Green Cardamom Pods, Mortar, Pot).
+      - 38. SetHeat(Stove, Low).
+      - 39. Stir(Pot, Spoon).
+      - 40. WaitUntil(ColorPink).
+      - 41. Locate(Salt).
+      - 42. Measure(Salt, 0.5, tsp, Teaspoon).
+      - 43. Transfer(Salt, Teaspoon, Pot).
+      - 44. Stir(Pot, Spoon).
+      - 45. Release(Spoon).
+      - 46. TurnOff(Stove).
+      - 47. Locate(Mitts).
+      - 48. Hold(Pot, Mitts).
+      - 49. Move(Pot, Countertop).
+      - 50. Locate(Muslin Cloth).
+      - 51. Hold(Muslin Cloth).
+      - 52. Locate(Cup).
+      - 53. Strain(Pot, Muslin Cloth, Cup).
+      - 54. Release(Muslin Cloth).
+      - 55. Release(Pot).
+      - 56. Locate(Crushed Nuts).
+      - 57. Locate(Tablespoon).
+      - 58. Measure(Crushed Nuts, 0.5, tbsp, Tablespoon).
+      - 59. Garnish(Cup, Crushed Nuts).
+      - 60. Locate(TrashContainer).
+      - 61. Hold(Muslin Cloth).
+      - 62. Discard(Residues In Muslin Cloth, TrashContainer).
+      - 63. Release(Muslin Cloth).
   campsite_morning:
     description: (campsite, 7–9 am, 16 °C with Butane Stove; pot without handles).
     steps:
@@ -738,3 +876,5 @@ Kashmiri Chai:
       - 66. Hold(Strainer).
       - 67. Discard(Residues In Strainer, TrashContainer).
       - 68. Release(Strainer).
+
+  
