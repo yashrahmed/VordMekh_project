@@ -1,0 +1,363 @@
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>chai gpt v5</title>
+    <style>
+      :root {
+        --bg: radial-gradient(1200px 600px at 10% -20%, #e9d5ff 0, transparent 50%),
+              radial-gradient(1000px 600px at 110% 0%, #c7d2fe 0, transparent 50%),
+              #0b1020;
+        --text: #0f172a;
+        --muted: #475569;
+        --surface: #ffffff;
+        --border: #e5e7eb;
+        --ring: #a78bfa;
+        --primary: #7c3aed;
+        --primary-900: #5b21b6;
+        --shadow: 0 10px 25px rgba(2, 6, 23, 0.12), 0 4px 10px rgba(2, 6, 23, 0.06);
+      }
+
+      @media (prefers-color-scheme: dark) {
+        :root {
+          --bg: radial-gradient(1200px 600px at 10% -20%, rgba(124, 58, 237, 0.25) 0, transparent 50%),
+                radial-gradient(1000px 600px at 110% 0%, rgba(59, 130, 246, 0.25) 0, transparent 50%),
+                #0b1020;
+          --text: #e5e7eb;
+          --muted: #94a3b8;
+          --surface: rgba(15, 23, 42, 0.6);
+          --border: rgba(148, 163, 184, 0.25);
+          --ring: #a78bfa;
+          --primary: #a78bfa;
+          --primary-900: #7c3aed;
+          --shadow: 0 10px 30px rgba(0, 0, 0, 0.35), inset 0 0 0 1px rgba(255, 255, 255, 0.03);
+        }
+      }
+
+      html, body { height: 100%; }
+      body {
+        font-family: ui-sans-serif, system-ui, -apple-system, Segoe UI, Roboto, Helvetica, Arial,
+          "Apple Color Emoji", "Segoe UI Emoji";
+        margin: 0;
+        color: var(--text);
+        background: var(--bg);
+        -webkit-font-smoothing: antialiased;
+        -moz-osx-font-smoothing: grayscale;
+      }
+
+      .container {
+        max-width: 900px;
+        margin: 0 auto;
+        padding: 32px 20px 48px;
+      }
+
+      .header {
+        display: flex;
+        align-items: center;
+        justify-content: space-between;
+        gap: 16px;
+        margin-bottom: 16px;
+      }
+      h1 {
+        font-size: 22px;
+        font-weight: 700;
+        letter-spacing: 0.2px;
+        margin: 0;
+      }
+      .subtle {
+        color: var(--muted);
+        font-size: 13px;
+      }
+
+      .panel {
+        background: var(--surface);
+        border: 1px solid var(--border);
+        border-radius: 16px;
+        padding: 18px;
+        box-shadow: var(--shadow);
+        backdrop-filter: saturate(140%) blur(6px);
+      }
+
+      .controls {
+        display: flex;
+        gap: 12px;
+        align-items: center;
+        flex-wrap: wrap;
+        margin-bottom: 14px;
+      }
+
+      .select {
+        position: relative;
+        display: inline-block;
+      }
+
+      select {
+        appearance: none;
+        -webkit-appearance: none;
+        -moz-appearance: none;
+        background: var(--surface);
+        color: var(--text);
+        border: 1px solid var(--border);
+        border-radius: 12px;
+        padding: 10px 40px 10px 12px;
+        font-size: 14px;
+        line-height: 1.2;
+        box-shadow: inset 0 1px 0 rgba(255,255,255,0.4);
+        transition: border-color 120ms ease, box-shadow 120ms ease, transform 100ms ease;
+      }
+      select:focus {
+        outline: none;
+        border-color: var(--ring);
+        box-shadow: 0 0 0 4px color-mix(in oklab, var(--ring) 25%, transparent);
+      }
+      .select::after {
+        content: '';
+        position: absolute;
+        right: 12px;
+        top: 50%;
+        width: 0; height: 0;
+        border-left: 5px solid transparent;
+        border-right: 5px solid transparent;
+        border-top: 6px solid var(--muted);
+        transform: translateY(-50%);
+        pointer-events: none;
+      }
+
+      button {
+        appearance: none;
+        border: 0;
+        border-radius: 12px;
+        padding: 10px 16px;
+        font-size: 14px;
+        font-weight: 600;
+        color: white;
+        background: linear-gradient(135deg, var(--primary), var(--primary-900));
+        box-shadow: 0 6px 16px rgba(124, 58, 237, 0.35);
+        transition: transform 80ms ease, box-shadow 120ms ease, opacity 120ms ease;
+        cursor: pointer;
+      }
+      button:hover:not(:disabled) {
+        transform: translateY(-1px);
+        box-shadow: 0 10px 22px rgba(124, 58, 237, 0.4);
+      }
+      button:active:not(:disabled) {
+        transform: translateY(0);
+        box-shadow: 0 6px 16px rgba(124, 58, 237, 0.35);
+      }
+      button:disabled {
+        opacity: 0.6;
+        cursor: not-allowed;
+        filter: grayscale(10%);
+      }
+
+      .status {
+        font-size: 13px;
+        color: var(--muted);
+        min-height: 1em;
+        margin: 4px 0 0;
+      }
+
+      .section-title {
+        margin: 16px 0 8px;
+        font-size: 16px;
+        font-weight: 700;
+        letter-spacing: 0.2px;
+      }
+
+      .recipe {
+        margin-top: 16px;
+        background: var(--surface);
+        border: 1px solid var(--border);
+        border-radius: 16px;
+        padding: 18px;
+        box-shadow: var(--shadow);
+        backdrop-filter: saturate(140%) blur(6px);
+      }
+      .recipe h2 {
+        margin: 0 0 12px;
+        font-size: 18px;
+      }
+      .recipe h3 {
+        margin: 18px 0 8px;
+        font-size: 15px;
+      }
+      .recipe ul, .recipe ol {
+        margin: 0 0 8px 18px;
+      }
+      pre {
+        white-space: pre-wrap;
+        background: color-mix(in oklab, var(--surface) 60%, #000 5%);
+        border: 1px solid var(--border);
+        border-radius: 12px;
+        padding: 12px;
+        overflow-x: auto;
+      }
+    </style>
+  </head>
+  <body>
+    <div class="container">
+      <div class="header">
+        <h1>Chai GPT V5</h1>
+        <span class="subtle">chai gpt v5 [grounded planning demo]</span>
+      </div>
+
+      <div class="panel">
+        <div class="controls">
+          <label for="chaiSelect" class="subtle">Chai type</label>
+          <span class="select">
+            <select id="chaiSelect" aria-label="Chai type">
+          <option value="" selected>Select a chai…</option>
+          <!-- Options sourced from chai_gpt_v4/recipes.yaml -->
+          <option value="Masala Chai">Masala Chai</option>
+          <option value="Kashmiri Chai">Kashmiri Chai</option>
+            </select>
+          </span>
+          <button id="getRecipeBtn" disabled>Get Recipe</button>
+        </div>
+
+        <div class="status" id="status"></div>
+        <div class="section-title">Recipe</div>
+        <div id="recipeOutput"></div>
+      </div>
+    </div>
+
+    <script>
+      (function () {
+        const select = document.getElementById('chaiSelect');
+        const getRecipeBtn = document.getElementById('getRecipeBtn');
+        const statusEl = document.getElementById('status');
+        const output = document.getElementById('recipeOutput');
+
+        function setPlaceholder() {
+          const type = select.value;
+          let msg = 'No Recipe Selected. Please select a recipe!';
+          if (type) {
+            msg = `${type} selected! Hit the prepare button to get the recipe!`;
+          }
+          output.innerHTML = '';
+          const wrap = document.createElement('div');
+          wrap.className = 'recipe';
+          const p = document.createElement('p');
+          p.className = 'subtle';
+          p.textContent = msg;
+          wrap.appendChild(p);
+          output.appendChild(wrap);
+          statusEl.textContent = '';
+        }
+
+        function setBusy(busy, msg) {
+          getRecipeBtn.disabled = busy || !select.value;
+          statusEl.textContent = msg || '';
+        }
+
+        function renderRecipeFromJson(name, data) {
+          const container = document.createElement('div');
+          container.className = 'recipe';
+          const title = document.createElement('h2');
+          title.textContent = name || 'Recipe';
+          container.appendChild(title);
+
+          if (Array.isArray(data.ingr)) {
+            const h = document.createElement('h3');
+            h.textContent = 'Ingredients';
+            container.appendChild(h);
+            const ul = document.createElement('ul');
+            data.ingr.forEach((item) => {
+              const li = document.createElement('li');
+              try {
+                // Expecting [name, qty, unit]
+                const [n, qty, unit] = item;
+                li.textContent =
+                  (n ?? '') + (qty != null ? ` — ${qty}` : '') + (unit ? ` ${unit}` : '');
+              } catch (e) {
+                li.textContent = String(item);
+              }
+              ul.appendChild(li);
+            });
+            container.appendChild(ul);
+          }
+
+
+          if (Array.isArray(data.steps)) {
+            const h = document.createElement('h3');
+            h.textContent = 'Steps';
+            container.appendChild(h);
+            const ol = document.createElement('ol');
+            data.steps.forEach((s) => {
+              const li = document.createElement('li');
+              li.textContent = s;
+              ol.appendChild(li);
+            });
+            container.appendChild(ol);
+          }
+
+          output.innerHTML = '';
+          output.appendChild(container);
+        }
+
+        async function fetchRecipe() {
+          const type = select.value;
+          if (!type) return;
+          // Clear any rendered recipe and show neutral state while preparing
+          output.innerHTML = '';
+          setBusy(true, 'Preparing…');
+          try {
+            const url = `http://127.0.0.1:5000/recipe?type=${encodeURIComponent(type)}`;
+            const res = await fetch(url, {
+              method: 'GET',
+              headers: { 'Accept': 'application/json, text/plain;q=0.8, */*;q=0.5' },
+            });
+            const text = await res.text();
+            if (!res.ok) {
+              throw new Error(`Server error (${res.status}): ${text || res.statusText}`);
+            }
+            // Try to parse JSON; fall back to plain text
+            try {
+              const json = JSON.parse(text);
+              // Try to infer title if provided
+              const name = json.name || type;
+              renderRecipeFromJson(name, json);
+              statusEl.textContent = '';
+            } catch (_) {
+              // Not JSON; render as plain text
+              const pre = document.createElement('pre');
+              pre.textContent = text;
+              output.innerHTML = '';
+              const wrap = document.createElement('div');
+              wrap.className = 'recipe';
+              const h = document.createElement('h2');
+              h.textContent = type;
+              wrap.appendChild(h);
+              wrap.appendChild(pre);
+              output.appendChild(wrap);
+              statusEl.textContent = '';
+            }
+          } catch (err) {
+            output.innerHTML = '';
+            const pre = document.createElement('pre');
+            pre.textContent = (err && err.message) ? err.message : String(err);
+            output.appendChild(pre);
+            statusEl.textContent = 'Failed to prepare recipe';
+          } finally {
+            setBusy(false);
+          }
+        }
+
+        select.addEventListener('change', () => {
+          // Enable/disable based on selection and clear any existing recipe
+          getRecipeBtn.disabled = !select.value;
+          setPlaceholder();
+        });
+
+        getRecipeBtn.addEventListener('click', (e) => {
+          e.preventDefault();
+          fetchRecipe();
+        });
+
+        // Initialize default placeholder
+        setPlaceholder();
+      })();
+    </script>
+  </body>
+  </html>

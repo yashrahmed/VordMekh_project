@@ -11,10 +11,6 @@ chai_recipes:
       - ["Black Peppercorns", 2, "peppercorns"]
       - ["Fennel Seeds", 0.25, "tsp"]
       - ["Jaggery or Sugar", 1, "tsp"]
-    tools:
-      - ["Medium Pot", 1, null]
-      - ["Mortar and Pestle", 1, null]
-      - ["Strainer", 1, null]
     steps:
       - "Using a mortar and pestle, lightly crush cardamom, cloves, peppercorns, and fennel seeds."
       - "Add crushed spices, ginger, and cinnamon to a pot with 0.75 cups of Water. Boil, then simmer covered for 5-6 min."
@@ -31,10 +27,6 @@ chai_recipes:
       - ["Salt", 0.5, "tsp"]
       - ["Green Cardamom Pods", 1, "pods"]
       - ["Crushed Nuts", 0.5, "tbsp"]
-    tools:
-      - ["Medium Pot", 1, null]
-      - ["Whisk or Deep Ladle", 1, null]
-      - ["Strainer", 1, null]
     steps:
       - "Boil 1.5 cups Water, 1 tsp tea, and 1/8 tsp baking soda. Simmer 15-25 min until liquid reduces by half."
       - "Add 0.5 cups of Ice/Water. Whisk or aerate vigorously until frothy."

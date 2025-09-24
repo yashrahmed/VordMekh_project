@@ -9,3 +9,5 @@ rich>=13.0.0
 
 # YAML processing
 PyYAML==6.0.2
+Flask>=2.2
+Flask-Cors>=4.0.0
