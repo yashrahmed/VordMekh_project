@@ -1,5 +1,6 @@
 Masala Chai:
   home_preparation:
+    scene: home
     description: Chai preparation at home and the pot does not have a handle and cannot be handled with bare hands.
     steps:
       - 1. Locate(Ginger Root).
@@ -72,6 +73,7 @@ Masala Chai:
       - 68. Discard(Residues In Strainer, TrashContainer).
       - 69. Release(Strainer).
   home_preparation_muslin:
+    scene: home
     description: Variant of home preparation using Muslin cloth instead of strainer. Chai preparation at home and the pot does not have a handle and cannot be handled with bare hands.
     steps:
       - 1. Locate(Ginger Root).
@@ -144,6 +146,7 @@ Masala Chai:
       - 68. Discard(Residues In Muslin Cloth, TrashContainer).
       - 69. Release(Muslin Cloth).
   campsite_morning:
+    scene: campsite
     description: (campsite, 7–9 am, 16 °C with Butane Stove, pot does not have a handle).
     steps:
       - 1. Locate(Butane Stove).
@@ -220,6 +223,7 @@ Masala Chai:
       - 72. Discard(Residues In Strainer, TrashContainer).
       - 73. Release(Strainer).
   campsite_morning_rain_prep:
+    scene: campsite
     description: (campsite, 7–9 am, 16 °C with Butane Stove; with rain prep and a table; pot does not have a handle).
     steps:
       - 1. Locate(Rainfly).
@@ -300,6 +304,7 @@ Masala Chai:
       - 76. Discard(Residues In Strainer, TrashContainer).
       - 77. Release(Strainer).
   pre_dawn_dark_campsite:
+    scene: campsite
     description: (Chai in the Dark at 4:30 am before sunrise with Butane Stove, pot without handles, and Camping Lantern; limited visibility requires stable lighting from lantern for every Locate and Transfer, with slower, deliberate movements).
     steps:
       - 1. Locate(Camping Lantern).
@@ -379,6 +384,7 @@ Masala Chai:
       - 75. Release(Strainer).
       - 76. TurnOff(Camping Lantern).
   daylight_campsite_high_winds:
+    scene: campsite     
     description: (Campsite in daylight with no rain, high winds requiring a windshield, Butane Stove, and pot with plastic handle).
     steps:
       - 1. Locate(Butane Stove).
@@ -457,6 +463,7 @@ Masala Chai:
       - 74. Release(Strainer).
 Kashmiri Chai:
   home_preparation:
+    scene: home
     description: Chai preparation at home and the pot does not have a handle and cannot be handled with bare hands.
     steps:
       - 1. Locate(Green Cardamom Pods).
@@ -523,6 +530,7 @@ Kashmiri Chai:
       - 62. Discard(Residues In Strainer, TrashContainer).
       - 63. Release(Strainer).
   home_preparation_muslin:
+    scene: home
     description: Variant of home preparation using Muslin cloth instead of strainer. Chai preparation at home and the pot does not have a handle and cannot be handled with bare hands.
     steps:
       - 1. Locate(Green Cardamom Pods).
@@ -589,6 +597,7 @@ Kashmiri Chai:
       - 62. Discard(Residues In Muslin Cloth, TrashContainer).
       - 63. Release(Muslin Cloth).
   campsite_morning:
+    scene: campsite
     description: (campsite, 7–9 am, 16 °C with Butane Stove; pot without handles).
     steps:
       - 1. Locate(Butane Stove).
@@ -659,6 +668,7 @@ Kashmiri Chai:
       - 66. Discard(Residues In Strainer, TrashContainer).
       - 67. Release(Strainer).
   campsite_morning_rain_prep:
+    scene: campsite
     description: (campsite, 7–9 am, 16 °C with Butane Stove; with rain prep and a table; pot without handles).
     steps:
       - 1. Locate(Rainfly).
@@ -733,6 +743,7 @@ Kashmiri Chai:
       - 70. Discard(Residues In Strainer, TrashContainer).
       - 71. Release(Strainer).
   pre_dawn_dark_campsite:
+    scene: campsite
     description: (Chai in the Dark at 4:30 am before sunrise with Butane Stove, pot without handles, and Camping Lantern; limited visibility requires stable lighting from lantern for every Locate and Transfer, with slower, deliberate movements).
     steps:
       - 1. Locate(Camping Lantern).
@@ -806,6 +817,7 @@ Kashmiri Chai:
       - 69. Release(Strainer).
       - 70. TurnOff(Camping Lantern).
   daylight_campsite_high_winds:
+    scene: campsite
     description: (Campsite in daylight with no rain, high winds requiring a windshield, Butane Stove, and pot with plastic handle).
     steps:
       - 1. Locate(Butane Stove).
@@ -876,5 +888,3 @@ Kashmiri Chai:
       - 66. Hold(Strainer).
       - 67. Discard(Residues In Strainer, TrashContainer).
       - 68. Release(Strainer).
-
-  
