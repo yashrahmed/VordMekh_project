@@ -1,7 +1,7 @@
 Masala Chai:
   home_preparation:
     scene: home
-    description: Chai preparation at home and the pot does not have a handle and cannot be handled with bare hands
+    description: Chai preparation at home; Pot has no handle and cannot be handled with bare hands;
     steps:
       - Locate(Ginger Root)
       - Hold(Ginger Root)
@@ -74,7 +74,7 @@ Masala Chai:
       - Release(Strainer)
   home_preparation_muslin:
     scene: home
-    description: home preparation using Muslin cloth instead of strainer. Chai preparation at home and the pot does not have a handle and cannot be handled with bare hands
+    description: Chai preparation at home; Pot has no handle and cannot be handled with bare hands; Using Muslin cloth instead of strainer;
     steps:
       - Locate(Ginger Root)
       - Hold(Ginger Root)
@@ -147,7 +147,7 @@ Masala Chai:
       - Release(Muslin Cloth)
   campsite_morning:
     scene: campsite
-    description: (campsite, 7–9 am, 16 °C with Butane Stove, pot does not have a handle)
+    description: Chai preparation at a campsite; Time of day is morning 7-9 am; 16 °C with Butane Stove; Pot has no handle and cannot be handled with bare hands;
     steps:
       - Locate(Butane Stove)
       - Locate(Pot)
@@ -224,7 +224,7 @@ Masala Chai:
       - Release(Strainer)
   campsite_morning_rain_prep:
     scene: campsite
-    description: (campsite, 7–9 am, 16 °C with Butane Stove; with rain prep and a table; pot does not have a handle)
+    description: Chai preparation at a campsite; Time of day is morning 7-9 am; 16 °C with Butane Stove; Expected to Rain; No table already available at the campsite; Pot has no handle and cannot be handled with bare hands;
     steps:
       - Locate(Rainfly)
       - Move(Rainfly, Cooking Area)
@@ -305,7 +305,7 @@ Masala Chai:
       - Release(Strainer)
   pre_dawn_dark_campsite:
     scene: campsite
-    description: (Chai in the Dark at 4:30 am before sunrise with Butane Stove, pot without handles, and Camping Lantern; limited visibility requires stable lighting from lantern for every Locate and Transfer, with slower, deliberate movements)
+    description: Chai preparation at a campsite; Time of day is morning 4.30 am; It is dark; 16 °C with Butane Stove; Pot has no handle and cannot be handled with bare hands; limited visibility requires stable lighting from lantern;
     steps:
       - Locate(Camping Lantern)
       - TurnOn(Camping Lantern)
@@ -384,8 +384,8 @@ Masala Chai:
       - Release(Strainer)
       - TurnOff(Camping Lantern)
   daylight_campsite_high_winds:
-    scene: campsite     
-    description: (Campsite in daylight with no rain, high winds requiring a windshield, Butane Stove, and pot with plastic handle)
+    scene: campsite 
+    description: Chai preparation at a campsite; Time of day is morning 7-9 am; 16 °C with Butane Stove; Very windy; Pot has a handle;
     steps:
       - Locate(Butane Stove)
       - Locate(Windshield)
@@ -464,7 +464,7 @@ Masala Chai:
 Kashmiri Chai:
   home_preparation:
     scene: home
-    description: Chai preparation at home and the pot does not have a handle and cannot be handled with bare hands
+    description: Chai preparation at home; Pot has no handle and cannot be handled with bare hands;
     steps:
       - Locate(Green Cardamom Pods)
       - Locate(Mortar)
@@ -531,7 +531,7 @@ Kashmiri Chai:
       - Release(Strainer)
   home_preparation_muslin:
     scene: home
-    description: Variant of home preparation using Muslin cloth instead of strainer. Chai preparation at home and the pot does not have a handle and cannot be handled with bare hands
+    description: Chai preparation at home; Pot has no handle and cannot be handled with bare hands; Using Muslin cloth instead of strainer;
     steps:
       - Locate(Green Cardamom Pods)
       - Locate(Mortar)
@@ -598,7 +598,7 @@ Kashmiri Chai:
       - Release(Muslin Cloth)
   campsite_morning:
     scene: campsite
-    description: (campsite, 7–9 am, 16 °C with Butane Stove; pot without handles)
+    description: Chai preparation at a campsite; Time of day is morning 7-9 am; 16 °C with Butane Stove; Pot has no handle and cannot be handled with bare hands;
     steps:
       - Locate(Butane Stove)
       - Locate(Pot)
@@ -669,7 +669,7 @@ Kashmiri Chai:
       - Release(Strainer)
   campsite_morning_rain_prep:
     scene: campsite
-    description: (campsite, 7–9 am, 16 °C with Butane Stove; with rain prep and a table; pot without handles)
+    description: Chai preparation at a campsite; Time of day is morning 7-9 am; 16 °C with Butane Stove; Expected to Rain; No table already available at the campsite; Pot has no handle and cannot be handled with bare hands;
     steps:
       - Locate(Rainfly)
       - Move(Rainfly, Cooking Area)
@@ -744,7 +744,7 @@ Kashmiri Chai:
       - Release(Strainer)
   pre_dawn_dark_campsite:
     scene: campsite
-    description: (Chai in the Dark at 4:30 am before sunrise with Butane Stove, pot without handles, and Camping Lantern; limited visibility requires stable lighting from lantern for every Locate and Transfer, with slower, deliberate movements)
+    description: Chai preparation at a campsite; Time of day is morning 4.30 am; It is dark; 16 °C with Butane Stove; Pot has no handle and cannot be handled with bare hands; limited visibility requires stable lighting from lantern;
     steps:
       - Locate(Camping Lantern)
       - TurnOn(Camping Lantern)
@@ -818,7 +818,7 @@ Kashmiri Chai:
       - TurnOff(Camping Lantern)
   daylight_campsite_high_winds:
     scene: campsite
-    description: (Campsite in daylight with no rain, high winds requiring a windshield, Butane Stove, and pot with plastic handle)
+    description: Chai preparation at a campsite; Time of day is morning 7-9 am; 16 °C with Butane Stove; Very windy; Pot has a handle;
     steps:
       - Locate(Butane Stove)
       - Locate(Windshield)
