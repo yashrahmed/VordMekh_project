@@ -3,20 +3,25 @@ from flask_cors import CORS  # optional but preferred
 import os
 import yaml
 import re
+import json
+
+from langchain_core.messages import HumanMessage, AIMessage, SystemMessage
+from langchain_core.language_models.chat_models import BaseChatModel
+
+from bot_utils.tools import set_open_api_key, setup_openai_model
+
+from dataclasses import dataclass
+
+@dataclass
+class LLMHandle:
+    llm: BaseChatModel
 
 app = Flask(__name__)
 CORS(app)
-
-def load_yaml(file_name):
-    try:
-        recipes_path = os.path.join(os.path.dirname(__file__), file_name)
-        with open(recipes_path, 'r') as file:
-            return yaml.safe_load(file)
-    except Exception as e:
-        raise Exception(f'Failed to load recipes: {str(e)}')
+llm_handle = LLMHandle
 
 
-def build_preparation_tips(chai_type, plans):
+def build_preparation_tips(plans):
     # Step 1 - Collect required item for all the scenarios.
     items_for_scenarios = []
     regex = r"Locate\(([\w\s\d]+)\)"
@@ -49,6 +54,52 @@ def build_preparation_tips(chai_type, plans):
     }
     
     return response
+
+
+def build_system_prompt():
+    system_prompt = f"""
+    You are chai-gpt. An expert in chai making.
+
+    The user is planning to prepare chai. A list of things that he/she may need will be provided.
+    The items therein will fall into two main groups. They are as follows.
+    - common items which are useful in almost any scenarios.
+    - Items specific to certain scenarios that the user may not have thought about.
+
+    Note that there are multiple scenarios that the user has planned for.
+
+    This data is in JSON form. Express that data in natural language with the following structure.
+
+    Required items -
+    ...
+    ...
+
+    Additonal items you may need -
+    ... scenario specific items - An explanation of where and when it may be required depending on the scenarios it is included in.
+
+    The scenario descriptions may be quite specific. I want you to describe them in a more general tone.
+    """
+    return SystemMessage(system_prompt)
+
+
+def build_user_message(chai_type, scene, prep_details):
+    user_message = f"""
+    Goal - To prepare {chai_type} at {scene}
+
+    The JSON list is as follows -
+
+    {json.dumps(chai_type, indent=2)}
+    """
+    return HumanMessage(user_message)
+
+
+def load_yaml(file_name):
+    try:
+        recipes_path = os.path.join(os.path.dirname(__file__), file_name)
+        with open(recipes_path, 'r') as file:
+            return yaml.safe_load(file)
+    except Exception as e:
+        raise Exception(f'Failed to load recipes: {str(e)}')
+
 
 
 @app.route("/recipe", methods=["GET"])
@@ -88,9 +139,19 @@ def prepare():
 
     relevant_plans = [p for _, p in plans.items() if p['scene'] == prep_scene]
 
-    return jsonify(build_preparation_tips(chai_type, relevant_plans), 200)
+    prep_tips = build_preparation_tips(relevant_plans)
+    chat_messages = [
+                        build_system_prompt(), 
+                        build_user_message(chai_type, prep_scene, prep_tips)
+                    ]
+    llm_response = llm_handle.llm.invoke(chat_messages)
+
+    return jsonify(llm_response.content, 200)
 
 
 if __name__ == "__main__":
+    key_err = set_open_api_key(config_file_name="keys-config.yml")
+    err, llm = setup_openai_model(model_name="gpt-5")
+    llm_handle.llm = llm
     port = int(os.getenv("PORT", 5000))
     app.run(host="127.0.0.1", port=port, debug=True)

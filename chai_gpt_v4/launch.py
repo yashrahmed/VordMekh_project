@@ -8,7 +8,6 @@ from langchain_core.language_models.chat_models import BaseChatModel
 from bot_utils.tools import set_open_api_key, setup_openai_model
 
 from dataclasses import dataclass
-from rich.prompt import Prompt
 from rich.text import Text
 from rich.console import Console
 

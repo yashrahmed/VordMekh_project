@@ -80,7 +80,7 @@ def setup_openai_model(model_name="gpt-5-mini-2025-08-07", model_provider="opena
     Initializes a langchain anthropic chat model
     """
     if not os.environ.get(OPENAI_API_KEY_NAME, "").strip():
-        return ValueError(f"Set the API Key `{OPENAI_API_KEY_NAME}` for Google Gemini API in as an environment variable to use the chat bot."), None
+        return ValueError(f"Set the API Key `{OPENAI_API_KEY_NAME}` for OpenAI API in as an environment variable to use the chat bot."), None
     return None, init_chat_model(model_name, model_provider=model_provider)
 
 
