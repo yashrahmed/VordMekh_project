@@ -101,7 +101,6 @@ def load_yaml(file_name):
         raise Exception(f'Failed to load recipes: {str(e)}')
 
 
-
 @app.route("/recipe", methods=["GET"])
 def recipe():
     chai_type = request.args.get("type", type=str)

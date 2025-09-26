@@ -173,6 +173,7 @@
         padding: 18px;
         box-shadow: var(--shadow);
         backdrop-filter: saturate(140%) blur(6px);
+        position: relative;
       }
       .recipe h2 {
         margin: 0 0 12px;
@@ -192,6 +193,47 @@
         border-radius: 12px;
         padding: 12px;
         overflow-x: auto;
+      }
+
+      /* Scene buttons inside recipe block */
+      .scene-buttons {
+        display: flex;
+        gap: 8px;
+        align-items: center;
+        justify-content: flex-end; /* move buttons to the right */
+        margin-top: 12px;
+      }
+      .btn-small {
+        padding: 6px 10px;
+        font-size: 12px;
+        border-radius: 10px;
+      }
+      .tips {
+        margin-top: 16px;
+        background: var(--surface);
+        border: 1px solid var(--border);
+        border-radius: 16px;
+        padding: 18px;
+        box-shadow: var(--shadow);
+        backdrop-filter: saturate(140%) blur(6px);
+      }
+
+      /* Spinner for tips section */
+      .spinner-row {
+        display: inline-flex;
+        align-items: center;
+        gap: 10px;
+      }
+      .spinner {
+        width: 16px;
+        height: 16px;
+        border: 2px solid color-mix(in oklab, var(--ring) 30%, transparent);
+        border-top-color: var(--ring);
+        border-radius: 50%;
+        animation: spin 0.9s linear infinite;
+      }
+      @keyframes spin {
+        to { transform: rotate(360deg); }
       }
     </style>
   </head>
@@ -219,6 +261,9 @@
         <div class="status" id="status"></div>
         <div class="section-title">Recipe</div>
         <div id="recipeOutput"></div>
+
+        <div class="section-title">Preparation Tips</div>
+        <div id="prepTipsOutput" class="tips"><p class="subtle">N/A</p></div>
       </div>
     </div>
 
@@ -228,6 +273,48 @@
         const getRecipeBtn = document.getElementById('getRecipeBtn');
         const statusEl = document.getElementById('status');
         const output = document.getElementById('recipeOutput');
+        const tipsOutput = document.getElementById('prepTipsOutput');
+
+        let hasRenderedRecipe = false;
+        let btnHomeRef = null;
+        let btnCampRef = null;
+
+        function escapeHTML(s) {
+          return s
+            .replace(/&/g, '&amp;')
+            .replace(/</g, '&lt;')
+            .replace(/>/g, '&gt;')
+            .replace(/"/g, '&quot;')
+            .replace(/'/g, '&#39;');
+        }
+
+        function formatPrepTextToHTML(text) {
+          const lines = String(text || '').split('\n');
+          let html = '';
+          let inList = false;
+          for (const raw of lines) {
+            const line = raw.trim();
+            if (line.startsWith('- ')) {
+              if (!inList) { html += '<ul>'; inList = true; }
+              html += `<li>${escapeHTML(line.slice(2))}</li>`;
+            } else {
+              if (inList) { html += '</ul>'; inList = false; }
+              if (!line) { html += '<br />'; continue; }
+              if (/-\s*$/.test(line)) {
+                const heading = line.replace(/-\s*$/, '').trim();
+                html += `<h3>${escapeHTML(heading)}</h3>`;
+              } else {
+                html += `<p>${escapeHTML(line)}</p>`;
+              }
+            }
+          }
+          if (inList) html += '</ul>';
+          return html;
+        }
+
+        function resetTips() {
+          tipsOutput.innerHTML = '<p class="subtle">N/A</p>';
+        }
 
         function setPlaceholder() {
           const type = select.value;
@@ -244,11 +331,97 @@
           wrap.appendChild(p);
           output.appendChild(wrap);
           statusEl.textContent = '';
+          hasRenderedRecipe = false;
+          resetTips();
         }
 
         function setBusy(busy, msg) {
           getRecipeBtn.disabled = busy || !select.value;
           statusEl.textContent = msg || '';
+        }
+
+        function createSceneButtons() {
+          const row = document.createElement('div');
+          row.className = 'scene-buttons';
+          const btnHome = document.createElement('button');
+          btnHome.className = 'btn-small';
+          btnHome.textContent = 'Home';
+          btnHome.title = 'Preparation Tips: home';
+          btnHome.addEventListener('click', (e) => {
+            e.preventDefault();
+            requestPreparation('home');
+          });
+
+          const btnCamp = document.createElement('button');
+          btnCamp.className = 'btn-small';
+          btnCamp.textContent = 'Campsite';
+          btnCamp.title = 'Preparation Tips: campsite';
+          btnCamp.addEventListener('click', (e) => {
+            e.preventDefault();
+            requestPreparation('campsite');
+          });
+
+          row.appendChild(btnHome);
+          row.appendChild(btnCamp);
+          btnHomeRef = btnHome;
+          btnCampRef = btnCamp;
+          return row;
+        }
+
+        function setSceneButtonsBusy(busy) {
+          if (btnHomeRef) btnHomeRef.disabled = !!busy;
+          if (btnCampRef) btnCampRef.disabled = !!busy;
+        }
+
+        async function requestPreparation(scene) {
+          if (!hasRenderedRecipe) return;
+          const type = select.value;
+          if (!type) return;
+          // Clear tips before fetching as requested
+          tipsOutput.innerHTML = '<div class="spinner-row"><div class="spinner"></div><span class="subtle">Fetching preparation tips…</span></div>';
+          setSceneButtonsBusy(true);
+          // Disable chai selection and Get Recipe while fetching tips
+          const prevSelectDisabled = select.disabled;
+          const prevBtnDisabled = getRecipeBtn.disabled;
+          select.disabled = true;
+          getRecipeBtn.disabled = true;
+          try {
+            const url = `http://127.0.0.1:5000/preparation?type=${encodeURIComponent(type)}&scene=${encodeURIComponent(scene)}`;
+            const res = await fetch(url, {
+              method: 'GET',
+              headers: { 'Accept': 'application/json, text/plain;q=0.8, */*;q=0.5' },
+            });
+            const text = await res.text();
+            if (!res.ok) {
+              throw new Error(`Server error (${res.status}): ${text || res.statusText}`);
+            }
+            let content = null;
+            try {
+              const json = JSON.parse(text);
+              // Expect array like [string, 200]
+              if (Array.isArray(json)) {
+                if (typeof json[0] === 'string') content = json[0];
+                else content = JSON.stringify(json[0], null, 2);
+              } else if (typeof json === 'string') {
+                content = json;
+              } else {
+                content = JSON.stringify(json, null, 2);
+              }
+            } catch (_) {
+              content = text;
+            }
+
+            const html = formatPrepTextToHTML(content);
+            tipsOutput.innerHTML = html || '<p class="subtle">N/A</p>';
+          } catch (err) {
+            tipsOutput.innerHTML = `<pre>${(err && err.message) ? err.message : String(err)}</pre>`;
+          } finally {
+            setSceneButtonsBusy(false);
+            // Restore controls
+            select.disabled = prevSelectDisabled;
+            // Get Recipe enabled if a type is selected and not otherwise disabled
+            getRecipeBtn.disabled = prevBtnDisabled || !select.value;
+          }
         }
 
         function renderRecipeFromJson(name, data) {
@@ -294,6 +467,13 @@
 
           output.innerHTML = '';
           output.appendChild(container);
+          // Add scene buttons within the recipe section (bottom-left area)
+          const controlsRow = createSceneButtons();
+          container.appendChild(controlsRow);
+          hasRenderedRecipe = true;
+          // Reset tips when a new recipe is rendered
+          resetTips();
+          setSceneButtonsBusy(false);
         }
 
         async function fetchRecipe() {
