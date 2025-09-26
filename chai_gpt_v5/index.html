@@ -401,7 +401,7 @@
               // Expect array like [string, 200]
               if (Array.isArray(json)) {
                 if (typeof json[0] === 'string') content = json[0];
-                else content = JSON.stringify(json[0], null, 2);
+                else content = json[0][0]['text'];
               } else if (typeof json === 'string') {
                 content = json;
               } else {

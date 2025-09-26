@@ -87,7 +87,7 @@ def build_user_message(chai_type, scene, prep_details):
 
     The JSON list is as follows -
 
-    {json.dumps(chai_type, indent=2)}
+    {json.dumps(prep_details, indent=2)}
     """
     return HumanMessage(user_message)
 
@@ -143,8 +143,9 @@ def prepare():
                         build_system_prompt(), 
                         build_user_message(chai_type, prep_scene, prep_tips)
                     ]
-    llm_response = llm_handle.llm.invoke(chat_messages)
-
+    llm_response = llm_handle.llm.invoke(chat_messages, 
+                                         reasoning={"effort": "minimal"},
+                                         text={"format": {"type": "text"}, "verbosity": "medium"})
     return jsonify(llm_response.content, 200)
 
 
