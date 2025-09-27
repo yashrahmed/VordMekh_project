@@ -111,29 +111,34 @@ Higher level activities for Masala Chai-
 --- Grok's High Level actions ------
 
 
-- Peel and grate ginger (includes holding, discarding remnants; Masala-specific).
-- Measure grated ginger with a teaspoon (Masala-specific).
-- Measure ground cinnamon with a teaspoon (Masala-specific).
-- Measure tea with a teaspoon (Loose Black Tea in Masala; Kashmiri Green Tea Leaves in Kashmiri).
-- Measure milk with a cup.
+- Peel and grate ginger (includes holding, discarding remnants; Masala- and Adrak-specific).
+- Measure grated ginger with a teaspoon (Masala- and Adrak-specific).
+- Measure ground cinnamon with a teaspoon (Masala- and Kahwah-specific).
+- Measure tea with a teaspoon (Loose Black Tea in Masala, Adrak, Sulaimani; Green Tea Leaves in Kashmiri, Kahwah).
+- Measure milk with a cup (Masala, Kashmiri, Adrak-specific).
 - Measure water with a cup.
-- Measure jaggery with a teaspoon (Masala-specific).
+- Measure jaggery with a teaspoon (Masala-, Adrak-, Sulaimani-specific; alternatives like sugar or honey in others).
 - Measure and add baking soda (Kashmiri-specific).
 - Measure ice with a cup (Kashmiri-specific).
 - Measure salt with a teaspoon (Kashmiri-specific).
-- Measure and garnish with crushed nuts (Kashmiri-specific).
-- Crush spices (e.g., cardamom pods and others in Masala; green cardamom pods in Kashmiri).
+- Measure and garnish with crushed nuts or almonds (Kashmiri- and Kahwah-specific).
+- Crush spices (e.g., cardamom pods and others in Masala/Kashmiri/Kahwah; cloves in Sulaimani).
 - Measure and add water to the pot.
 - Add prepared spices/cardamom to the pot/mixture.
+- Add saffron threads to the mixture (Sulaimani- and Kahwah-specific; inferred addition).
+- Add dried rose petals to the mixture (Kahwah-specific; inferred addition).
 - Boil mixture and reduce to simmer (includes waiting for boiling, time elapsed, or liquid reduction).
 - Reduce liquid by half through simmering (Kashmiri-specific).
 - Add ice to the reduced mixture (Kashmiri-specific).
 - Aerate Kashmiri tea mixture (after adding ice).
 - Add tea to the mixture.
+- Steep tea off-heat (includes covering and waiting; Sulaimani- and Kahwah-specific; inferred addition).
 - Add milk to the mixture (and heat to just before boiling or until pink in Kashmiri).
 - Simmer milk mixture until pink (Kashmiri-specific).
+- Gentle boil after adding milk (Adrak-specific; inferred addition).
 - Add salt to the tea (Kashmiri-specific).
-- Add and stir jaggery until dissolved (Masala-specific).
+- Add and stir jaggery until dissolved (Masala-specific; alternatives like sugar or honey in others).
+- Add lemon juice and mint leaves (Sulaimani-specific; inferred addition).
 - Stir the mixture (after adding various ingredients).
 - Set up and ignite stove/heat source (includes moving pot, setting heat levels like High/Low/Medium).
 - Turn off stove and remove pot (using mitts if no handle).
