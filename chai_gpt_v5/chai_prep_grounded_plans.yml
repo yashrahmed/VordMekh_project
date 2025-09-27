@@ -147,14 +147,12 @@ Masala Chai:
       - Release(Muslin Cloth)
   campsite_morning:
     scene: campsite
-    description: Chai preparation at a campsite; Time of day is morning 7-9 am; 16 °C with Butane Stove; Pot has no handle and cannot be handled with bare hands;
+    description: Chai preparation at a campsite; Time of day is morning 7-9 am; 16 °C with Butane Stove that already has a full canister in it; Pot has no handle and cannot be handled with bare hands;
     steps:
       - Locate(Butane Stove)
       - Locate(Pot)
       - Move(Pot, Butane Stove)
-      - Locate(Butane Canister)
       - Hold(Butane Stove)
-      - Move(Butane Canister, Butane Stove)
       - Release(Butane Stove)
       - TurnOn(Butane Stove)
       - SetHeat(Butane Stove, High)
@@ -598,14 +596,12 @@ Kashmiri Chai:
       - Release(Muslin Cloth)
   campsite_morning:
     scene: campsite
-    description: Chai preparation at a campsite; Time of day is morning 7-9 am; 16 °C with Butane Stove; Pot has no handle and cannot be handled with bare hands;
+    description: Chai preparation at a campsite; Time of day is morning 7-9 am; 16 °C with Butane Stove that already has a full canister in it; Pot has no handle and cannot be handled with bare hands;
     steps:
       - Locate(Butane Stove)
       - Locate(Pot)
       - Move(Pot, Butane Stove)
-      - Locate(Butane Canister)
       - Hold(Butane Stove)
-      - Move(Butane Canister, Butane Stove)
       - Release(Butane Stove)
       - TurnOn(Butane Stove)
       - SetHeat(Butane Stove, High)
