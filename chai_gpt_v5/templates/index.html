@@ -386,7 +386,7 @@
           select.disabled = true;
           getRecipeBtn.disabled = true;
           try {
-            const url = `http://127.0.0.1:5000/preparation?type=${encodeURIComponent(type)}&scene=${encodeURIComponent(scene)}`;
+            const url = `http://localhost:5050/preparation?type=${encodeURIComponent(type)}&scene=${encodeURIComponent(scene)}`;
             const res = await fetch(url, {
               method: 'GET',
               headers: { 'Accept': 'application/json, text/plain;q=0.8, */*;q=0.5' },
@@ -483,7 +483,7 @@
           output.innerHTML = '';
           setBusy(true, 'Preparing…');
           try {
-            const url = `http://127.0.0.1:5000/recipe?type=${encodeURIComponent(type)}`;
+            const url = `http://localhost:5050/recipe?type=${encodeURIComponent(type)}`;
             const res = await fetch(url, {
               method: 'GET',
               headers: { 'Accept': 'application/json, text/plain;q=0.8, */*;q=0.5' },

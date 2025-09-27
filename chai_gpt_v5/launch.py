@@ -1,4 +1,4 @@
-from flask import Flask, jsonify, request
+from flask import Flask, jsonify, request, render_template
 from flask_cors import CORS  # optional but preferred
 import os
 import yaml
@@ -149,9 +149,14 @@ def prepare():
     return jsonify(llm_response.content, 200)
 
 
+@app.route("/")
+def show_app():
+    return render_template("index.html")
+
+
 if __name__ == "__main__":
     key_err = set_open_api_key(config_file_name="keys-config.yml")
     err, llm = setup_openai_model(model_name="gpt-5")
     llm_handle.llm = llm
-    port = int(os.getenv("PORT", 5000))
+    port = int(os.getenv("PORT", 5050))
     app.run(host="127.0.0.1", port=port, debug=True)
