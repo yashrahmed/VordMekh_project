@@ -1,0 +1,149 @@
+
+
+Notes --
+1. Hold(X) and Release(X) will not be included as this HTN is tailored to finding the required items.
+2. Should Transfer(...) have a from and to?
+
+Higher level activities for Masala Chai- 
+
+1. Peel and grate Ginger.
+    - Locate(Ginger Root)
+    - Locate(Peeler)
+    - Peel(Ginger Root, Peeler)
+    - Locate(Grater)
+    - Grate(Ginger Root, Grater)
+
+2.1 Measuring Ginger with a teaspoon.
+    - Locate(Teaspoon)
+    - Measure(Grated Ginger, 0.5, tsp, Teaspoon)
+2.2 Measuring Ground Cinnamon with a teaspoon.
+    - Locate(Teaspoon)
+    - Measure(Ground Cinnamon, 0.5, tsp, Teaspoon)
+2.3 Measuring tea with a teaspoon.
+    - Locate(Teaspoon)
+    - Locate(Loose Black Tea)
+    - Measure(Loose Black Tea, 1, tsp, Teaspoon)
+2.4 Measuring milk with a cup.
+    - Locate(Measuring Cup)
+    - Measure(Whole Milk, 0.5, cup, Measuring Cup)
+2.5 Measuring water with a cup.
+    - Locate(Measuring Cup)
+    - Measure(Water, 0.5, cup, Measuring Cup)
+2.6 Measure Jaggery with a teaspoon.
+    - Locate(Jaggery)
+    - Measure(Jaggery, 1, tsp, Teaspoon)
+
+
+3. Crush Spices.
+    - Locate(Cardamom Pods)
+    - Locate(Cloves)
+    - Locate(Peppercorns)
+    - Locate(Fennel Seeds)
+    - Locate(Mortar)
+    - Locate(Pestle)
+    - Crush([Cardamom Pods, Cloves, Peppercorns, Fennel Seeds], Mortar and Pestle)
+
+4. Pour Water into the pot on the stove.
+    - Locate(Pot)
+    - Locate(Stove)
+    - Move(Pot, Stove)
+    - TurnOn(Stove)
+    - SetHeat(Stove, High)
+    - Locate(Measuring Cup)
+    - Locate(Water)
+    - Measure(Water, 0.75, cup, Measuring Cup)
+    - Transfer(Water, Measuring Cup, Pot)
+
+5. Add prepared spices to the pot.
+    - Transfer(Grated Ginger, Teaspoon, Pot)
+    - Transfer(Crushed Spices, Mortar, Pot)
+    - Locate (Cinnamon Jar) ------------------?
+    - Locate(Ground Cinnamon)
+    - Measure(Ground Cinnamon, 0.25, tsp, Teaspoon)
+    - Transfer(Ground Cinnamon, Teaspoon, Pot)
+
+6. Boil water to simmer.
+    - Locate(Spoon)
+    - Hold(Spoon)
+    - Stir(Pot, Spoon)
+    - WaitUntil(Boiling)
+    - SetHeat(Stove, Low)
+    - WaitUntil(TimeElapsed(5m))
+
+7. Add tea to the mixture.
+    - Locate(Loose Black Tea)
+    - Measure(Loose Black Tea, 1, tsp, Teaspoon)
+    - Transfer(Loose Black Tea, Teaspoon, Pot)
+    - Stir(Pot, Spoon)
+    - WaitUntil(TimeElapsed(2m))
+
+8. Add milk to the mixture.
+    - Locate(Whole Milk)
+    - Measure(Whole Milk, 0.5, cup, Measuring Cup)
+    - Transfer(Whole Milk, Measuring Cup, Pot)
+    - SetHeat(Stove, Medium)
+    - WaitUntil(JustBeforeBoiling)
+
+9. Remove pot from stove.
+    - TurnOff(Stove)
+    - Locate(Mitts)
+    - Hold(Pot, Mitts)
+    - Move(Pot, Countertop)
+
+10. Strain and pour into cups for serving.
+    - Locate(Strainer)
+    - Locate(Cup)
+    - Strain(Pot, Strainer, Cup)
+    - Release(Strainer)
+
+11. Add jaggery to the tea.
+    - Locate(Jaggery Container) -----------------------?
+    - Locate(Jaggery)
+    - Measure(Jaggery, 1, tsp, Teaspoon)
+    - Transfer(Jaggery, Teaspoon, Cup)
+    - Stir(Cup, Spoon)
+    - WaitUntil(SweetenerDissolved)
+
+12. Discard waste.
+    - Locate(TrashContainer)
+    - Discard(Residues In Strainer, TrashContainer)
+
+--- Grok's High Level actions ------
+
+
+- Peel and grate ginger (includes holding, discarding remnants; Masala-specific).
+- Measure grated ginger with a teaspoon (Masala-specific).
+- Measure ground cinnamon with a teaspoon (Masala-specific).
+- Measure tea with a teaspoon (Loose Black Tea in Masala; Kashmiri Green Tea Leaves in Kashmiri).
+- Measure milk with a cup.
+- Measure water with a cup.
+- Measure jaggery with a teaspoon (Masala-specific).
+- Measure and add baking soda (Kashmiri-specific).
+- Measure ice with a cup (Kashmiri-specific).
+- Measure salt with a teaspoon (Kashmiri-specific).
+- Measure and garnish with crushed nuts (Kashmiri-specific).
+- Crush spices (e.g., cardamom pods and others in Masala; green cardamom pods in Kashmiri).
+- Measure and add water to the pot.
+- Add prepared spices/cardamom to the pot/mixture.
+- Boil mixture and reduce to simmer (includes waiting for boiling, time elapsed, or liquid reduction).
+- Reduce liquid by half through simmering (Kashmiri-specific).
+- Add ice to the reduced mixture (Kashmiri-specific).
+- Aerate Kashmiri tea mixture (after adding ice).
+- Add tea to the mixture.
+- Add milk to the mixture (and heat to just before boiling or until pink in Kashmiri).
+- Simmer milk mixture until pink (Kashmiri-specific).
+- Add salt to the tea (Kashmiri-specific).
+- Add and stir jaggery until dissolved (Masala-specific).
+- Stir the mixture (after adding various ingredients).
+- Set up and ignite stove/heat source (includes moving pot, setting heat levels like High/Low/Medium).
+- Turn off stove and remove pot (using mitts if no handle).
+- Strain and pour into cups for serving (using Strainer or Muslin Cloth).
+- Hold and release tools (e.g., spoon for stirring, pot with mitts).
+- Discard waste (residues during cleanup).
+
+-- Prepare Cooking Area
+    - Using a Rainfly (for rain prep).
+    - Using a Camping Lantern (turn on/off for pre-dawn dark).
+    - Attach butane canister to stove (common in campsite scenarios).
+    - Using a Windshield (for high winds).
+    - Using a Table (moved to cooking area for rain prep).
