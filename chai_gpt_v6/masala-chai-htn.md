@@ -63,9 +63,8 @@ Subtasks:
 Method: campsite-butane
 Subtasks (ordered):
 	1.	attach-fuel-canister (primitive)
-	2.	check-for-leaks (primitive)
-	3.	stabilize-stove-base (primitive)
-	4.	verify-burner-control (primitive)
+
+Metho
 
 ⸻
 

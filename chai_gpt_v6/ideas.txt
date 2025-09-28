@@ -152,3 +152,28 @@ Higher level activities for Masala Chai-
     - Attach butane canister to stove (common in campsite scenarios).
     - Using a Windshield (for high winds).
     - Using a Table (moved to cooking area for rain prep).
+
+
+------------
+
+
+
+1. Knowledge Graphs / Ontologies
+	•	Build a graph where cooking actions link to the instruments they usually require.
+	•	Nodes: actions, ingredients, tools.
+	•	Edges: requires, can substitute, context (kitchen vs campsite).
+	•	This lets the system generalize: “boil water at a campsite” → pot + butane stove.
+
+2. Hierarchical Task / Plan Recognition
+	•	Treat recipes as HTNs: high-level task → subtasks → actions.
+	•	Then associate subtasks with required artifacts.
+	•	Helps when steps can be recomposed differently (e.g., campsite vs kitchen).
+
+3. Script / Frame Semantics
+	•	Recipes are essentially “scripts” (like in Schank & Abelson’s theory).
+	•	The script of “making chai” has slots for tools, which can be filled depending on environment.
+	•	Aligns well with FrameNet / semantic role labeling.
+
+
+I think I may be going with Frames for this after all.
+They are much better suited to stating implicit items.
