@@ -1,8 +1,6 @@
-⸻
+Parent Frame: CookingTooling
 
-Parent Frame: ChaiTooling
-
-Purpose: Common slots for chai prep across variants.*
+Purpose: Frame to represent the available tools in a cooking area.
 
 Core
 	•	scene (home | campsite)
@@ -12,7 +10,19 @@ Core
 	•	surface (countertop | table | portableSurface)
 	•	ignition (piezo | lighter | matches | none)
 	•	fuelOrPower (butaneCanister | LPG | electricity | none)
-	•	handling (mitts | handleOnly | trivet)
+
+Environment Mitigation
+	•	windMitigation (windshield | none)
+	•	rainMitigation (rainfly | canopy | none)
+	•	lighting (lantern | headlamp | none)
+
+⸻
+
+Parent Frame: ChaiTooling
+
+Purpose: Common slots for chai prep across variants.
+
+CookingAreaASetup [CookingTooling]
 
 Preparation
 	•	aromaticsPrep (Set: peeler | grater | mortarAndPestle)
@@ -25,11 +35,7 @@ Aeration
 Straining & Serving
 	•	strainingTool (strainer | muslin | decant)
 	•	servingVessels (Set: cup | mug)
-
-Environment Mitigation
-	•	windMitigation (windshield | none)
-	•	rainMitigation (rainfly | canopy | none)
-	•	lighting (lantern | headlamp | none)
+	•	handling (mitts | handleOnly | trivet)
 
 Consumables & Waste
 	•	waterSource (tap | bottle | jug)
