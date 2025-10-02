@@ -1,53 +1,54 @@
-Parent Frame: CookingTooling
+ChaiPreparationFrame:
+  # Liquids & tea
+  liquids:
+    - { name: "water", amount: ?, unit: "cup" }
+    - { name: "milk", amount: ?, unit: "cup" }
+  teas:
+    - { name: "loose black tea", amount: ?, unit: "tsp" }
+    - { name: "kashmiri green tea leaves", amount: ?, unit: "tsp" }
+    - { name: "green tea leaves", amount: ?, unit: "tsp" }
 
-Purpose: Frame to represent the available tools in a cooking area.
+  # Sweeteners & seasoning
+  sweeteners:
+    - { name: "jaggery", amount: ?, unit: "tsp" }
+    - { name: "sugar", amount: ?, unit: "tsp" }
+    - { name: "honey", amount: ?, unit: "tsp" }
+  salt:
+    - { name: "salt", amount: ?, unit: "tsp" }
 
-Core
-	•	scene (home | campsite)
-	•	conditions (Set: wind | rain | dark | cold | highAltitude | none)
-	•	heatSource (gasStove | inductionHob | butaneStove)
-	•	cookingVessel (pot | saucepan | kettleBody)
-	•	surface (countertop | table | portableSurface)
-	•	ignition (piezo | lighter | matches | none)
-	•	fuelOrPower (butaneCanister | LPG | electricity | none)
+  # Spices (generic, list form)
+  spices_ground:
+    - { name: "ginger", amount: ?, unit: "tsp" }
+    - { name: "cinnamon", amount: ?, unit: "tsp" }
+  spices_whole:
+    - { name: "cardamom pods", amount: ?, unit: "pods" }
+    - { name: "cloves", amount: ?, unit: "cloves" }
+    - { name: "peppercorns", amount: ?, unit: "peppercorns" }
+    - { name: "fennel seeds", amount: ?, unit: "tsp" }
+    - { name: "saffron threads", amount: ?, unit: "threads" }
 
-Environment Mitigation
-	•	windMitigation (windshield | none)
-	•	rainMitigation (rainfly | canopy | none)
-	•	lighting (lantern | headlamp | none)
+  # Herbs / floral / citrus
+  herbs:
+    - { name: "mint leaves", amount: ?, unit: "leaves" }
+  floral:
+    - { name: "rose petals", amount: ?, unit: "tsp" }
+  citrus:
+    - { name: "lemon juice", amount: ?, unit: "tsp" }
 
-⸻
+  # Process modifiers
+  process_modifiers:
+    - { name: "baking soda", amount: ?, unit: "tsp" }
+    - { name: "ice", amount: ?, unit: "cup" }
 
-Parent Frame: ChaiTooling
+  # Garnish
+  garnish:
+    - { name: "crushed nuts", amount: ?, unit: "tbsp" }
+    - { name: "slivered almonds", amount: ?, unit: "tbsp" }
 
-Purpose: Common slots for chai prep across variants.
-
-CookingAreaASetup [CookingTooling]
-
-Preparation
-	•	aromaticsPrep (Set: peeler | grater | mortarAndPestle)
-	•	measurement (Set: teaspoon | tablespoon | measuringCup | scale)
-	•	stirring (spoon | ladle | whisk)
-
-Aeration
-	•	aerationTools (whisk | ladle | none)
-
-Straining & Serving
-	•	strainingTool (strainer | muslin | decant)
-	•	servingVessels (Set: cup | mug)
-	•	handling (mitts | handleOnly | trivet)
-
-Consumables & Waste
-	•	waterSource (tap | bottle | jug)
-	•	sweetenerContainer (jaggeryJar | sugarJar | saltContainer | none)
-	•	wasteHandling (trashcan | trashbag | packOut)
-
-⸻
-
-Child Frame: KashmiriChaiTooling (inherits ChaiTooling)
-
-Adds the rare “shock” step.
-
-Preparation
-	•	shockingTools (ice | coldWater | none) [Additional slot]
-
+  # Process/tool actions
+  actions:
+    crushing:   [ "mortar and pestle" ]
+    peeling:    [ "peeler" ]
+    stirring:   [ "spoon", "ladle" ]
+    straining:  [ "strainer", "muslin" ]
+    aerating:   [ "whisk", "deep ladle" ]
