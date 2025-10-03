@@ -91,6 +91,47 @@ class CookingEquipmentInASceneFrame:
             if not self.cookingVessel: self.cookingVessel = VESSEL_POT
             if not self.fuelOrPowerAttachment: self.fuelOrPowerAttachment = FUEL_PROPANE_CANISTER
 
+@dataclass
+class Ingredient:
+    """Represents an ingredient with name, amount, and unit."""
+    name: str
+    amount: Optional[float] = None
+    unit: Optional[str] = None
+
+@dataclass
+class ChaiPreparationFrame:
+    """Frame to represent the ingredients and tools for chai preparation."""
+
+    # Liquids & tea
+    liquids: Optional[list[Ingredient]] = None  # Base liquids like water, milk (dairy or plant-based)
+    teas: Optional[list[Ingredient]] = None  # Tea leaves: black tea, green tea, kashmiri green tea, etc.
+
+    # Sweeteners & seasoning
+    sweeteners: Optional[list[Ingredient]] = None  # Sweetening agents: sugar, jaggery, honey, etc.
+    salt: Optional[list[Ingredient]] = None  # Salt for savory chai variants (e.g., noon chai)
+
+    # Spices
+    spices_ground: Optional[list[Ingredient]] = None  # Pre-ground spices: ginger powder, cinnamon powder, etc.
+    spices_whole: Optional[list[Ingredient]] = None  # Whole spices: cardamom pods, cloves, peppercorns, fennel seeds, saffron threads
+
+    # Herbs / floral / citrus
+    herbs: Optional[list[Ingredient]] = None  # Fresh or dried herbs: mint leaves, tulsi, lemongrass, etc.
+    floral: Optional[list[Ingredient]] = None  # Floral additions: rose petals, jasmine, etc.
+    citrus: Optional[list[Ingredient]] = None  # Citrus elements: lemon juice, orange zest, etc.
+
+    # Process modifiers
+    process_modifiers: Optional[list[Ingredient]] = None  # Ingredients that modify cooking process: baking soda (for pink chai), ice (for iced chai)
+
+    # Garnish
+    garnish: Optional[list[Ingredient]] = None  # Toppings and finishing touches: crushed nuts, slivered almonds, spice powder, cream, etc.
+
+    # Actions (tool mappings)
+    crushing_tools: Optional[list[str]] = None  # Tools for crushing spices: mortar and pestle, rolling pin, etc.
+    peeling_tools: Optional[list[str]] = None  # Tools for peeling ginger, citrus: peeler, knife, spoon, etc.
+    stirring_tools: Optional[list[str]] = None  # Tools for mixing and stirring: spoon, ladle, whisk, etc.
+    straining_tools: Optional[list[str]] = None  # Tools for filtering tea: strainer, muslin cloth, tea filter, sieve, etc.
+    aerating_tools: Optional[list[str]] = None  # Tools for creating froth/aeration: whisk, deep ladle (for pulling), frother, etc.
+
 
 class CookingEquipmentSceneFrameVariants:
     def __init__(self) -> None:
@@ -122,6 +163,7 @@ class CookingEquipmentSceneFrameVariants:
 
        self.variants.append(CookingEquipmentInASceneFrame(sceneType=SCENE_ANY, cookingVessel=VESSEL_POT_NO_HANDLE, cookingVesselHandlingTools=HANDLING_TOOL_CLAMP))
        self.variants.append(CookingEquipmentInASceneFrame(sceneType=SCENE_ANY, cookingVessel=VESSEL_POT_NO_HANDLE, cookingVesselHandlingTools=HANDLING_TOOL_MITTEN))
+
 
 if __name__ == '__main__':
     variants = CookingEquipmentSceneFrameVariants()
