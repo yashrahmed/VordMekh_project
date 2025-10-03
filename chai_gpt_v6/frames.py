@@ -101,7 +101,7 @@ class Ingredient:
 @dataclass
 class ChaiPreparationFrame:
     """Frame to represent the ingredients and tools for chai preparation."""
-
+    chai_type: str  # The name/type of chai recipe (e.g., "Masala Chai", "Adrak Chai", "Sulaimani Chai")
     # Liquids & tea
     liquids: Optional[list[Ingredient]] = None  # Base liquids like water, milk (dairy or plant-based)
     teas: Optional[list[Ingredient]] = None  # Tea leaves: black tea, green tea, kashmiri green tea, etc.
@@ -131,6 +131,78 @@ class ChaiPreparationFrame:
     stirring_tools: Optional[list[str]] = None  # Tools for mixing and stirring: spoon, ladle, whisk, etc.
     straining_tools: Optional[list[str]] = None  # Tools for filtering tea: strainer, muslin cloth, tea filter, sieve, etc.
     aerating_tools: Optional[list[str]] = None  # Tools for creating froth/aeration: whisk, deep ladle (for pulling), frother, etc.
+
+
+class ChaiPreparationFrameVariants:
+    def __init__(self) -> None:
+        self.variants = []
+        self.init_recipes()
+
+    def init_recipes(self) -> None:
+        # Masala Chai
+        self.variants.append(ChaiPreparationFrame(
+            chai_type="Masala Chai",
+            liquids=[Ingredient("Water", 0.75, "cup"), Ingredient("Whole Milk", 0.5, "cup")],
+            teas=[Ingredient("Loose Black Tea", 1, "tsp")],
+            sweeteners=[Ingredient("Jaggery or Sugar", 1, "tsp")],
+            spices_ground=[Ingredient("Grated Fresh Ginger", 0.5, "tsp"), Ingredient("Ground Cinnamon", 0.25, "tsp")],
+            spices_whole=[Ingredient("Green Cardamom Pods", 3, "pods"), Ingredient("Whole Cloves", 2, "cloves"),
+                          Ingredient("Black Peppercorns", 2, "peppercorns"), Ingredient("Fennel Seeds", 0.25, "tsp")],
+            crushing_tools=["Mortar and Pestle"],
+            peeling_tools=["Peeler"],
+            straining_tools=["Strainer"]
+        ))
+
+        # Adrak Chai
+        self.variants.append(ChaiPreparationFrame(
+            chai_type="Adrak Chai",
+            liquids=[Ingredient("Water", 0.75, "cup"), Ingredient("Whole Milk", 0.5, "cup")],
+            teas=[Ingredient("Loose Black Tea", 1.5, "tsp")],
+            sweeteners=[Ingredient("Jaggery or Sugar", 1, "tsp")],
+            spices_ground=[Ingredient("Grated Fresh Ginger", 3, "tsp")],
+            crushing_tools=["Mortar and Pestle"],
+            peeling_tools=["Peeler"],
+            straining_tools=["Strainer"]
+        ))
+
+        # Sulaimani Chai
+        self.variants.append(ChaiPreparationFrame(
+            chai_type="Sulaimani Chai",
+            liquids=[Ingredient("Water", 1, "cup")],
+            teas=[Ingredient("Loose Black Tea", 1, "tsp")],
+            sweeteners=[Ingredient("Honey or Jaggery", 1, "tsp")],
+            spices_whole=[Ingredient("Whole Cloves", 2, "cloves"), Ingredient("Green Cardamom Pods", 1, "pods"),
+                          Ingredient("Saffron Threads", 5, "threads")],
+            herbs=[Ingredient("Fresh Mint Leaves", 3, "leaves")],
+            citrus=[Ingredient("Lemon Juice", 1, "tsp")],
+            straining_tools=["Strainer"]
+        ))
+
+        # Kashmiri Chai
+        self.variants.append(ChaiPreparationFrame(
+            chai_type="Kashmiri Chai",
+            liquids=[Ingredient("Water", 1.5, "cup"), Ingredient("Whole Milk", 0.75, "cup")],
+            teas=[Ingredient("Kashmiri Green Tea Leaves", 1, "tsp")],
+            salt=[Ingredient("Salt", 0.5, "tsp")],
+            spices_whole=[Ingredient("Green Cardamom Pods", 1, "pods")],
+            process_modifiers=[Ingredient("Baking Soda", 0.125, "tsp"), Ingredient("Ice", 0.5, "cup")],
+            garnish=[Ingredient("Crushed Nuts", 0.5, "tbsp")],
+            aerating_tools=["Whisk or Deep Ladle"],
+            straining_tools=["Strainer"]
+        ))
+
+        # Kahwah
+        self.variants.append(ChaiPreparationFrame(
+            chai_type="Kahwah",
+            liquids=[Ingredient("Water", 1, "cup")],
+            teas=[Ingredient("Green Tea Leaves", 0.5, "tsp")],
+            sweeteners=[Ingredient("Honey or Sugar", 1, "tsp")],
+            spices_ground=[Ingredient("Ground Cinnamon", 0.125, "tsp")],
+            spices_whole=[Ingredient("Green Cardamom Pods", 1, "pods"), Ingredient("Saffron Threads", 5, "threads")],
+            floral=[Ingredient("Dried Rose Petals", 0.5, "tsp")],
+            garnish=[Ingredient("Slivered Almonds", 0.5, "tbsp")],
+            straining_tools=["Strainer"]
+        ))
 
 
 class CookingEquipmentSceneFrameVariants:
