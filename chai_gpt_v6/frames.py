@@ -62,34 +62,34 @@ class CookingEquipmentInASceneFrame:
     """Frame to represent the *required* equipment for cooking."""
 
     # Core
-    sceneType: str = SCENE_HOME
+    scene_type: str = SCENE_HOME
     conditions: Optional[Set[str]] = None
-    heatSource: Optional[str] = None
-    cookingVessel: Optional[str] = None
-    cookingVesselHandlingTools: Optional[str] = None
-    cookingPlatform: Optional[str] = None
-    ignitionTool: Optional[str] = None
-    fuelOrPowerAttachment: Optional[str] = None
-    fuelConnectors: Optional[str] = None
+    heat_source: Optional[str] = None
+    cooking_vessel: Optional[str] = None
+    cooking_vessel_handling_tools: Optional[str] = None
+    cooking_platform: Optional[str] = None
+    ignition_tool: Optional[str] = None
+    fuel_or_power_attachment: Optional[str] = None
+    fuel_connectors: Optional[str] = None
 
     # Environment Mitigation
-    windMitigationEquipment: Optional[str] = None
-    rainMitigationEquipment: Optional[str] = None
-    lightingEquipment: Optional[str] = None
+    wind_mitigation_equipment: Optional[str] = None
+    rain_mitigation_equipment: Optional[str] = None
+    lighting_equipment: Optional[str] = None
 
     def __post_init__(self):
         """Set default value for conditions if None."""
         if self.conditions is None: self.conditions = {CONDITION_NORMAL}
 
         """Set the defaults procedurally"""
-        if self.sceneType in [SCENE_HOME, SCENE_ANY]:
-            if not self.heatSource: self.heatSource = HEAT_GAS_COOKTOP
-            if not self.cookingVessel: self.cookingVessel = VESSEL_POT
+        if self.scene_type in [SCENE_HOME, SCENE_ANY]:
+            if not self.heat_source: self.heat_source = HEAT_GAS_COOKTOP
+            if not self.cooking_vessel: self.cooking_vessel = VESSEL_POT
 
-        if self.sceneType == SCENE_CAMPSITE:
-            if not self.heatSource: self.heatSource = HEAT_PROPANE_STOVE
-            if not self.cookingVessel: self.cookingVessel = VESSEL_POT
-            if not self.fuelOrPowerAttachment: self.fuelOrPowerAttachment = FUEL_PROPANE_CANISTER
+        if self.scene_type == SCENE_CAMPSITE:
+            if not self.heat_source: self.heat_source = HEAT_PROPANE_STOVE
+            if not self.cooking_vessel: self.cooking_vessel = VESSEL_POT
+            if not self.fuel_or_power_attachment: self.fuel_or_power_attachment = FUEL_PROPANE_CANISTER
 
 @dataclass
 class Ingredient:
@@ -212,29 +212,29 @@ class CookingEquipmentSceneFrameVariants:
         self.init_campsite_variants()
 
     def init_home_variants(self) -> None:
-        self.variants.append(CookingEquipmentInASceneFrame(sceneType=SCENE_HOME, heatSource=HEAT_GAS_COOKTOP, cookingVessel=VESSEL_POT))
-        self.variants.append(CookingEquipmentInASceneFrame(sceneType=SCENE_HOME, heatSource=HEAT_INDUCTION_COOKTOP, cookingVessel=VESSEL_INDUCTION_POT))
+        self.variants.append(CookingEquipmentInASceneFrame(scene_type=SCENE_HOME, heat_source=HEAT_GAS_COOKTOP, cooking_vessel=VESSEL_POT))
+        self.variants.append(CookingEquipmentInASceneFrame(scene_type=SCENE_HOME, heat_source=HEAT_INDUCTION_COOKTOP, cooking_vessel=VESSEL_INDUCTION_POT))
 
     def init_campsite_variants(self) -> None:
-       self.variants.append(CookingEquipmentInASceneFrame(sceneType=SCENE_CAMPSITE, conditions={CONDITION_WINDY}, windMitigationEquipment=WIND_WINDSHIELD))
-       self.variants.append(CookingEquipmentInASceneFrame(sceneType=SCENE_CAMPSITE, conditions={CONDITION_RAINY}, rainMitigationEquipment=RAIN_RAINFLY))
-       self.variants.append(CookingEquipmentInASceneFrame(sceneType=SCENE_CAMPSITE, conditions={CONDITION_RAINY}, rainMitigationEquipment=RAIN_CANOPY))
-       self.variants.append(CookingEquipmentInASceneFrame(sceneType=SCENE_CAMPSITE, conditions={CONDITION_DARK}, lightingEquipment=LIGHTING_LANTERN))
-       self.variants.append(CookingEquipmentInASceneFrame(sceneType=SCENE_CAMPSITE, conditions={CONDITION_DARK}, lightingEquipment=LIGHTING_HEADLAMP))
+       self.variants.append(CookingEquipmentInASceneFrame(scene_type=SCENE_CAMPSITE, conditions={CONDITION_WINDY}, wind_mitigation_equipment=WIND_WINDSHIELD))
+       self.variants.append(CookingEquipmentInASceneFrame(scene_type=SCENE_CAMPSITE, conditions={CONDITION_RAINY}, rain_mitigation_equipment=RAIN_RAINFLY))
+       self.variants.append(CookingEquipmentInASceneFrame(scene_type=SCENE_CAMPSITE, conditions={CONDITION_RAINY}, rain_mitigation_equipment=RAIN_CANOPY))
+       self.variants.append(CookingEquipmentInASceneFrame(scene_type=SCENE_CAMPSITE, conditions={CONDITION_DARK}, lighting_equipment=LIGHTING_LANTERN))
+       self.variants.append(CookingEquipmentInASceneFrame(scene_type=SCENE_CAMPSITE, conditions={CONDITION_DARK}, lighting_equipment=LIGHTING_HEADLAMP))
 
-       self.variants.append(CookingEquipmentInASceneFrame(sceneType=SCENE_CAMPSITE, heatSource=HEAT_BUTANE_STOVE, fuelOrPowerAttachment=FUEL_BUTANE_CANISTER))
-       self.variants.append(CookingEquipmentInASceneFrame(sceneType=SCENE_CAMPSITE, heatSource=HEAT_PROPANE_STOVE, fuelOrPowerAttachment=FUEL_PROPANE_TANK, fuelConnectors=CONNECTOR_PROPANE_HOSE_ADAPTER))
-       self.variants.append(CookingEquipmentInASceneFrame(sceneType=SCENE_CAMPSITE, heatSource=HEAT_PROPANE_STOVE, fuelOrPowerAttachment=FUEL_PROPANE_CANISTER))
+       self.variants.append(CookingEquipmentInASceneFrame(scene_type=SCENE_CAMPSITE, heat_source=HEAT_BUTANE_STOVE, fuel_or_power_attachment=FUEL_BUTANE_CANISTER))
+       self.variants.append(CookingEquipmentInASceneFrame(scene_type=SCENE_CAMPSITE, heat_source=HEAT_PROPANE_STOVE, fuel_or_power_attachment=FUEL_PROPANE_TANK, fuel_connectors=CONNECTOR_PROPANE_HOSE_ADAPTER))
+       self.variants.append(CookingEquipmentInASceneFrame(scene_type=SCENE_CAMPSITE, heat_source=HEAT_PROPANE_STOVE, fuel_or_power_attachment=FUEL_PROPANE_CANISTER))
 
-       self.variants.append(CookingEquipmentInASceneFrame(sceneType=SCENE_CAMPSITE, heatSource=HEAT_INDUCTION_STOVE, cookingVessel=VESSEL_INDUCTION_POT, fuelOrPowerAttachment=FUEL_BATTERY))
+       self.variants.append(CookingEquipmentInASceneFrame(scene_type=SCENE_CAMPSITE, heat_source=HEAT_INDUCTION_STOVE, cooking_vessel=VESSEL_INDUCTION_POT, fuel_or_power_attachment=FUEL_BATTERY))
 
-       self.variants.append(CookingEquipmentInASceneFrame(sceneType=SCENE_CAMPSITE, ignitionTool=IGNITION_LIGHTER))
-       self.variants.append(CookingEquipmentInASceneFrame(sceneType=SCENE_CAMPSITE, ignitionTool=IGNITION_MATCHES))
+       self.variants.append(CookingEquipmentInASceneFrame(scene_type=SCENE_CAMPSITE, ignition_tool=IGNITION_LIGHTER))
+       self.variants.append(CookingEquipmentInASceneFrame(scene_type=SCENE_CAMPSITE, ignition_tool=IGNITION_MATCHES))
 
-       self.variants.append(CookingEquipmentInASceneFrame(sceneType=SCENE_CAMPSITE, cookingPlatform=PLATFORM_PORTABLE_TABLE))
+       self.variants.append(CookingEquipmentInASceneFrame(scene_type=SCENE_CAMPSITE, cooking_platform=PLATFORM_PORTABLE_TABLE))
 
-       self.variants.append(CookingEquipmentInASceneFrame(sceneType=SCENE_ANY, cookingVessel=VESSEL_POT_NO_HANDLE, cookingVesselHandlingTools=HANDLING_TOOL_CLAMP))
-       self.variants.append(CookingEquipmentInASceneFrame(sceneType=SCENE_ANY, cookingVessel=VESSEL_POT_NO_HANDLE, cookingVesselHandlingTools=HANDLING_TOOL_MITTEN))
+       self.variants.append(CookingEquipmentInASceneFrame(scene_type=SCENE_ANY, cooking_vessel=VESSEL_POT_NO_HANDLE, cooking_vessel_handling_tools=HANDLING_TOOL_CLAMP))
+       self.variants.append(CookingEquipmentInASceneFrame(scene_type=SCENE_ANY, cooking_vessel=VESSEL_POT_NO_HANDLE, cooking_vessel_handling_tools=HANDLING_TOOL_MITTEN))
 
 
 if __name__ == '__main__':
