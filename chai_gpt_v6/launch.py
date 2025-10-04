@@ -2,14 +2,13 @@ from flask import Flask, jsonify, request, render_template
 from flask_cors import CORS  # optional but preferred
 import os
 import yaml
-import re
 import json
 
 from langchain_core.messages import HumanMessage, AIMessage, SystemMessage
 from langchain_core.language_models.chat_models import BaseChatModel
 
 from bot_utils.tools import set_open_api_key, setup_openai_model
-
+from .frames import think_through_scenarios_for_chai
 from dataclasses import dataclass
 
 @dataclass
@@ -23,25 +22,7 @@ llm_handle = LLMHandle
 
 def build_system_prompt():
     system_prompt = f"""
-    You are chai-gpt. An expert in chai making.
-
-    The user is planning to prepare chai. A list of things that he/she may need will be provided.
-    The items therein will fall into two main groups. They are as follows.
-    - common items which are useful in almost any scenarios.
-    - Items specific to certain scenarios that the user may not have thought about.
-
-    Note that there are multiple scenarios that the user has planned for.
-
-    This data is in JSON form. Express that data in natural language with the following structure.
-
-    Required items -
-    ...
-    ...
-
-    Additonal items you may need -
-    ... scenario specific items - An explanation of where and when it may be required depending on the scenarios it is included in.
-
-    The scenario descriptions may be quite specific. I want you to describe them in a more general tone.
+            EMPTY system prompt
     """
     return SystemMessage(system_prompt)
 
@@ -98,7 +79,9 @@ def prepare():
     if prep_scene not in valid_scenes:
         return jsonify({"error": f"Scene must be one of {' or '.join(valid_scenes)}"}), 400
     
-    return jsonify("Hello??", 200)
+    response = think_through_scenarios_for_chai(chai_type, prep_scene)
+    
+    return jsonify(response, 200)
 
 
 @app.route("/")

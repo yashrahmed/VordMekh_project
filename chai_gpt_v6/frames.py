@@ -470,9 +470,3 @@ def think_through_scenarios_for_chai(chai_type, scene_type):
     print(combined_cot_str)
 
     return combined_cot_str
-    
-
-
-if __name__ == '__main__':
-    think_through_scenarios_for_chai(CHAI_MASALA, SCENE_CAMPSITE)
-
