@@ -1,6 +1,10 @@
 from dataclasses import dataclass
-from typing import Set, Optional
+from typing import List, Set, Optional
 
+
+# ============================================================================
+# COOKING EQUIPMENT CONSTANTS
+# ============================================================================
 
 # Scene Type Constants
 SCENE_HOME = "home"
@@ -55,6 +59,69 @@ RAIN_CANOPY = "canopy"
 # Lighting Equipment Constants
 LIGHTING_LANTERN = "lantern"
 LIGHTING_HEADLAMP = "headlamp"
+
+
+# ============================================================================
+# CHAI PREPARATION CONSTANTS
+# ============================================================================
+
+# Chai Type Constants
+CHAI_MASALA = "Masala Chai"
+CHAI_ADRAK = "Adrak Chai"
+CHAI_SULAIMANI = "Sulaimani Chai"
+CHAI_KASHMIRI = "Kashmiri Chai"
+CHAI_KAHWAH = "Kahwah"
+
+# Liquid Ingredient Constants
+LIQUID_WATER = "Water"
+LIQUID_WHOLE_MILK = "Whole Milk"
+
+# Tea Leaf Constants
+TEA_LOOSE_BLACK = "Loose Black Tea"
+TEA_KASHMIRI_GREEN = "Kashmiri Green Tea Leaves"
+TEA_GREEN = "Green Tea Leaves"
+
+# Sweetener Constants
+SWEETENER_JAGGERY_OR_SUGAR = "Jaggery or Sugar"
+SWEETENER_HONEY_OR_JAGGERY = "Honey or Jaggery"
+SWEETENER_HONEY_OR_SUGAR = "Honey or Sugar"
+
+# Salt Constants
+SALT = "Salt"
+
+# Ground Spice Constants
+SPICE_GROUND_GINGER = "Grated Fresh Ginger"
+SPICE_GROUND_CINNAMON = "Ground Cinnamon"
+
+# Whole Spice Constants
+SPICE_WHOLE_CARDAMOM = "Green Cardamom Pods"
+SPICE_WHOLE_CLOVES = "Whole Cloves"
+SPICE_WHOLE_PEPPERCORNS = "Black Peppercorns"
+SPICE_WHOLE_FENNEL = "Fennel Seeds"
+SPICE_WHOLE_SAFFRON = "Saffron Threads"
+
+# Herb Constants
+HERB_MINT = "Fresh Mint Leaves"
+
+# Floral Constants
+FLORAL_ROSE_PETALS = "Dried Rose Petals"
+
+# Citrus Constants
+CITRUS_LEMON_JUICE = "Lemon Juice"
+
+# Process Modifier Constants
+PROCESS_BAKING_SODA = "Baking Soda"
+PROCESS_ICE = "Ice"
+
+# Garnish Constants
+GARNISH_CRUSHED_NUTS = "Crushed Nuts"
+GARNISH_ALMONDS = "Slivered Almonds"
+
+# Chai Preparation Tool Constants
+TOOL_MORTAR_PESTLE = "Mortar and Pestle"
+TOOL_PEELER = "Peeler"
+TOOL_STRAINER = "Strainer"
+TOOL_WHISK_LADLE = "Whisk or Deep Ladle"
 
 
 @dataclass
@@ -135,79 +202,85 @@ class ChaiPreparationFrame:
 
 class ChaiPreparationFrameVariants:
     def __init__(self) -> None:
-        self.variants = []
+        self.variants: List[ChaiPreparationFrame] = []
         self.init_recipes()
 
     def init_recipes(self) -> None:
         # Masala Chai
         self.variants.append(ChaiPreparationFrame(
-            chai_type="Masala Chai",
-            liquids=[Ingredient("Water", 0.75, "cup"), Ingredient("Whole Milk", 0.5, "cup")],
-            teas=[Ingredient("Loose Black Tea", 1, "tsp")],
-            sweeteners=[Ingredient("Jaggery or Sugar", 1, "tsp")],
-            spices_ground=[Ingredient("Grated Fresh Ginger", 0.5, "tsp"), Ingredient("Ground Cinnamon", 0.25, "tsp")],
-            spices_whole=[Ingredient("Green Cardamom Pods", 3, "pods"), Ingredient("Whole Cloves", 2, "cloves"),
-                          Ingredient("Black Peppercorns", 2, "peppercorns"), Ingredient("Fennel Seeds", 0.25, "tsp")],
-            crushing_tools=["Mortar and Pestle"],
-            peeling_tools=["Peeler"],
-            straining_tools=["Strainer"]
+            chai_type=CHAI_MASALA,
+            liquids=[Ingredient(LIQUID_WATER, 0.75, "cup"), Ingredient(LIQUID_WHOLE_MILK, 0.5, "cup")],
+            teas=[Ingredient(TEA_LOOSE_BLACK, 1, "tsp")],
+            sweeteners=[Ingredient(SWEETENER_JAGGERY_OR_SUGAR, 1, "tsp")],
+            spices_ground=[Ingredient(SPICE_GROUND_GINGER, 0.5, "tsp"), Ingredient(SPICE_GROUND_CINNAMON, 0.25, "tsp")],
+            spices_whole=[Ingredient(SPICE_WHOLE_CARDAMOM, 3, "pods"), Ingredient(SPICE_WHOLE_CLOVES, 2, "cloves"),
+                          Ingredient(SPICE_WHOLE_PEPPERCORNS, 2, "peppercorns"), Ingredient(SPICE_WHOLE_FENNEL, 0.25, "tsp")],
+            crushing_tools=[TOOL_MORTAR_PESTLE],
+            peeling_tools=[TOOL_PEELER],
+            straining_tools=[TOOL_STRAINER]
         ))
 
         # Adrak Chai
         self.variants.append(ChaiPreparationFrame(
-            chai_type="Adrak Chai",
-            liquids=[Ingredient("Water", 0.75, "cup"), Ingredient("Whole Milk", 0.5, "cup")],
-            teas=[Ingredient("Loose Black Tea", 1.5, "tsp")],
-            sweeteners=[Ingredient("Jaggery or Sugar", 1, "tsp")],
-            spices_ground=[Ingredient("Grated Fresh Ginger", 3, "tsp")],
-            crushing_tools=["Mortar and Pestle"],
-            peeling_tools=["Peeler"],
-            straining_tools=["Strainer"]
+            chai_type=CHAI_ADRAK,
+            liquids=[Ingredient(LIQUID_WATER, 0.75, "cup"), Ingredient(LIQUID_WHOLE_MILK, 0.5, "cup")],
+            teas=[Ingredient(TEA_LOOSE_BLACK, 1.5, "tsp")],
+            sweeteners=[Ingredient(SWEETENER_JAGGERY_OR_SUGAR, 1, "tsp")],
+            spices_ground=[Ingredient(SPICE_GROUND_GINGER, 3, "tsp")],
+            crushing_tools=[TOOL_MORTAR_PESTLE],
+            peeling_tools=[TOOL_PEELER],
+            straining_tools=[TOOL_STRAINER]
         ))
 
         # Sulaimani Chai
         self.variants.append(ChaiPreparationFrame(
-            chai_type="Sulaimani Chai",
-            liquids=[Ingredient("Water", 1, "cup")],
-            teas=[Ingredient("Loose Black Tea", 1, "tsp")],
-            sweeteners=[Ingredient("Honey or Jaggery", 1, "tsp")],
-            spices_whole=[Ingredient("Whole Cloves", 2, "cloves"), Ingredient("Green Cardamom Pods", 1, "pods"),
-                          Ingredient("Saffron Threads", 5, "threads")],
-            herbs=[Ingredient("Fresh Mint Leaves", 3, "leaves")],
-            citrus=[Ingredient("Lemon Juice", 1, "tsp")],
-            straining_tools=["Strainer"]
+            chai_type=CHAI_SULAIMANI,
+            liquids=[Ingredient(LIQUID_WATER, 1, "cup")],
+            teas=[Ingredient(TEA_LOOSE_BLACK, 1, "tsp")],
+            sweeteners=[Ingredient(SWEETENER_HONEY_OR_JAGGERY, 1, "tsp")],
+            spices_whole=[Ingredient(SPICE_WHOLE_CLOVES, 2, "cloves"), Ingredient(SPICE_WHOLE_CARDAMOM, 1, "pods"),
+                          Ingredient(SPICE_WHOLE_SAFFRON, 5, "threads")],
+            herbs=[Ingredient(HERB_MINT, 3, "leaves")],
+            citrus=[Ingredient(CITRUS_LEMON_JUICE, 1, "tsp")],
+            straining_tools=[TOOL_STRAINER]
         ))
 
         # Kashmiri Chai
         self.variants.append(ChaiPreparationFrame(
-            chai_type="Kashmiri Chai",
-            liquids=[Ingredient("Water", 1.5, "cup"), Ingredient("Whole Milk", 0.75, "cup")],
-            teas=[Ingredient("Kashmiri Green Tea Leaves", 1, "tsp")],
-            salt=[Ingredient("Salt", 0.5, "tsp")],
-            spices_whole=[Ingredient("Green Cardamom Pods", 1, "pods")],
-            process_modifiers=[Ingredient("Baking Soda", 0.125, "tsp"), Ingredient("Ice", 0.5, "cup")],
-            garnish=[Ingredient("Crushed Nuts", 0.5, "tbsp")],
-            aerating_tools=["Whisk or Deep Ladle"],
-            straining_tools=["Strainer"]
+            chai_type=CHAI_KASHMIRI,
+            liquids=[Ingredient(LIQUID_WATER, 1.5, "cup"), Ingredient(LIQUID_WHOLE_MILK, 0.75, "cup")],
+            teas=[Ingredient(TEA_KASHMIRI_GREEN, 1, "tsp")],
+            salt=[Ingredient(SALT, 0.5, "tsp")],
+            spices_whole=[Ingredient(SPICE_WHOLE_CARDAMOM, 1, "pods")],
+            process_modifiers=[Ingredient(PROCESS_BAKING_SODA, 0.125, "tsp"), Ingredient(PROCESS_ICE, 0.5, "cup")],
+            garnish=[Ingredient(GARNISH_CRUSHED_NUTS, 0.5, "tbsp")],
+            aerating_tools=[TOOL_WHISK_LADLE],
+            straining_tools=[TOOL_STRAINER]
         ))
 
         # Kahwah
         self.variants.append(ChaiPreparationFrame(
-            chai_type="Kahwah",
-            liquids=[Ingredient("Water", 1, "cup")],
-            teas=[Ingredient("Green Tea Leaves", 0.5, "tsp")],
-            sweeteners=[Ingredient("Honey or Sugar", 1, "tsp")],
-            spices_ground=[Ingredient("Ground Cinnamon", 0.125, "tsp")],
-            spices_whole=[Ingredient("Green Cardamom Pods", 1, "pods"), Ingredient("Saffron Threads", 5, "threads")],
-            floral=[Ingredient("Dried Rose Petals", 0.5, "tsp")],
-            garnish=[Ingredient("Slivered Almonds", 0.5, "tbsp")],
-            straining_tools=["Strainer"]
+            chai_type=CHAI_KAHWAH,
+            liquids=[Ingredient(LIQUID_WATER, 1, "cup")],
+            teas=[Ingredient(TEA_GREEN, 0.5, "tsp")],
+            sweeteners=[Ingredient(SWEETENER_HONEY_OR_SUGAR, 1, "tsp")],
+            spices_ground=[Ingredient(SPICE_GROUND_CINNAMON, 0.125, "tsp")],
+            spices_whole=[Ingredient(SPICE_WHOLE_CARDAMOM, 1, "pods"), Ingredient(SPICE_WHOLE_SAFFRON, 5, "threads")],
+            floral=[Ingredient(FLORAL_ROSE_PETALS, 0.5, "tsp")],
+            garnish=[Ingredient(GARNISH_ALMONDS, 0.5, "tbsp")],
+            straining_tools=[TOOL_STRAINER]
         ))
 
+    def get_recipe(self, chai_type):
+        for frame in self.variants:
+            if frame.chai_type == chai_type:
+                return frame
+        
+        raise LookupError("Invalid chai type specified!!")
 
 class CookingEquipmentSceneFrameVariants:
     def __init__(self) -> None:
-        self.variants = []
+        self.variants: List[CookingEquipmentInASceneFrame] = []
         self.init_home_variants()
         self.init_campsite_variants()
 
@@ -236,9 +309,32 @@ class CookingEquipmentSceneFrameVariants:
        self.variants.append(CookingEquipmentInASceneFrame(scene_type=SCENE_ANY, cooking_vessel=VESSEL_POT_NO_HANDLE, cooking_vessel_handling_tools=HANDLING_TOOL_CLAMP))
        self.variants.append(CookingEquipmentInASceneFrame(scene_type=SCENE_ANY, cooking_vessel=VESSEL_POT_NO_HANDLE, cooking_vessel_handling_tools=HANDLING_TOOL_MITTEN))
 
+    def get_scenes(self, scene_type):
+        result = [
+            frame for frame in self.variants if frame.scene_type == scene_type
+        ]
+
+        if not len(result):
+            raise LookupError("Invalid scene type specified!!")
+        
+        return result
+
+
+def think_through_scenarios_for_chai(chai_type, scene_type):
+    equip_frames = CookingEquipmentSceneFrameVariants()
+    prep_frames = ChaiPreparationFrameVariants()
+    
+    recipe = prep_frames.get_recipe(chai_type)
+    scene_variants = equip_frames.get_scenes(scene_type)
+
+    print(recipe)
+    print('_____________')
+    for scene in scene_variants:
+        print(scene)
+        print('+++++')
+    
+
 
 if __name__ == '__main__':
-    variants = CookingEquipmentSceneFrameVariants()
-
-    print(variants.variants[-1])  
+    think_through_scenarios_for_chai("Adrak Chai", SCENE_CAMPSITE)
 
