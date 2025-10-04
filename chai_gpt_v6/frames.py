@@ -158,6 +158,11 @@ class CookingEquipmentInASceneFrame:
             if not self.cooking_vessel: self.cooking_vessel = VESSEL_POT
             if not self.fuel_or_power_attachment: self.fuel_or_power_attachment = FUEL_PROPANE_CANISTER
 
+    def generate_description(self):
+        # @todo
+        pass
+
+
 @dataclass
 class Ingredient:
     """Represents an ingredient with name, amount, and unit."""
@@ -198,6 +203,11 @@ class ChaiPreparationFrame:
     stirring_tools: Optional[list[str]] = None  # Tools for mixing and stirring: spoon, ladle, whisk, etc.
     straining_tools: Optional[list[str]] = None  # Tools for filtering tea: strainer, muslin cloth, tea filter, sieve, etc.
     aerating_tools: Optional[list[str]] = None  # Tools for creating froth/aeration: whisk, deep ladle (for pulling), frother, etc.
+
+    def generate_description(self):
+        # @todo
+        pass
+
 
 
 class ChaiPreparationFrameVariants:
