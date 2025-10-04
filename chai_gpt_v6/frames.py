@@ -1,6 +1,8 @@
 from dataclasses import dataclass
 from typing import List, Set, Optional
 
+import re
+
 
 # ============================================================================
 # COOKING EQUIPMENT CONSTANTS
@@ -9,7 +11,7 @@ from typing import List, Set, Optional
 # Scene Type Constants
 SCENE_HOME = "home"
 SCENE_CAMPSITE = "campsite"
-SCENE_ANY = "any"
+SCENE_ANY = "anywhere"
 
 # Condition Constants
 CONDITION_NORMAL = "normal"
@@ -159,9 +161,64 @@ class CookingEquipmentInASceneFrame:
             if not self.fuel_or_power_attachment: self.fuel_or_power_attachment = FUEL_PROPANE_CANISTER
 
     def generate_description(self):
-        # @todo
-        pass
+        """Generate a formatted description of cooking equipment for the scene.
 
+            Casual relation will NOT be explicitly stated. E.g.
+            
+            CookingEquipmentInASceneFrame -
+                scene_type='any'
+                conditions={'normal'}
+                heat_source='gas cooktop'
+                cooking_vessel='pot with no handle'
+                cooking_vessel_handling_tools='mittens'
+                ........
+            
+            The fact about mittens being used as the pot has no handle will NOT be explictly modeled.
+            That will be left up to the LLMs to infer.
+        """
+        # Format scene type
+        scene_str = f"at {self.scene_type}" if self.scene_type else "anywhere"
+
+        # Format conditions
+        if self.conditions:
+            conditions_list = sorted(list(self.conditions))
+            conditions_str = ", ".join(conditions_list)
+        else:
+            conditions_str = "normal"
+
+        description = f"When cooking {scene_str}\n"
+        description += f"Under {conditions_str} conditions\n"
+        description += "Here are the tools and equipment that is needed -\n"
+
+        # Collect all equipment
+        equipment_list = []
+
+        if self.heat_source:
+            equipment_list.append(self.heat_source)
+        if self.cooking_vessel:
+            equipment_list.append(self.cooking_vessel)
+        if self.cooking_vessel_handling_tools:
+            equipment_list.append(self.cooking_vessel_handling_tools)
+        if self.cooking_platform:
+            equipment_list.append(self.cooking_platform)
+        if self.ignition_tool:
+            equipment_list.append(self.ignition_tool)
+        if self.fuel_or_power_attachment:
+            equipment_list.append(self.fuel_or_power_attachment)
+        if self.fuel_connectors:
+            equipment_list.append(self.fuel_connectors)
+        if self.wind_mitigation_equipment:
+            equipment_list.append(self.wind_mitigation_equipment)
+        if self.rain_mitigation_equipment:
+            equipment_list.append(self.rain_mitigation_equipment)
+        if self.lighting_equipment:
+            equipment_list.append(self.lighting_equipment)
+
+        # Add numbered list
+        for idx, equipment in enumerate(equipment_list, start=1):
+            description += f"{idx}. {equipment}\n"
+
+        return description
 
 @dataclass
 class Ingredient:
@@ -205,9 +262,63 @@ class ChaiPreparationFrame:
     aerating_tools: Optional[list[str]] = None  # Tools for creating froth/aeration: whisk, deep ladle (for pulling), frother, etc.
 
     def generate_description(self):
-        # @todo
-        pass
+        """Generate a formatted description of ingredients and tools."""
+        description = "Ingredients:\n"
 
+        ingredient_count = 1
+
+        # Helper function to add ingredients from a list
+        def add_ingredients(ingredient_list):
+            nonlocal ingredient_count
+            if ingredient_list:
+                for ing in ingredient_list:
+                    if ing.amount and ing.unit:
+                        description_line = f"{ingredient_count}. {ing.amount} {ing.unit} of {ing.name}\n"
+                    elif ing.amount:
+                        description_line = f"{ingredient_count}. {ing.amount} of {ing.name}\n"
+                    else:
+                        description_line = f"{ingredient_count}. {ing.name}\n"
+                    description_lines.append(description_line)
+                    ingredient_count += 1
+
+        description_lines = []
+
+        # Add all ingredient categories
+        add_ingredients(self.liquids)
+        add_ingredients(self.teas)
+        add_ingredients(self.sweeteners)
+        add_ingredients(self.salt)
+        add_ingredients(self.spices_ground)
+        add_ingredients(self.spices_whole)
+        add_ingredients(self.herbs)
+        add_ingredients(self.floral)
+        add_ingredients(self.citrus)
+        add_ingredients(self.process_modifiers)
+        add_ingredients(self.garnish)
+
+        description += ''.join(description_lines)
+
+        # Add tools section
+        description += "\nPreparation tools:\n"
+        tool_count = 1
+        all_tools = []
+
+        if self.crushing_tools:
+            all_tools.extend(self.crushing_tools)
+        if self.peeling_tools:
+            all_tools.extend(self.peeling_tools)
+        if self.stirring_tools:
+            all_tools.extend(self.stirring_tools)
+        if self.straining_tools:
+            all_tools.extend(self.straining_tools)
+        if self.aerating_tools:
+            all_tools.extend(self.aerating_tools)
+
+        for tool in all_tools:
+            description += f"{tool_count}. {tool}\n"
+            tool_count += 1
+
+        return description
 
 
 class ChaiPreparationFrameVariants:
@@ -288,6 +399,7 @@ class ChaiPreparationFrameVariants:
         
         raise LookupError("Invalid chai type specified!!")
 
+
 class CookingEquipmentSceneFrameVariants:
     def __init__(self) -> None:
         self.variants: List[CookingEquipmentInASceneFrame] = []
@@ -333,18 +445,34 @@ class CookingEquipmentSceneFrameVariants:
 def think_through_scenarios_for_chai(chai_type, scene_type):
     equip_frames = CookingEquipmentSceneFrameVariants()
     prep_frames = ChaiPreparationFrameVariants()
-    
     recipe = prep_frames.get_recipe(chai_type)
-    scene_variants = equip_frames.get_scenes(scene_type)
+    
+    scene_variants = []
+    scene_variants.extend(equip_frames.get_scenes(SCENE_ANY))
+    scene_variants.extend(equip_frames.get_scenes(scene_type))
 
-    print(recipe)
-    print('_____________')
-    for scene in scene_variants:
-        print(scene)
-        print('+++++')
+    sep_string = '\n' + '_' * 30 + '\n\n'
+    scene_desc_str = sep_string.join([scene.generate_description() for scene in scene_variants])
+
+    # Build a "chain of thought about the different scenarios" here....
+
+    combined_cot_str = f"""
+        Here are the things that are needed to prepare {chai_type}.
+
+        Let's start with the ingredients -
+
+        {recipe.generate_description()}
+        And here are the different cooking scenarios where preparation may occur.
+
+        {scene_desc_str}
+    """
+    combined_cot_str= '\n'.join([re.sub(r'^[\s^\n]+', '' ,line) for line in combined_cot_str.split('\n')])
+    print(combined_cot_str)
+
+    return combined_cot_str
     
 
 
 if __name__ == '__main__':
-    think_through_scenarios_for_chai("Adrak Chai", SCENE_CAMPSITE)
+    think_through_scenarios_for_chai(CHAI_MASALA, SCENE_CAMPSITE)
 
