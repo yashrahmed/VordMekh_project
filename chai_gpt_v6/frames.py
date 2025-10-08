@@ -467,6 +467,5 @@ def think_through_scenarios_for_chai(chai_type, scene_type):
         {scene_desc_str}
     """
     combined_cot_str= '\n'.join([re.sub(r'^[\s^\n]+', '' ,line) for line in combined_cot_str.split('\n')])
-    print(combined_cot_str)
 
     return combined_cot_str
