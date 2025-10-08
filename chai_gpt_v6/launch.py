@@ -22,18 +22,37 @@ llm_handle = LLMHandle
 
 def build_system_prompt():
     system_prompt = f"""
-            EMPTY system prompt
+    You are chai-gpt. An expert in chai making. Help out the user with his task.
     """
     return SystemMessage(system_prompt)
 
 
 def build_user_message(chai_type, scene, prep_details):
     user_message = f"""
-    Goal - To prepare {chai_type} at {scene}
+    I am planning to prepare {chai_type} at {scene}. 
 
-    The JSON list is as follows -
+    Here are the preparation instructions that I have received - 
+    {prep_details}
 
-    {json.dumps(prep_details, indent=2)}
+    The items therein will fall into two main groups. They are as follows.
+    - common items which are useful in almost any scenarios.
+    - Items specific to certain scenarios that the user may not have thought about.
+
+    Note that there are multiple scenarios that the the instructions cover.
+
+    Express that data in natural language with the following structure.
+
+    Required items -
+    ...
+    ...
+
+    Additonal items you may need -
+    ... scenario specific items - An explanation of where and when it may be required depending on the scenarios in which it is included.
+
+    The scenario descriptions may be quite specific. I want you to describe them in a more general tone.
+
+    Ignore the cooktops.
+
     """
     return HumanMessage(user_message)
 
@@ -79,9 +98,13 @@ def prepare():
     if prep_scene not in valid_scenes:
         return jsonify({"error": f"Scene must be one of {' or '.join(valid_scenes)}"}), 400
     
-    response = think_through_scenarios_for_chai(chai_type, prep_scene)
+    scenario_details = think_through_scenarios_for_chai(chai_type, prep_scene)
+
+    # pipe the "thought" through an LLM.
+    messages = [build_system_prompt(), build_user_message(chai_type, prep_scene, scenario_details)]
+    llm_response = llm_handle.llm.invoke(messages)
     
-    return jsonify(response, 200)
+    return jsonify(llm_response.content, 200)
 
 
 @app.route("/")
