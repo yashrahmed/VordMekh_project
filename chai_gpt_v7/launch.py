@@ -39,7 +39,7 @@ def run_recipe_parse_test():
     ⸻
 
     """
-    msg_body = f"""Extract all the relevant details from the given chai recipe.
+    msg_body = f"""Extract all the relevant details about ingredients and tools from the given chai recipe.
     {recipe}
     """
     messages = [HumanMessage(msg_body)]

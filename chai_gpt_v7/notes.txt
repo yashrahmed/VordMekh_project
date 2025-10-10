@@ -1,5 +1,7 @@
 Workflow -
 
+Try DSPY for prompt tuning for atleast one of the steps.
+
 1. User asks for recipe for a certain type of chai (single serving).
 2. LLM prompted to generate recipe with focus on tools and quantities (How do I represent alternatives to tools e.g. Using Muslin cloth and clamps in plance of a strainer?)
 3. LLM prompted to extract a chai prep frame using structured output parsing.
