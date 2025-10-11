@@ -2,8 +2,9 @@ Workflow -
 
 Try DSPY for prompt tuning for atleast one of the steps.
 
-1. User asks for recipe for a certain type of chai (single serving).
-2. LLM prompted to generate recipe with focus on tools and quantities (How do I represent alternatives to tools e.g. Using Muslin cloth and clamps in plance of a strainer?)
-3. LLM prompted to extract a chai prep frame using structured output parsing.
-4. Generate combined recipe and cooking scenario description like in V6.
-5. Have the LLM generate a tooling description.
+- User asks for recipe for a certain type of chai (single serving) and goes back and forth with the customization.
+- Using the recipe, the LLM is prompted to extract ingredients and their quantities.
+- Using the outputs of the previous two steps, the LLM is prompted to extract action-ingredient pair like crushing-ginger, grinding-spices, etc...
+- Lookup the chai prep tools frame table using the above step's output as the input.
+- Combine the results from the previous steps with the cooking scenario descriptions like in V6.
+- Have the LLM generate a tool/equipment description.

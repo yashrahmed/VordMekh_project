@@ -40,6 +40,7 @@ def run_recipe_parse_test():
 
     """
     msg_body = f"""Extract all the relevant details about ingredients and the actions that I need to take from the given chai recipe.
+    If ingredients are in a specific state like crushed or grated, consider also the actions needed to bring them into that state.
     {recipe}
     """
     messages = [HumanMessage(msg_body)]
