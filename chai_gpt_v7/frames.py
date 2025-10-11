@@ -72,7 +72,48 @@ class Ingredient(BaseModel):
     unit: Optional[str] = Field(None, description="Unit of measurement (e.g., cup, tsp, tbsp)")
 
 
-class ChaiPreparationFrame(BaseModel):
+class ChaiPrepToolingFrame(BaseModel):
+    """Frame to represent the tools needed for chai preparation actions."""
+    crushing_tools: Optional[list[str]] = Field(None, description="Tools for crushing spices: mortar and pestle, rolling pin, etc.")
+    peeling_tools: Optional[list[str]] = Field(None, description="Tools for peeling ginger, citrus: peeler, knife, spoon, etc.")
+    stirring_tools: Optional[list[str]] = Field(None, description="Tools for mixing and stirring: spoon, ladle, whisk, etc.")
+    straining_tools: Optional[list[str]] = Field(None, description="Tools for filtering tea: strainer, muslin cloth, tea filter, sieve, etc.")
+    aerating_tools: Optional[list[str]] = Field(None, description="Tools for creating froth/aeration: whisk, deep ladle (for pulling), frother, etc.")
+
+    def generate_tools_description(self) -> str:
+        """Generate a formatted description of preparation tools with their purposes."""
+        description = "Preparation tools:\n"
+        tool_count = 1
+
+        if self.crushing_tools:
+            for tool in self.crushing_tools:
+                description += f"{tool_count}. {tool} - for crushing spices\n"
+                tool_count += 1
+
+        if self.peeling_tools:
+            for tool in self.peeling_tools:
+                description += f"{tool_count}. {tool} - for peeling\n"
+                tool_count += 1
+
+        if self.stirring_tools:
+            for tool in self.stirring_tools:
+                description += f"{tool_count}. {tool} - for mixing and stirring\n"
+                tool_count += 1
+
+        if self.straining_tools:
+            for tool in self.straining_tools:
+                description += f"{tool_count}. {tool} - for filtering tea\n"
+                tool_count += 1
+
+        if self.aerating_tools:
+            for tool in self.aerating_tools:
+                description += f"{tool_count}. {tool} - for creating froth and aeration\n"
+                tool_count += 1
+
+        return description
+
+
+class ChaiPreparationIngredientsFrame(BaseModel):
     """Frame to represent the ingredients and tools for chai preparation."""
     chai_type: str = Field(..., description="The name/type of chai recipe (e.g., 'Masala Chai', 'Adrak Chai', 'Sulaimani Chai')")
 
@@ -99,15 +140,15 @@ class ChaiPreparationFrame(BaseModel):
     # Garnish
     garnish: Optional[list[Ingredient]] = Field(None, description="Toppings and finishing touches: crushed nuts, slivered almonds, spice powder, cream, etc.")
 
-    # Actions (tool mappings)
-    crushing_tools: Optional[list[str]] = Field(None, description="Tools for crushing spices: mortar and pestle, rolling pin, etc.")
-    peeling_tools: Optional[list[str]] = Field(None, description="Tools for peeling ginger, citrus: peeler, knife, spoon, etc.")
-    stirring_tools: Optional[list[str]] = Field(None, description="Tools for mixing and stirring: spoon, ladle, whisk, etc.")
-    straining_tools: Optional[list[str]] = Field(None, description="Tools for filtering tea: strainer, muslin cloth, tea filter, sieve, etc.")
-    aerating_tools: Optional[list[str]] = Field(None, description="Tools for creating froth/aeration: whisk, deep ladle (for pulling), frother, etc.")
+    # Actions (verb-noun boolean properties)
+    crush_spices: Optional[bool] = Field(None, description="Whether spices need to be crushed during preparation")
+    peel_ingredients: Optional[bool] = Field(None, description="Whether ingredients (ginger, citrus) need to be peeled")
+    stir_chai: Optional[bool] = Field(None, description="Whether chai needs to be stirred/mixed during preparation")
+    strain_chai: Optional[bool] = Field(None, description="Whether chai needs to be strained/filtered")
+    aerate_chai: Optional[bool] = Field(None, description="Whether chai needs to be aerated/frothed (e.g., by pulling)")
 
     def generate_description(self) -> str:
-        """Generate a formatted description of ingredients and tools."""
+        """Generate a formatted description of ingredients and preparation actions."""
         description = "Ingredients:\n"
 
         ingredient_count = 1
@@ -142,25 +183,5 @@ class ChaiPreparationFrame(BaseModel):
         add_ingredients(self.garnish)
 
         description += ''.join(description_lines)
-
-        # Add tools section
-        description += "\nPreparation tools:\n"
-        tool_count = 1
-        all_tools = []
-
-        if self.crushing_tools:
-            all_tools.extend(self.crushing_tools)
-        if self.peeling_tools:
-            all_tools.extend(self.peeling_tools)
-        if self.stirring_tools:
-            all_tools.extend(self.stirring_tools)
-        if self.straining_tools:
-            all_tools.extend(self.straining_tools)
-        if self.aerating_tools:
-            all_tools.extend(self.aerating_tools)
-
-        for tool in all_tools:
-            description += f"{tool_count}. {tool}\n"
-            tool_count += 1
 
         return description
