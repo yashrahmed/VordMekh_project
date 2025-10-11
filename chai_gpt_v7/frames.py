@@ -113,7 +113,7 @@ class ChaiPrepToolingFrame(BaseModel):
         return description
 
 
-class ChaiPreparationIngredientsFrame(BaseModel):
+class ChaiPreparationIngredientsActionsFrame(BaseModel):
     """Frame to represent the ingredients and tools for chai preparation."""
     chai_type: str = Field(..., description="The name/type of chai recipe (e.g., 'Masala Chai', 'Adrak Chai', 'Sulaimani Chai')")
 
@@ -185,3 +185,153 @@ class ChaiPreparationIngredientsFrame(BaseModel):
         description += ''.join(description_lines)
 
         return description
+
+
+class ChaiPreparationIngredientsActionsFrameVariants:
+    """Collection of chai recipe variants using ChaiPreparationIngredientsActionsFrame."""
+
+    def __init__(self) -> None:
+        self.variants: list[ChaiPreparationIngredientsActionsFrame] = []
+        self.init_recipes()
+
+    def init_recipes(self) -> None:
+        # Masala Chai
+        self.variants.append(ChaiPreparationIngredientsActionsFrame(
+            chai_type=CHAI_MASALA,
+            liquids=[
+                Ingredient(name=LIQUID_WATER, amount=0.75, unit="cup"),
+                Ingredient(name=LIQUID_WHOLE_MILK, amount=0.5, unit="cup")
+            ],
+            teas=[Ingredient(name=TEA_LOOSE_BLACK, amount=1, unit="tsp")],
+            sweeteners=[Ingredient(name=SWEETENER_JAGGERY_OR_SUGAR, amount=1, unit="tsp")],
+            salt=None,
+            spices_ground=[
+                Ingredient(name=SPICE_GROUND_GINGER, amount=0.5, unit="tsp"),
+                Ingredient(name=SPICE_GROUND_CINNAMON, amount=0.25, unit="tsp")
+            ],
+            spices_whole=[
+                Ingredient(name=SPICE_WHOLE_CARDAMOM, amount=3, unit="pods"),
+                Ingredient(name=SPICE_WHOLE_CLOVES, amount=2, unit="cloves"),
+                Ingredient(name=SPICE_WHOLE_PEPPERCORNS, amount=2, unit="peppercorns"),
+                Ingredient(name=SPICE_WHOLE_FENNEL, amount=0.25, unit="tsp")
+            ],
+            herbs=None,
+            floral=None,
+            citrus=None,
+            process_modifiers=None,
+            garnish=None,
+            crush_spices=True,
+            peel_ingredients=True,
+            stir_chai=None,
+            strain_chai=True,
+            aerate_chai=None
+        ))
+
+        # Adrak Chai
+        self.variants.append(ChaiPreparationIngredientsActionsFrame(
+            chai_type=CHAI_ADRAK,
+            liquids=[
+                Ingredient(name=LIQUID_WATER, amount=0.75, unit="cup"),
+                Ingredient(name=LIQUID_WHOLE_MILK, amount=0.5, unit="cup")
+            ],
+            teas=[Ingredient(name=TEA_LOOSE_BLACK, amount=1.5, unit="tsp")],
+            sweeteners=[Ingredient(name=SWEETENER_JAGGERY_OR_SUGAR, amount=1, unit="tsp")],
+            salt=None,
+            spices_ground=[Ingredient(name=SPICE_GROUND_GINGER, amount=3, unit="tsp")],
+            spices_whole=None,
+            herbs=None,
+            floral=None,
+            citrus=None,
+            process_modifiers=None,
+            garnish=None,
+            crush_spices=True,
+            peel_ingredients=True,
+            stir_chai=None,
+            strain_chai=True,
+            aerate_chai=None
+        ))
+
+        # Sulaimani Chai
+        self.variants.append(ChaiPreparationIngredientsActionsFrame(
+            chai_type=CHAI_SULAIMANI,
+            liquids=[Ingredient(name=LIQUID_WATER, amount=1, unit="cup")],
+            teas=[Ingredient(name=TEA_LOOSE_BLACK, amount=1, unit="tsp")],
+            sweeteners=[Ingredient(name=SWEETENER_HONEY_OR_JAGGERY, amount=1, unit="tsp")],
+            salt=None,
+            spices_ground=None,
+            spices_whole=[
+                Ingredient(name=SPICE_WHOLE_CLOVES, amount=2, unit="cloves"),
+                Ingredient(name=SPICE_WHOLE_CARDAMOM, amount=1, unit="pods"),
+                Ingredient(name=SPICE_WHOLE_SAFFRON, amount=5, unit="threads")
+            ],
+            herbs=[Ingredient(name=HERB_MINT, amount=3, unit="leaves")],
+            floral=None,
+            citrus=[Ingredient(name=CITRUS_LEMON_JUICE, amount=1, unit="tsp")],
+            process_modifiers=None,
+            garnish=None,
+            crush_spices=None,
+            peel_ingredients=None,
+            stir_chai=None,
+            strain_chai=True,
+            aerate_chai=None
+        ))
+
+        # Kashmiri Chai
+        self.variants.append(ChaiPreparationIngredientsActionsFrame(
+            chai_type=CHAI_KASHMIRI,
+            liquids=[
+                Ingredient(name=LIQUID_WATER, amount=1.5, unit="cup"),
+                Ingredient(name=LIQUID_WHOLE_MILK, amount=0.75, unit="cup")
+            ],
+            teas=[Ingredient(name=TEA_KASHMIRI_GREEN, amount=1, unit="tsp")],
+            sweeteners=None,
+            salt=[Ingredient(name=SALT, amount=0.5, unit="tsp")],
+            spices_ground=None,
+            spices_whole=[Ingredient(name=SPICE_WHOLE_CARDAMOM, amount=1, unit="pods")],
+            herbs=None,
+            floral=None,
+            citrus=None,
+            process_modifiers=[
+                Ingredient(name=PROCESS_BAKING_SODA, amount=0.125, unit="tsp"),
+                Ingredient(name=PROCESS_ICE, amount=0.5, unit="cup")
+            ],
+            garnish=[Ingredient(name=GARNISH_CRUSHED_NUTS, amount=0.5, unit="tbsp")],
+            crush_spices=None,
+            peel_ingredients=None,
+            stir_chai=None,
+            strain_chai=True,
+            aerate_chai=True
+        ))
+
+        # Kahwah
+        self.variants.append(ChaiPreparationIngredientsActionsFrame(
+            chai_type=CHAI_KAHWAH,
+            liquids=[Ingredient(name=LIQUID_WATER, amount=1, unit="cup")],
+            teas=[Ingredient(name=TEA_GREEN, amount=0.5, unit="tsp")],
+            sweeteners=[Ingredient(name=SWEETENER_HONEY_OR_SUGAR, amount=1, unit="tsp")],
+            salt=None,
+            spices_ground=[Ingredient(name=SPICE_GROUND_CINNAMON, amount=0.125, unit="tsp")],
+            spices_whole=[
+                Ingredient(name=SPICE_WHOLE_CARDAMOM, amount=1, unit="pods"),
+                Ingredient(name=SPICE_WHOLE_SAFFRON, amount=5, unit="threads")
+            ],
+            herbs=None,
+            floral=[Ingredient(name=FLORAL_ROSE_PETALS, amount=0.5, unit="tsp")],
+            citrus=None,
+            process_modifiers=None,
+            garnish=[Ingredient(name=GARNISH_ALMONDS, amount=0.5, unit="tbsp")],
+            crush_spices=None,
+            peel_ingredients=None,
+            stir_chai=None,
+            strain_chai=True,
+            aerate_chai=None
+        ))
+
+    def get_recipe(self, chai_type: str) -> ChaiPreparationIngredientsActionsFrame:
+        """Get a recipe by chai type."""
+        for frame in self.variants:
+            if frame.chai_type == chai_type:
+                return frame
+
+        raise LookupError(f"Invalid chai type specified: {chai_type}")
+
