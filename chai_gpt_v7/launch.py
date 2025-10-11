@@ -4,7 +4,7 @@ from langchain_core.language_models.chat_models import BaseChatModel
 from bot_utils.tools import set_open_api_key, setup_openai_model
 from dataclasses import dataclass
 
-from .frames import ChaiPreparationFrame
+from .frames import ChaiPreparationIngredientsActionsFrame
 
 @dataclass
 class LLMHandle:
@@ -39,11 +39,11 @@ def run_recipe_parse_test():
     ⸻
 
     """
-    msg_body = f"""Extract all the relevant details about ingredients and tools from the given chai recipe.
+    msg_body = f"""Extract all the relevant details about ingredients and the actions that I need to take from the given chai recipe.
     {recipe}
     """
     messages = [HumanMessage(msg_body)]
-    parser_llm = llm_handle.llm.with_structured_output(ChaiPreparationFrame)
+    parser_llm = llm_handle.llm.with_structured_output(ChaiPreparationIngredientsActionsFrame)
     frame = parser_llm.invoke(messages)
     print(frame)
     print('__________')

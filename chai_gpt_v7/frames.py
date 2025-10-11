@@ -141,8 +141,10 @@ class ChaiPreparationIngredientsActionsFrame(BaseModel):
     garnish: Optional[list[Ingredient]] = Field(None, description="Toppings and finishing touches: crushed nuts, slivered almonds, spice powder, cream, etc.")
 
     # Actions (verb-noun boolean properties)
-    crush_spices: Optional[bool] = Field(None, description="Whether spices need to be crushed during preparation")
+    crush_spices: Optional[bool] = Field(None, description="Whether any ingredients need to be crushed during preparation")
+    grind_spices: Optional[bool] = Field(None, description="Whether any ingredients need to be ground into powder")
     peel_ingredients: Optional[bool] = Field(None, description="Whether ingredients (ginger, citrus) need to be peeled")
+    slice_ingredients: Optional[bool] = Field(None, description="Whether ingredients (ginger, citrus) need to be sliced")
     stir_chai: Optional[bool] = Field(None, description="Whether chai needs to be stirred/mixed during preparation")
     strain_chai: Optional[bool] = Field(None, description="Whether chai needs to be strained/filtered")
     aerate_chai: Optional[bool] = Field(None, description="Whether chai needs to be aerated/frothed (e.g., by pulling)")
@@ -184,6 +186,30 @@ class ChaiPreparationIngredientsActionsFrame(BaseModel):
 
         description += ''.join(description_lines)
 
+        # Add preparation actions section
+        description += "\nPreparation actions:\n"
+        action_count = 1
+        actions = []
+
+        if self.crush_spices:
+            actions.append("Crush spices")
+        if self.grind_spices:
+            actions.append("Grind spices")
+        if self.peel_ingredients:
+            actions.append("Peel ingredients (ginger, citrus, etc.)")
+        if self.slice_ingredients:
+            actions.append("Slice ingredients (ginger, citrus, etc.)")
+        if self.stir_chai:
+            actions.append("Stir chai during preparation")
+        if self.strain_chai:
+            actions.append("Strain chai before serving")
+        if self.aerate_chai:
+            actions.append("Aerate chai (pull/froth)")
+
+        for action in actions:
+            description += f"{action_count}. {action}\n"
+            action_count += 1
+
         return description
 
 
@@ -221,7 +247,9 @@ class ChaiPreparationIngredientsActionsFrameVariants:
             process_modifiers=None,
             garnish=None,
             crush_spices=True,
+            grind_spices=None,
             peel_ingredients=True,
+            slice_ingredients=None,
             stir_chai=None,
             strain_chai=True,
             aerate_chai=None
@@ -245,7 +273,9 @@ class ChaiPreparationIngredientsActionsFrameVariants:
             process_modifiers=None,
             garnish=None,
             crush_spices=True,
+            grind_spices=None,
             peel_ingredients=True,
+            slice_ingredients=None,
             stir_chai=None,
             strain_chai=True,
             aerate_chai=None
@@ -270,7 +300,9 @@ class ChaiPreparationIngredientsActionsFrameVariants:
             process_modifiers=None,
             garnish=None,
             crush_spices=None,
+            grind_spices=None,
             peel_ingredients=None,
+            slice_ingredients=None,
             stir_chai=None,
             strain_chai=True,
             aerate_chai=None
@@ -297,7 +329,9 @@ class ChaiPreparationIngredientsActionsFrameVariants:
             ],
             garnish=[Ingredient(name=GARNISH_CRUSHED_NUTS, amount=0.5, unit="tbsp")],
             crush_spices=None,
+            grind_spices=None,
             peel_ingredients=None,
+            slice_ingredients=None,
             stir_chai=None,
             strain_chai=True,
             aerate_chai=True
@@ -321,7 +355,9 @@ class ChaiPreparationIngredientsActionsFrameVariants:
             process_modifiers=None,
             garnish=[Ingredient(name=GARNISH_ALMONDS, amount=0.5, unit="tbsp")],
             crush_spices=None,
+            grind_spices=None,
             peel_ingredients=None,
+            slice_ingredients=None,
             stir_chai=None,
             strain_chai=True,
             aerate_chai=None
