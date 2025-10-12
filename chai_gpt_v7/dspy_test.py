@@ -33,6 +33,7 @@ def llm_predict_test():
     response = predict(car="Lamborghini Murciélago")
     print('___________________')
     print(response)
+    print(dspy.inspect_history())
 
 
 def main():
