@@ -64,24 +64,24 @@ def set_google_api_key(config_file_name = "keys-config.yml"):
     return set_api_key(GOOGLE_API_KEY_NAME, config_file_name)
 
 
-def setup_google_model(model_name="gemini-2.5-flash", model_provider="google_genai"):
+def setup_google_model(model_name="gemini-2.5-flash", model_provider="google_genai", **config):
     """
     Sets the api key as an env variable and then
     Initializes a langchain anthropic chat model
     """
     if not os.environ.get(GOOGLE_API_KEY_NAME, "").strip():
         return ValueError(f"Set the API Key `{GOOGLE_API_KEY_NAME}` for Google Gemini API in as an environment variable to use the chat bot."), None
-    return None, init_chat_model(model_name, model_provider=model_provider)
+    return None, init_chat_model(model_name, model_provider=model_provider, **config)
 
 
-def setup_openai_model(model_name="gpt-5-mini-2025-08-07", model_provider="openai"):
+def setup_openai_model(model_name="gpt-5-mini-2025-08-07", model_provider="openai", **config):
     """
     Sets the api key as an env variable and then
     Initializes a langchain anthropic chat model
     """
     if not os.environ.get(OPENAI_API_KEY_NAME, "").strip():
         return ValueError(f"Set the API Key `{OPENAI_API_KEY_NAME}` for OpenAI API in as an environment variable to use the chat bot."), None
-    return None, init_chat_model(model_name, model_provider=model_provider)
+    return None, init_chat_model(model_name, model_provider=model_provider, **config)
 
 
 class SimpleChatBot:

@@ -41,7 +41,7 @@ def run_recipe_parse_test():
     """
     messages = [HumanMessage(msg_body)]
     parser_llm = llm_handle.llm.with_structured_output(ChaiPreparationIngredientsActionsFrame)
-    frame = parser_llm.invoke(messages, reasoning={ "effort": "low" })
+    frame = parser_llm.invoke(messages)
 
     print(frame)
     print('__________')
@@ -50,6 +50,6 @@ def run_recipe_parse_test():
 
 if __name__ == "__main__":
     key_err = set_open_api_key(config_file_name="keys-config.yml")
-    err, llm = setup_openai_model(model_name="gpt-5")
+    err, llm = setup_openai_model(model_name="gpt-5", reasoning={ "effort": "low" })
     llm_handle.llm = llm
     run_recipe_parse_test()
