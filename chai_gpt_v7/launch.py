@@ -14,22 +14,26 @@ llm_handle = LLMHandle
 
 def run_recipe_parse_test():
     recipe = """
-    Ingredients (for 2 small “cutting” glasses)
-	•	¾ cup water
-	•	¾ cup full-fat milk
-	•	2 teaspoons loose black tea (Assam or strong CTC)
-	•	2 teaspoons sugar (adjust to taste)
-	•	1 small piece fresh ginger, crushed
-	•	2–3 green cardamom pods, lightly crushed
-	•	1 small clove (optional)
+    Ingredients
+        •	1 cup water
+        •	½ teaspoon Kashmiri green tea leaves (or other mild green tea)
+        •	2 green cardamom pods, lightly crushed
+        •	1 small pinch of saffron (2–3 strands)
+        •	2–3 almond slices (or 1 almond, blanched and slivered)
+        •	½ inch piece of cinnamon stick
+        •	1 clove (optional)
+        •	½ teaspoon honey or sugar (to taste)
+
+    ⸻
 
     Steps
-        1.	In a saucepan, bring the water, ginger, cardamom, and clove to a simmer.
-        2.	Add the tea leaves and boil for 30–40 seconds so the color deepens and aroma rises.
-        3.	Pour in the milk and sugar; keep stirring to prevent boil-over.
-        4.	Let the mixture come up to a full rolling boil once, then reduce heat and simmer another minute.
-        5.	“Pull” the chai a couple of times by pouring between two pots to aerate and develop froth (classic street-style).
-        6.	Strain into small glasses and serve piping hot.
+        1.	In a small saucepan, combine water, cardamom, cinnamon, clove, and saffron.
+    Bring to a gentle boil, then simmer for about 2 minutes to release the aromas.
+        2.	Turn off the heat, add green tea leaves, and steep for 1–2 minutes.
+    Avoid boiling after adding tea—it should stay clear and fragrant.
+        3.	Strain the tea into a cup.
+        4.	Add sliced almonds and sweeten with honey or sugar.
+    Stir lightly and serve hot.
 
     """
     msg_body = f"""
@@ -37,7 +41,8 @@ def run_recipe_parse_test():
     """
     messages = [HumanMessage(msg_body)]
     parser_llm = llm_handle.llm.with_structured_output(ChaiPreparationIngredientsActionsFrame)
-    frame = parser_llm.invoke(messages)
+    frame = parser_llm.invoke(messages, reasoning={ "effort": "low" })
+
     print(frame)
     print('__________')
     print(frame.generate_description())
