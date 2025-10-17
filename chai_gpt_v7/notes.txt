@@ -15,3 +15,10 @@ Tools and Libraries -
 2. Langgraph.
 3. DSPy.
 4.....Something from prompt caching.......
+
+
+Refining action extraction -
+1. Take a few recipes.
+2. Research them.
+3. Manually annotate them with action ingredient pairs.
+4. ...Will this become a dataset for dspy? Maybe......

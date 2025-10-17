@@ -14,33 +14,25 @@ llm_handle = LLMHandle
 
 def run_recipe_parse_test():
     recipe = """
-    Here’s one version of a single-serving recipe for Yemeni / Adeni chai (often called “Adeni Chai” or “Chai Adani”) based on sources:
-
-    ⸻
-
-    Ingredients (for 1 cup / serving)
-        •	¾ cup milk (or combination of water + milk)  ￼
-        •	¾ cup water  ￼
-        •	1 teaspoon loose black tea  ￼
-        •	1 rolled cinnamon stick (broken)  ￼
-        •	3 green cardamom pods (slightly crushed / peeled)  ￼
-        •	5 cloves  ￼
-        •	¼ teaspoon ground ginger (optional)  ￼
-        •	Sugar (to taste)  ￼
-
-    ⸻
+    Ingredients (for 2 small “cutting” glasses)
+	•	¾ cup water
+	•	¾ cup full-fat milk
+	•	2 teaspoons loose black tea (Assam or strong CTC)
+	•	2 teaspoons sugar (adjust to taste)
+	•	1 small piece fresh ginger, crushed
+	•	2–3 green cardamom pods, lightly crushed
+	•	1 small clove (optional)
 
     Steps
-        1.	In a small saucepan, combine milk + water, along with cinnamon, cardamom pods, cloves, ground ginger. Cover and heat over medium flame.  ￼
-        2.	When the mixture is nearly boiling, add sugar and tea leaves. Stir, watching carefully to avoid boil-over.  ￼
-        3.	Let it come to a brief boil for about a minute.  ￼
-        4.	Turn off the heat. Strain into a cup, removing spices and leaves.  ￼
-
-    ⸻
+        1.	In a saucepan, bring the water, ginger, cardamom, and clove to a simmer.
+        2.	Add the tea leaves and boil for 30–40 seconds so the color deepens and aroma rises.
+        3.	Pour in the milk and sugar; keep stirring to prevent boil-over.
+        4.	Let the mixture come up to a full rolling boil once, then reduce heat and simmer another minute.
+        5.	“Pull” the chai a couple of times by pouring between two pots to aerate and develop froth (classic street-style).
+        6.	Strain into small glasses and serve piping hot.
 
     """
-    msg_body = f"""Extract all the relevant details about ingredients and the actions that I need to take from the given chai recipe.
-    If ingredients are in a specific state like crushed or grated, consider also the actions needed to bring them into that state.
+    msg_body = f"""
     {recipe}
     """
     messages = [HumanMessage(msg_body)]
