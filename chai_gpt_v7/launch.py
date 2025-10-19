@@ -36,14 +36,20 @@ def run_recipe_parse_test():
     Stir lightly and serve hot.
 
     """
-    recipe = get_recipe_step(llm_handle.llm, "Give me the recipe for a serving of Kashmiri chai. Make it on the sweeter side and use sliced almonds!")
-    print(recipe)
-    print('___________')
-    frame = parse_recipe_step(llm_handle.llm, recipe)
+    recipe = get_recipe_step(llm_handle.llm, "Give me the recipe for a serving of Kashmiri chai. Make it on the sweeter side")
+    # recipe = get_recipe_step(llm_handle.llm, "How do I change my car tyre?")
 
-    print(frame)
-    print('__________')
-    print(frame.generate_description())
+    print(recipe.is_valid)
+    print(recipe.recipe_text)
+    print('___________')
+    if recipe.is_valid:
+        frame = parse_recipe_step(llm_handle.llm, recipe.recipe_text)
+
+        print(frame)
+        print('__________')
+        print(frame.generate_description())
+    else:
+        print("Invalid request.....")
 
 
 if __name__ == "__main__":

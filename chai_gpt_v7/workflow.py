@@ -1,10 +1,17 @@
 from langchain_core.messages import HumanMessage, AIMessage, SystemMessage
 from langchain_core.language_models.chat_models import BaseChatModel
 
-from .frames import ChaiPreparationIngredientsActionsFrame as CPIAF, ChaiPrepToolingFrame as CPF, CookingEquipmentInASceneFrame as CESF
+from .frames import (
+    ChaiPreparationIngredientsActionsFrame as CPIAF,
+    ChaiPrepToolingFrame as CPF,
+    CookingEquipmentInASceneFrame as CESF,
+    ChaiRecipe,
+)
 from typing import List
 
-def get_recipe_step(llm: BaseChatModel, user_request: str) -> str:
+
+
+def get_recipe_step(llm: BaseChatModel, user_request: str) -> ChaiRecipe:
     "User asks for recipe for a certain type of chai (single serving) and goes back and forth with the customization."
     messages= [AIMessage(f"""As an expert chai chef, help me find a recipe that is customized to my needs. 
         - The recipe must be structured as follows - 
@@ -17,12 +24,13 @@ def get_recipe_step(llm: BaseChatModel, user_request: str) -> str:
         
         - Output only the recipe.
         - No follow up questions.
-                        
+        - Do NOT respond if the user's request has nothing to do with a chai recipe. 
     Here is my request -
     {user_request}
-    """)]
+    """)] 
     messages.append(HumanMessage(user_request))
-    return llm.invoke(messages).content
+    parser_llm = llm.with_structured_output(ChaiRecipe)
+    return parser_llm.invoke(messages)
 
 def parse_recipe_step(llm: BaseChatModel, recipe_text: str) -> CPIAF:
     "Using the recipe, the LLM is prompted to extract ingredients, their quantities and actions like crushing, grating, stirring, aerating etc."

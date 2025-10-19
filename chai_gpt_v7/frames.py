@@ -123,6 +123,18 @@ TOOL_PEELER = "Peeler"
 TOOL_STRAINER = "Strainer"
 TOOL_WHISK_LADLE = "Whisk or Deep Ladle"
 
+# ============================================================================
+# HELPER CLASSES
+# ============================================================================
+
+class ChaiRecipe(BaseModel):
+    """Class to represent an LLMs response to a request for chai recipe"""
+    recipe_text: Optional[str] = Field(None, description="The raw text of the recipe")
+    is_valid: bool = Field(True, description="A boolean flag set to indicate if the response is valid. Flag is set to false if the system failed or used asked for a request that was unrelated to a chai recipe.")
+
+# ============================================================================
+# CHAI PREPARATION AND SCENARIO FRAMES
+# ============================================================================
 
 class CookingEquipmentInASceneFrame(BaseModel):
     """Frame to represent the *required* equipment for cooking."""
@@ -279,6 +291,10 @@ class ChaiPreparationIngredientsActionsFrame(BaseModel):
         None,
         description="True if grating is instructed OR if an ingredient is listed as 'grated'."
     )
+    chop_ingredients: Optional[bool] = Field(
+        None,
+        description="True if chopping is instructed OR if an ingredient is listed as 'chopped'."
+    )
     stir_chai: Optional[bool] = Field(
         None,
         description="True if the steps instruct stirring/mixing during cooking."
@@ -316,6 +332,8 @@ class ChaiPreparationIngredientsActionsFrame(BaseModel):
             actions.append("Grind spices")
         if self.peel_ingredients:
             actions.append("Peel ingredients (ginger, citrus, etc.)")
+        if self.chop_ingredients:
+            actions.append("Chop ingredients")
         if self.slice_ingredients:
             actions.append("Slice ingredients (ginger, citrus, etc.)")
         if self.grate_ingredients:
