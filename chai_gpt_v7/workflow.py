@@ -6,11 +6,30 @@ from typing import List
 
 def get_recipe_step(llm: BaseChatModel, user_request: str) -> str:
     "User asks for recipe for a certain type of chai (single serving) and goes back and forth with the customization."
-    return ""
+    messages= [AIMessage(f"""As an expert chai chef, help me find a recipe that is customized to my needs. 
+        - The recipe must be structured as follows - 
+            Ingredients:
+                1.
+                2. .... ingredients and their quantities.
+            Stpes:
+                1. 
+                2. .... preparation steps
+        
+        - Output only the recipe.
+        - No follow up questions.
+                        
+    Here is my request -
+    {user_request}
+    """)]
+    messages.append(HumanMessage(user_request))
+    return llm.invoke(messages).content
 
-def parse_recipe_step(llm: BaseChatModel, user_request: str) -> CPIAF:
+def parse_recipe_step(llm: BaseChatModel, recipe_text: str) -> CPIAF:
     "Using the recipe, the LLM is prompted to extract ingredients, their quantities and actions like crushing, grating, stirring, aerating etc."
-    return CPIAF()
+    msg_body = f"""{recipe_text}"""
+    messages = [HumanMessage(msg_body)]
+    parser_llm = llm.with_structured_output(CPIAF)
+    return parser_llm.invoke(messages)
 
 def infer_chai_prep_tools_step(ingredient_prep_frame: CPIAF) -> CPF:
     "Lookup the chai prep tools frame table using the above step's output as the input."
