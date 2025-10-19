@@ -52,7 +52,7 @@ if __name__ == "__main__":
     from time import time
     key_err = set_open_api_key(config_file_name="keys-config.yml")
     start_ts = time()
-    err, llm = setup_openai_model(model_name="gpt-5", reasoning={ "effort": "low" })
+    err, llm = setup_openai_model(model_name="gpt-5-chat-latest")
     llm_handle.llm = llm
     run_recipe_parse_test()
     end_ts = time()
