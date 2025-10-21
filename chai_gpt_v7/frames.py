@@ -118,19 +118,23 @@ GARNISH_CRUSHED_NUTS = "Crushed Nuts"
 GARNISH_ALMONDS = "Slivered Almonds"
 
 # Chai Preparation Tool Constants
-TOOL_MORTAR_PESTLE = "Mortar and Pestle"
-TOOL_PEELER = "Peeler"
-TOOL_STRAINER = "Strainer"
-TOOL_WHISK_LADLE = "Whisk or Deep Ladle"
-
-# ============================================================================
-# HELPER CLASSES
-# ============================================================================
-
-class ChaiRecipe(BaseModel):
-    """Class to represent an LLMs response to a request for chai recipe"""
-    recipe_text: Optional[str] = Field(None, description="The raw text of the recipe")
-    is_valid: bool = Field(True, description="A boolean flag set to indicate if the response is valid. Flag is set to false if the system failed or used asked for a request that was unrelated to a chai recipe.")
+TOOL_MORTAR_PESTLE = "mortar and pestle"
+TOOL_ROLLING_PIN = "rolling pin"
+TOOL_SPICE_GRINDER = "spice grinder"
+TOOL_COFFEE_GRINDER = "coffee grinder"
+TOOL_PEELER = "peeler"
+TOOL_PARING_KNIFE = "paring knife"
+TOOL_KNIFE = "knife"
+TOOL_MANDOLINE = "mandoline slicer"
+TOOL_GRATER = "grater"
+TOOL_MICROPLANE = "microplane"
+TOOL_CHEFS_KNIFE = "chef's knife"
+TOOL_CLEAVER = "small cleaver"
+TOOL_SPOON = "spoon"
+TOOL_LADLE = "ladle"
+TOOL_STRAINER = "strainer"
+TOOL_MUSLIN_CLOTH = "muslin cloth"
+TOOL_FROTHER = "frother"
 
 # ============================================================================
 # CHAI PREPARATION AND SCENARIO FRAMES
@@ -353,40 +357,46 @@ class ChaiPreparationIngredientsActionsFrame(BaseModel):
 class ChaiPrepToolingFrame(BaseModel):
     """Frame to represent the tools needed for chai preparation actions."""
     crushing_tools: Optional[list[str]] = Field(None, description="Tools for crushing spices: mortar and pestle, rolling pin, etc.")
+    slicing_tools: Optional[list[str]] = Field(None, description="Tools for slicing ingredients.")
     peeling_tools: Optional[list[str]] = Field(None, description="Tools for peeling ginger, citrus: peeler, knife, spoon, etc.")
     stirring_tools: Optional[list[str]] = Field(None, description="Tools for mixing and stirring: spoon, ladle, whisk, etc.")
     straining_tools: Optional[list[str]] = Field(None, description="Tools for filtering tea: strainer, muslin cloth, tea filter, sieve, etc.")
     aerating_tools: Optional[list[str]] = Field(None, description="Tools for creating froth/aeration: whisk, deep ladle (for pulling), frother, etc.")
 
-    def generate_tools_description(self) -> str:
+    def generate_description(self) -> str:
         """Generate a formatted description of preparation tools with their purposes."""
         description = "Preparation tools:\n"
         tool_count = 1
 
         if self.crushing_tools:
-            for tool in self.crushing_tools:
-                description += f"{tool_count}. {tool} - for crushing spices\n"
-                tool_count += 1
+            tools_str = " or ".join(self.crushing_tools)
+            description += f"{tool_count}. {tools_str} - for crushing spices\n"
+            tool_count += 1
+
+        if self.slicing_tools:
+            tools_str = " or ".join(self.slicing_tools)
+            description += f"{tool_count}. {tools_str} - for slicing ingredients\n"
+            tool_count += 1
 
         if self.peeling_tools:
-            for tool in self.peeling_tools:
-                description += f"{tool_count}. {tool} - for peeling\n"
-                tool_count += 1
+            tools_str = " or ".join(self.peeling_tools)
+            description += f"{tool_count}. {tools_str} - for peeling\n"
+            tool_count += 1
 
         if self.stirring_tools:
-            for tool in self.stirring_tools:
-                description += f"{tool_count}. {tool} - for mixing and stirring\n"
-                tool_count += 1
+            tools_str = " or ".join(self.stirring_tools)
+            description += f"{tool_count}. {tools_str} - for mixing and stirring\n"
+            tool_count += 1
 
         if self.straining_tools:
-            for tool in self.straining_tools:
-                description += f"{tool_count}. {tool} - for filtering tea\n"
-                tool_count += 1
+            tools_str = " or ".join(self.straining_tools)
+            description += f"{tool_count}. {tools_str} - for filtering tea\n"
+            tool_count += 1
 
         if self.aerating_tools:
-            for tool in self.aerating_tools:
-                description += f"{tool_count}. {tool} - for creating froth and aeration\n"
-                tool_count += 1
+            tools_str = " or ".join(self.aerating_tools)
+            description += f"{tool_count}. {tools_str} - for creating froth and aeration\n"
+            tool_count += 1
 
         return description
    
@@ -499,3 +509,51 @@ class CookingEquipmentSceneFrameVariants:
 
         return result
 
+# ============================================================================
+# HELPER CLASSES AND FUNCTIONS
+# ============================================================================
+
+class ChaiRecipe(BaseModel):
+    """Class to represent an LLMs response to a request for chai recipe"""
+    recipe_text: Optional[str] = Field(None, description="The raw text of the recipe")
+    is_valid: bool = Field(True, description="A boolean flag set to indicate if the response is valid. Flag is set to false if the system failed or used asked for a request that was unrelated to a chai recipe.")
+
+def generate_chai_tooling(frame: ChaiPreparationIngredientsActionsFrame) -> ChaiPrepToolingFrame:
+    """Generate a ChaiPrepToolingFrame instance with tool lists based on the detected actions."""
+
+    # Mapping from actions → tools
+    action_to_tools = {
+        "crush_spices": [TOOL_MORTAR_PESTLE, TOOL_ROLLING_PIN],
+        "grind_spices": [TOOL_SPICE_GRINDER, TOOL_COFFEE_GRINDER],
+        "peel_ingredients": [TOOL_PEELER, TOOL_PARING_KNIFE],
+        "slice_ingredients": [TOOL_KNIFE, TOOL_MANDOLINE],
+        "grate_ingredients": [TOOL_GRATER, TOOL_MICROPLANE],
+        "chop_ingredients": [TOOL_CHEFS_KNIFE, TOOL_CLEAVER],
+        "stir_chai": [TOOL_SPOON, TOOL_LADLE],
+        "strain_chai": [TOOL_STRAINER, TOOL_MUSLIN_CLOTH],
+        "aerate_chai": [TOOL_LADLE, TOOL_FROTHER]
+    }
+
+    # Initialize frame fields
+    tooling = ChaiPrepToolingFrame()
+
+    # Assign tool lists based on which actions are true
+    if getattr(frame, "crush_spices", False):
+        tooling.crushing_tools = action_to_tools["crush_spices"]
+
+    if getattr(frame, "slice_ingredients", False) or getattr(frame, "chop_ingredients", False):
+        tooling.slicing_tools = action_to_tools["slice_ingredients"]
+
+    if getattr(frame, "peel_ingredients", False):
+        tooling.peeling_tools = action_to_tools["peel_ingredients"]
+
+    if getattr(frame, "stir_chai", False):
+        tooling.stirring_tools = action_to_tools["stir_chai"]
+
+    if getattr(frame, "strain_chai", False):
+        tooling.straining_tools = action_to_tools["strain_chai"]
+
+    if getattr(frame, "aerate_chai", False):
+        tooling.aerating_tools = action_to_tools["aerate_chai"]
+
+    return tooling

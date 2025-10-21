@@ -6,6 +6,7 @@ from .frames import (
     ChaiPrepToolingFrame as CPF,
     CookingEquipmentInASceneFrame as CESF,
     ChaiRecipe,
+    generate_chai_tooling
 )
 from typing import List
 
@@ -41,7 +42,7 @@ def parse_recipe_step(llm: BaseChatModel, recipe_text: str) -> CPIAF:
 
 def infer_chai_prep_tools_step(ingredient_prep_frame: CPIAF) -> CPF:
     "Lookup the chai prep tools frame table using the above step's output as the input."
-    return CPF()
+    return generate_chai_tooling(ingredient_prep_frame)
 
 def generate_full_scene_descriptor_step(ingredient_prep_frame: CPIAF, tooling_prep_frame: CPF, scenario_frames: List[CESF]):
     "Combine the results from the previous steps with the cooking scenario descriptions like in V6."

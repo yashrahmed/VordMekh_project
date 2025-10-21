@@ -4,7 +4,7 @@ from langchain_core.language_models.chat_models import BaseChatModel
 from bot_utils.tools import set_open_api_key, setup_openai_model
 from dataclasses import dataclass
 
-from .workflow import parse_recipe_step, get_recipe_step
+from .workflow import parse_recipe_step, get_recipe_step, infer_chai_prep_tools_step
 
 @dataclass
 class LLMHandle:
@@ -44,10 +44,16 @@ def run_recipe_parse_test():
     print('___________')
     if recipe.is_valid:
         frame = parse_recipe_step(llm_handle.llm, recipe.recipe_text)
-
+        print('################')
         print(frame)
         print('__________')
         print(frame.generate_description())
+        print('################')
+        chai_tool_frame = infer_chai_prep_tools_step(frame)
+        print(chai_tool_frame)
+        print('__________')
+        print(chai_tool_frame.generate_description())
+
     else:
         print("Invalid request.....")
 
