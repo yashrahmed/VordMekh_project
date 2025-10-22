@@ -557,3 +557,9 @@ def generate_chai_tooling(frame: ChaiPreparationIngredientsActionsFrame) -> Chai
         tooling.aerating_tools = action_to_tools["aerate_chai"]
 
     return tooling
+
+# ============================================================================
+# INSTANTIATED VARIANTS
+# ============================================================================
+
+SCENE_FRAMES_VARIANTS = CookingEquipmentSceneFrameVariants()

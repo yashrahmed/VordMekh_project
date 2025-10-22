@@ -1,16 +1,13 @@
 from langchain_core.messages import HumanMessage, AIMessage, SystemMessage
 from langchain_core.language_models.chat_models import BaseChatModel
-
+import re
 from .frames import (
     ChaiPreparationIngredientsActionsFrame as CPIAF,
     ChaiPrepToolingFrame as CPF,
-    CookingEquipmentInASceneFrame as CESF,
+    SCENE_FRAMES_VARIANTS,
     ChaiRecipe,
     generate_chai_tooling
 )
-from typing import List
-
-
 
 def get_recipe_step(llm: BaseChatModel, user_request: str) -> ChaiRecipe:
     "User asks for recipe for a certain type of chai (single serving) and goes back and forth with the customization."
@@ -44,9 +41,29 @@ def infer_chai_prep_tools_step(ingredient_prep_frame: CPIAF) -> CPF:
     "Lookup the chai prep tools frame table using the above step's output as the input."
     return generate_chai_tooling(ingredient_prep_frame)
 
-def generate_full_scene_descriptor_step(ingredient_prep_frame: CPIAF, tooling_prep_frame: CPF, scenario_frames: List[CESF]):
+def generate_full_scene_descriptor_step(scene_type: str, ingredient_prep_frame: CPIAF, tooling_prep_frame: CPF):
     "Combine the results from the previous steps with the cooking scenario descriptions like in V6."
-    pass
+    equipment_frames = SCENE_FRAMES_VARIANTS.get_scenes(scene_type)
+    equipment_frames_descriptions = '____________________\n'.join([scene.generate_description() for scene in equipment_frames])
+    ingredient_frame_description = ingredient_prep_frame.generate_description()
+    tooling_frame_description = tooling_prep_frame.generate_description()
+    full_description = f"""
+        Here are the details about preparing chai at {scene_type}.
+
+        Ingredients and actions -
+        
+        {ingredient_frame_description}
+
+        Chai preparation equipment - 
+
+        {tooling_frame_description}
+
+        Preparation contexts and the required equipment -
+        
+        {equipment_frames_descriptions}
+    """
+    full_description = '\n'.join([re.sub(r'^[\s^\n]+', '' ,line) for line in full_description.split('\n')])
+    return full_description
 
 def generate_full_nl_description_step(llm: BaseChatModel, scene_and_tooling_description: str) -> str:
     "Have the LLM generate a tool/equipment description."
