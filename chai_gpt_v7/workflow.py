@@ -67,5 +67,38 @@ def generate_full_scene_descriptor_step(scene_type: str, ingredient_prep_frame: 
 
 def generate_full_nl_description_step(llm: BaseChatModel, scene_and_tooling_description: str) -> str:
     "Have the LLM generate a tool/equipment description."
-    return ""
+    user_prompt = f"""
+        You will be given a description of a chai recipe and the details about the equipment and scenarios involved.
+
+        The description document will have four sections - 
+        1. Ingredients.
+        2. Preparation actions.
+        3. Chai preparation equipment
+        4. Preparation contexts and the required equipment.
+
+        #4 describes the different pieces of equipment when making chai under different circumstances.
+
+        You task is to generate the following "required tools" document. The document must have the following structure.
+
+        1. Ingredients - Contains details about ingredients and their quantities.
+        2. Required Equipment.
+
+        The "Required Equipment" section must be formatted like the following.
+        1. [Tool 1]
+            - Why it is needed (Reason #1)
+            - Why it is needed (Reason #2)
+            ......
+        2. ....
+        3. ....
+
+        When generating the "Required Equipment" section, dedup the tools from all different preparation contexts with details about different usage contexts
+        listed under that tool's entry.
+
+        The document must be written in natural language and must NOT sound formulaic.
+
+        The description document is given below -
+        {scene_and_tooling_description}
+    """
+    user_message = [HumanMessage(user_prompt)]
+    return llm.invoke(user_message).content
 

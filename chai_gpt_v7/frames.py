@@ -501,7 +501,7 @@ class CookingEquipmentSceneFrameVariants:
     def get_scenes(self, scene_type: str) -> List[CookingEquipmentInASceneFrame]:
         """Get all scene variants for a specific scene type."""
         result = [
-            frame for frame in self.variants if frame.scene_type == scene_type
+            frame for frame in self.variants if frame.scene_type in [scene_type, SCENE_ANY]
         ]
 
         if not len(result):

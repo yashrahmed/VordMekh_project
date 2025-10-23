@@ -4,7 +4,7 @@ from langchain_core.language_models.chat_models import BaseChatModel
 from bot_utils.tools import set_open_api_key, setup_openai_model
 from dataclasses import dataclass
 
-from .workflow import parse_recipe_step, get_recipe_step, infer_chai_prep_tools_step, generate_full_scene_descriptor_step
+from .workflow import parse_recipe_step, get_recipe_step, infer_chai_prep_tools_step, generate_full_scene_descriptor_step, generate_full_nl_description_step
 
 @dataclass
 class LLMHandle:
@@ -43,17 +43,13 @@ def run_recipe_parse_test():
     print('___________')
     if recipe.is_valid:
         frame = parse_recipe_step(llm_handle.llm, recipe.recipe_text)
-        print('################')
-        # print(frame)
-        # print('__________')
-        # print(frame.generate_description())
-        # print('################')
         chai_tool_frame = infer_chai_prep_tools_step(frame)
-        # print(chai_tool_frame)
-        # print('__________')
-        # print(chai_tool_frame.generate_description())
         print('################')
-        print(generate_full_scene_descriptor_step("campsite", frame, chai_tool_frame))
+        combined_scene_description = generate_full_scene_descriptor_step("home", frame, chai_tool_frame)
+        print(combined_scene_description)
+        print('################')
+        nl_output = generate_full_nl_description_step(llm_handle.llm, combined_scene_description)
+        print(nl_output)
 
     else:
         print("Invalid request.....")
@@ -68,5 +64,3 @@ if __name__ == "__main__":
     run_recipe_parse_test()
     end_ts = time()
     print(f"Time taken: {end_ts - start_ts:.4f} seconds")
-
-    # run_recipe_parse_test()
