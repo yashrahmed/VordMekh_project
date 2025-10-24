@@ -26,4 +26,4 @@ For some reason, dspy version of the parser prompt caches but launch does not.
 Update (Oct 18) - Prompt caching in dspy was done with the library itself in the ~/.dspy_cache folder and not the api.
 
 @Todo
-1. Think of a better way to present output. Current output is too robotic. How do I communicate frame output better?
+- N/A

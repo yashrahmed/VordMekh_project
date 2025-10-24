@@ -44,10 +44,10 @@ def run_recipe_parse_test():
     if recipe.is_valid:
         frame = parse_recipe_step(llm_handle.llm, recipe.recipe_text)
         chai_tool_frame = infer_chai_prep_tools_step(frame)
-        print('################')
+        # print('################')
         combined_scene_description = generate_full_scene_descriptor_step("home", frame, chai_tool_frame)
-        print(combined_scene_description)
-        print('################')
+        # print(combined_scene_description)
+        # print('################')
         nl_output = generate_full_nl_description_step(llm_handle.llm, combined_scene_description)
         print(nl_output)
 

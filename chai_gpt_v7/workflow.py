@@ -94,7 +94,9 @@ def generate_full_nl_description_step(llm: BaseChatModel, scene_and_tooling_desc
         When generating the "Required Equipment" section, dedup the tools from all different preparation contexts with details about different usage contexts
         listed under that tool's entry.
 
-        The document must be written in natural language and must NOT sound formulaic.
+        The document must be written in natural language and must NOT sound formulaic. The document must ONLY include the two sections and no other content like title, footer etc.
+
+        Lastly, generate the output as plain text using tabs for indentation. Do not use markdown.
 
         The description document is given below -
         {scene_and_tooling_description}
