@@ -12,7 +12,7 @@ from .workflow import (
     generate_full_nl_description_step,
 )
 
-from flask import Flask, jsonify, request
+from flask import Flask, jsonify, request, render_template
 from flask_cors import CORS
 import os
 import re
@@ -43,6 +43,9 @@ def _sanitize_text(text: str) -> str:
     t = html.escape(t)
     return t[:4000]
 
+@app.route("/")
+def show_app():
+    return render_template("index.html")
 
 @app.route("/get-recipe", methods=["POST"])
 def get_recipe():
