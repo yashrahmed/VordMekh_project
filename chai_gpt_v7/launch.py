@@ -4,6 +4,12 @@ from langchain_core.language_models.chat_models import BaseChatModel
 from bot_utils.tools import set_open_api_key, setup_openai_model
 from dataclasses import dataclass
 
+from .frames import (
+    ChaiRecipe,
+    ChaiPreparationIngredientsActionsFrame as CPIAF,
+    ChaiPrepToolingFrame as CPTF
+)
+
 from .workflow import (
     parse_recipe_step,
     get_recipe_step,
@@ -49,35 +55,47 @@ def show_app():
 
 @app.route("/get-recipe", methods=["POST"])
 def get_recipe():
-    text = None
+    recipe_query = None
     if request.is_json:
         body = request.get_json(silent=True) or {}
-        text = body.get("query")
-    if text is None:
-        text = request.get_data(as_text=True)
-    if not text:
+        recipe_query = body.get("query")
+    if recipe_query is None:
+        recipe_query = request.get_data(as_text=True)
+    if not recipe_query:
         return jsonify({"error": "Missing text payload"}), 400
-    sanitized = _sanitize_text(text)
-    return jsonify({"recipe": sanitized}), 200
+    recipe_query = _sanitize_text(recipe_query)
+
+    recipe: ChaiRecipe = get_recipe_step(llm_handle.llm, recipe_query)
+
+    if recipe.is_valid and recipe.recipe_text:
+        return jsonify({"recipe": recipe.recipe_text}), 200
+    if not recipe.recipe_text:
+        return jsonify({"recipe": "N/A", "error": "Recipe could not be fetched"}), 400
+    return jsonify({"recipe": "N/A", "error": "Your query isn't relevant to chai preparation!"}), 400
 
 
 @app.route("/get-prep-tools", methods=["POST"])
 def get_prep_tools():
     scene_type = None
-    text = None
+    recipe_text = None
     if request.is_json:
         body = request.get_json(silent=True) or {}
         scene_type = body.get("scene_type")
-        text = body.get("recipe")
+        recipe_text = body.get("recipe_text")
     if not scene_type:
         return jsonify({"error": "Missing scene_type"}), 400
     valid_scenes = ["home", "campsite"]
     if scene_type not in valid_scenes:
         return jsonify({"error": f"scene_type must be one of {' or '.join(valid_scenes)}"}), 400
-    if not text:
+    if not recipe_text:
         return jsonify({"error": "Missing text payload"}), 400
-    sanitized = _sanitize_text(text)
-    return jsonify({"scene_type": scene_type, "sanitized_text": sanitized}), 200
+    recipe_text = _sanitize_text(recipe_text)
+
+    recipe_frame: CPIAF = parse_recipe_step(llm_handle.llm, recipe_text)
+    chai_tool_frame: CPTF = infer_chai_prep_tools_step(recipe_frame)
+    combined_scene_description = generate_full_scene_descriptor_step(scene_type, recipe_frame, chai_tool_frame)
+    nl_output = generate_full_nl_description_step(llm_handle.llm, combined_scene_description)
+    return jsonify({"scene_type": scene_type, "sanitized_text": nl_output}), 200
 
 
 @app.route("/hello", methods=["GET"])
