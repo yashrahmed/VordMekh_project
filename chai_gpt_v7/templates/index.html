@@ -92,10 +92,12 @@
 
       .query-wrapper {
         position: relative;
+        display: grid;
         width: 100%;
+        box-sizing: border-box;
         border: 1px solid var(--border);
         border-radius: 14px;
-        padding: 18px 20px 72px 20px;
+        padding: 18px 20px;
         background: color-mix(in oklab, var(--surface) 94%, rgba(15, 23, 42, 0.12));
         box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.05);
         transition: border-color 120ms ease, box-shadow 120ms ease;
@@ -108,9 +110,11 @@
       }
 
       .query-wrapper textarea {
+        grid-area: 1 / 1;
         width: 100%;
-        min-height: 150px;
-        padding: 12px 128px 12px 12px;
+        box-sizing: border-box;
+        min-height: 130px;
+        padding: 12px 124px 40px 12px;
         border: none;
         outline: none;
         resize: vertical;
@@ -126,9 +130,9 @@
       }
 
       .query-wrapper button {
-        position: absolute;
-        right: 24px;
-        bottom: 24px;
+        grid-area: 1 / 1;
+        justify-self: end;
+        align-self: end;
       }
 
       button {
@@ -181,17 +185,28 @@
         box-shadow: var(--shadow);
         backdrop-filter: saturate(140%) blur(6px);
         position: relative;
+        font-size: 14px;
+        line-height: 1.6;
+        color: var(--text);
       }
       .recipe h2 {
         margin: 0 0 12px;
         font-size: 18px;
       }
-      .recipe h3 {
-        margin: 18px 0 8px;
+      .recipe .rich-text h3 {
         font-size: 15px;
+        font-weight: 600;
+        margin: 18px 0 8px;
       }
-      .recipe ul, .recipe ol {
+      .recipe .rich-text p,
+      .recipe .rich-text li,
+      .recipe .rich-text span {
+        margin: 0 0 8px;
+      }
+      .recipe .rich-text ul,
+      .recipe .rich-text ol {
         margin: 0 0 8px 18px;
+        padding: 0;
       }
       pre {
         white-space: pre-wrap;
@@ -200,6 +215,9 @@
         border-radius: 12px;
         padding: 12px;
         overflow-x: auto;
+        font-family: inherit;
+        font-size: 14px;
+        line-height: 1.6;
       }
 
       /* Scene buttons inside recipe block */
@@ -223,6 +241,23 @@
         padding: 18px;
         box-shadow: var(--shadow);
         backdrop-filter: saturate(140%) blur(6px);
+        font-size: 14px;
+        line-height: 1.6;
+        color: var(--text);
+      }
+      .tips h3 {
+        font-size: 15px;
+        font-weight: 600;
+      }
+      .tips p,
+      .tips li,
+      .tips span {
+        margin: 0 0 8px;
+      }
+      .tips ul,
+      .tips ol {
+        margin: 0 0 8px 18px;
+        padding: 0;
       }
 
       /* Spinner for tips section */
@@ -452,9 +487,11 @@
           container.className = 'recipe';
 
           if (recipeContent) {
-            const pre = document.createElement('pre');
-            pre.textContent = recipeContent;
-            container.appendChild(pre);
+            const content = document.createElement('div');
+            content.className = 'rich-text';
+            const html = formatPrepTextToHTML(rawText);
+            content.innerHTML = html || `<p>${escapeHTML(recipeContent)}</p>`;
+            container.appendChild(content);
             btnHomeRef = null;
             btnCampRef = null;
             container.appendChild(createSceneButtons());
