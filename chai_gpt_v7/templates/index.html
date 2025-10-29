@@ -81,47 +81,54 @@
 
       .controls {
         display: flex;
-        gap: 12px;
-        align-items: center;
-        flex-wrap: wrap;
+        flex-direction: column;
+        gap: 10px;
         margin-bottom: 14px;
       }
 
-      .select {
-        position: relative;
-        display: inline-block;
+      .controls label {
+        font-weight: 500;
       }
 
-      select {
-        appearance: none;
-        -webkit-appearance: none;
-        -moz-appearance: none;
-        background: var(--surface);
-        color: var(--text);
+      .query-wrapper {
+        position: relative;
+        width: 100%;
         border: 1px solid var(--border);
-        border-radius: 12px;
-        padding: 10px 40px 10px 12px;
-        font-size: 14px;
-        line-height: 1.2;
-        box-shadow: inset 0 1px 0 rgba(255,255,255,0.4);
-        transition: border-color 120ms ease, box-shadow 120ms ease, transform 100ms ease;
+        border-radius: 14px;
+        padding: 18px 20px 72px 20px;
+        background: color-mix(in oklab, var(--surface) 94%, rgba(15, 23, 42, 0.12));
+        box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.05);
+        transition: border-color 120ms ease, box-shadow 120ms ease;
       }
-      select:focus {
-        outline: none;
+      .query-wrapper:focus-within {
         border-color: var(--ring);
-        box-shadow: 0 0 0 4px color-mix(in oklab, var(--ring) 25%, transparent);
+        box-shadow:
+          inset 0 1px 0 rgba(255, 255, 255, 0.05),
+          0 0 0 4px color-mix(in oklab, var(--ring) 25%, transparent);
       }
-      .select::after {
-        content: '';
+
+      .query-wrapper textarea {
+        width: 100%;
+        min-height: 150px;
+        padding: 12px 128px 12px 12px;
+        border: none;
+        outline: none;
+        resize: vertical;
+        font-size: 14px;
+        line-height: 1.55;
+        color: var(--text);
+        background: transparent;
+        font-family: inherit;
+      }
+      .query-wrapper textarea:disabled {
+        cursor: not-allowed;
+        color: color-mix(in oklab, var(--muted) 70%, var(--text) 30%);
+      }
+
+      .query-wrapper button {
         position: absolute;
-        right: 12px;
-        top: 50%;
-        width: 0; height: 0;
-        border-left: 5px solid transparent;
-        border-right: 5px solid transparent;
-        border-top: 6px solid var(--muted);
-        transform: translateY(-50%);
-        pointer-events: none;
+        right: 24px;
+        bottom: 24px;
       }
 
       button {
@@ -246,19 +253,15 @@
 
       <div class="panel">
         <div class="controls">
-          <label for="chaiSelect" class="subtle">Chai type</label>
-          <span class="select">
-            <select id="chaiSelect" aria-label="Chai type">
-          <option value="" selected>Select a chai…</option>
-          <!-- Options sourced from chai_gpt_v6/recipes.yaml -->
-          <option value="Masala Chai">Masala Chai</option>
-          <option value="Adrak Chai">Adrak Chai</option>
-          <option value="Sulaimani Chai">Sulaimani Chai</option>
-          <option value="Kashmiri Chai">Kashmiri Chai</option>
-          <option value="Kahwah">Kahwah</option>
-            </select>
-          </span>
-          <button id="getRecipeBtn" disabled>Get Recipe</button>
+          <label for="chaiQuery" class="subtle">Search for a chai recipe.</label>
+          <div class="query-wrapper">
+            <textarea
+              id="chaiQuery"
+              aria-label="Search for a chai recipe."
+              placeholder="Describe the chai recipe you want to brew..."
+            ></textarea>
+            <button id="getRecipeBtn" type="button" disabled>Get Recipe</button>
+          </div>
         </div>
 
         <div class="status" id="status"></div>
@@ -272,18 +275,20 @@
 
     <script>
       (function () {
-        const select = document.getElementById('chaiSelect');
+        const queryInput = document.getElementById('chaiQuery');
         const getRecipeBtn = document.getElementById('getRecipeBtn');
         const statusEl = document.getElementById('status');
         const output = document.getElementById('recipeOutput');
         const tipsOutput = document.getElementById('prepTipsOutput');
 
         let hasRenderedRecipe = false;
+        let lastRecipeText = '';
+        let isRecipeRequestActive = false;
         let btnHomeRef = null;
         let btnCampRef = null;
 
         function escapeHTML(s) {
-          return s
+          return String(s || '')
             .replace(/&/g, '&amp;')
             .replace(/</g, '&lt;')
             .replace(/>/g, '&gt;')
@@ -319,28 +324,38 @@
           tipsOutput.innerHTML = '<p class="subtle">N/A</p>';
         }
 
-        function setPlaceholder() {
-          const type = select.value;
-          let msg = 'No Recipe Selected. Please select a recipe!';
-          if (type) {
-            msg = `${type} selected! Hit the 'Get Recipe' button to get the recipe!`;
-          }
-          output.innerHTML = '';
+        function setPlaceholder(customMessage) {
           const wrap = document.createElement('div');
           wrap.className = 'recipe';
           const p = document.createElement('p');
           p.className = 'subtle';
-          p.textContent = msg;
+          p.textContent = customMessage || 'Search for a recipe';
           wrap.appendChild(p);
+          output.innerHTML = '';
           output.appendChild(wrap);
-          statusEl.textContent = '';
           hasRenderedRecipe = false;
+          lastRecipeText = '';
+          btnHomeRef = null;
+          btnCampRef = null;
           resetTips();
+          if (!customMessage) {
+            statusEl.textContent = '';
+          }
+          updateControlState();
+        }
+
+        function updateControlState() {
+          const hasQuery = !!queryInput.value.trim();
+          queryInput.disabled = isRecipeRequestActive;
+          getRecipeBtn.disabled = isRecipeRequestActive || !hasQuery;
         }
 
         function setBusy(busy, msg) {
-          getRecipeBtn.disabled = busy || !select.value;
-          statusEl.textContent = msg || '';
+          isRecipeRequestActive = !!busy;
+          updateControlState();
+          if (msg !== undefined) {
+            statusEl.textContent = msg;
+          }
         }
 
         function createSceneButtons() {
@@ -377,41 +392,45 @@
         }
 
         async function requestPreparation(scene) {
-          if (!hasRenderedRecipe) return;
-          const type = select.value;
-          if (!type) return;
-          // Clear tips before fetching as requested
+          if (!hasRenderedRecipe || !lastRecipeText) return;
+
           tipsOutput.innerHTML = '<div class="spinner-row"><div class="spinner"></div><span class="subtle">Fetching preparation tips…</span></div>';
           setSceneButtonsBusy(true);
-          // Disable chai selection and Get Recipe while fetching tips
-          const prevSelectDisabled = select.disabled;
-          const prevBtnDisabled = getRecipeBtn.disabled;
-          select.disabled = true;
-          getRecipeBtn.disabled = true;
+
+          const prevBusyState = isRecipeRequestActive;
+          isRecipeRequestActive = true;
+          updateControlState();
+
           try {
-            const url = `http://localhost:5050/preparation?type=${encodeURIComponent(type)}&scene=${encodeURIComponent(scene)}`;
-            const res = await fetch(url, {
-              method: 'GET',
-              headers: { 'Accept': 'application/json, text/plain;q=0.8, */*;q=0.5' },
+            const res = await fetch('/get-prep-tools', {
+              method: 'POST',
+              headers: {
+                'Content-Type': 'application/json',
+                'Accept': 'application/json, text/plain;q=0.8, */*;q=0.5'
+              },
+              body: JSON.stringify({
+                scene_type: scene,
+                recipe_text: lastRecipeText,
+              }),
             });
             const text = await res.text();
             if (!res.ok) {
-              throw new Error(`Server error (${res.status}): ${text || res.statusText}`);
+              let message = res.statusText || 'Request failed';
+              try {
+                const jsonErr = JSON.parse(text);
+                message = jsonErr.error || message;
+              } catch (_) {
+                if (text) message = text;
+              }
+              throw new Error(message);
             }
-            let content = null;
+
+            let content = text;
             try {
               const json = JSON.parse(text);
-              // Expect array like [string, 200]
-              if (Array.isArray(json)) {
-                if (typeof json[0] === 'string') content = json[0];
-                else content = json[0][0]['text'];
-              } else if (typeof json === 'string') {
-                content = json;
-              } else {
-                content = JSON.stringify(json, null, 2);
-              }
+              content = json.sanitized_text || json.recipe || text;
             } catch (_) {
-              content = text;
+              // Keep original text if parsing fails
             }
 
             const html = formatPrepTextToHTML(content);
@@ -420,117 +439,114 @@
             tipsOutput.innerHTML = `<pre>${(err && err.message) ? err.message : String(err)}</pre>`;
           } finally {
             setSceneButtonsBusy(false);
-            // Restore controls
-            select.disabled = prevSelectDisabled;
-            // Get Recipe enabled if a type is selected and not otherwise disabled
-            getRecipeBtn.disabled = prevBtnDisabled || !select.value;
+            isRecipeRequestActive = prevBusyState;
+            updateControlState();
           }
         }
 
-        function renderRecipeFromJson(name, data) {
+        function renderRecipeText(text) {
+          const rawText = typeof text === 'string' ? text : '';
+          const recipeContent = rawText.trim();
+          output.innerHTML = '';
           const container = document.createElement('div');
           container.className = 'recipe';
-          const title = document.createElement('h2');
-          title.textContent = name || 'Recipe';
-          container.appendChild(title);
 
-          if (Array.isArray(data.ingr)) {
-            const h = document.createElement('h3');
-            h.textContent = 'Ingredients';
-            container.appendChild(h);
-            const ul = document.createElement('ul');
-            data.ingr.forEach((item) => {
-              const li = document.createElement('li');
-              try {
-                // Expecting [name, qty, unit]
-                const [n, qty, unit] = item;
-                li.textContent =
-                  (n ?? '') + (qty != null ? ` — ${qty}` : '') + (unit ? ` ${unit}` : '');
-              } catch (e) {
-                li.textContent = String(item);
-              }
-              ul.appendChild(li);
-            });
-            container.appendChild(ul);
+          if (recipeContent) {
+            const pre = document.createElement('pre');
+            pre.textContent = recipeContent;
+            container.appendChild(pre);
+            btnHomeRef = null;
+            btnCampRef = null;
+            container.appendChild(createSceneButtons());
+            hasRenderedRecipe = true;
+            lastRecipeText = rawText;
+          } else {
+            const p = document.createElement('p');
+            p.className = 'subtle';
+            p.textContent = 'Recipe content was empty.';
+            container.appendChild(p);
+            hasRenderedRecipe = false;
+            lastRecipeText = '';
+            btnHomeRef = null;
+            btnCampRef = null;
           }
 
-
-          if (Array.isArray(data.steps)) {
-            const h = document.createElement('h3');
-            h.textContent = 'Steps';
-            container.appendChild(h);
-            const ol = document.createElement('ol');
-            data.steps.forEach((s) => {
-              const li = document.createElement('li');
-              li.textContent = s;
-              ol.appendChild(li);
-            });
-            container.appendChild(ol);
-          }
-
-          output.innerHTML = '';
           output.appendChild(container);
-          // Add scene buttons within the recipe section (bottom-left area)
-          const controlsRow = createSceneButtons();
-          container.appendChild(controlsRow);
-          hasRenderedRecipe = true;
-          // Reset tips when a new recipe is rendered
           resetTips();
           setSceneButtonsBusy(false);
         }
 
         async function fetchRecipe() {
-          const type = select.value;
-          if (!type) return;
-          // Clear any rendered recipe and show neutral state while preparing
+          const query = queryInput.value.trim();
+          if (!query) {
+            setPlaceholder();
+            return;
+          }
+
+          hasRenderedRecipe = false;
+          lastRecipeText = '';
+          btnHomeRef = null;
+          btnCampRef = null;
+          resetTips();
           output.innerHTML = '';
-          setBusy(true, 'Preparing…');
+
+          setBusy(true, 'Searching…');
+
           try {
-            const url = `http://localhost:5050/recipe?type=${encodeURIComponent(type)}`;
-            const res = await fetch(url, {
-              method: 'GET',
-              headers: { 'Accept': 'application/json, text/plain;q=0.8, */*;q=0.5' },
+            const res = await fetch('/get-recipe', {
+              method: 'POST',
+              headers: {
+                'Content-Type': 'application/json',
+                'Accept': 'application/json, text/plain;q=0.8, */*;q=0.5'
+              },
+              body: JSON.stringify({ query }),
             });
+
             const text = await res.text();
-            if (!res.ok) {
-              throw new Error(`Server error (${res.status}): ${text || res.statusText}`);
-            }
-            // Try to parse JSON; fall back to plain text
+            let data = null;
             try {
-              const json = JSON.parse(text);
-              // Try to infer title if provided
-              const name = json.name || type;
-              renderRecipeFromJson(name, json);
-              statusEl.textContent = '';
+              data = JSON.parse(text);
             } catch (_) {
-              // Not JSON; render as plain text
-              const pre = document.createElement('pre');
-              pre.textContent = text;
-              output.innerHTML = '';
-              const wrap = document.createElement('div');
-              wrap.className = 'recipe';
-              const h = document.createElement('h2');
-              h.textContent = type;
-              wrap.appendChild(h);
-              wrap.appendChild(pre);
-              output.appendChild(wrap);
-              statusEl.textContent = '';
+              // Leave as plain text if not JSON
             }
+
+            if (!res.ok) {
+              const message = (data && data.error) ? data.error : (text || res.statusText);
+              throw new Error(message);
+            }
+
+            const recipeText = data && typeof data.recipe === 'string' ? data.recipe : text;
+            renderRecipeText(recipeText);
+            statusEl.textContent = '';
           } catch (err) {
-            output.innerHTML = '';
+            const wrap = document.createElement('div');
+            wrap.className = 'recipe';
             const pre = document.createElement('pre');
             pre.textContent = (err && err.message) ? err.message : String(err);
-            output.appendChild(pre);
-            statusEl.textContent = 'Failed to prepare recipe';
+            wrap.appendChild(pre);
+            output.innerHTML = '';
+            output.appendChild(wrap);
+            statusEl.textContent = 'Failed to fetch recipe';
+            hasRenderedRecipe = false;
+            lastRecipeText = '';
+            btnHomeRef = null;
+            btnCampRef = null;
+            resetTips();
           } finally {
             setBusy(false);
           }
         }
 
-        select.addEventListener('change', () => {
-          // Enable/disable based on selection and clear any existing recipe
-          getRecipeBtn.disabled = !select.value;
-          setPlaceholder();
+        function handleQueryChange() {
+          updateControlState();
+          if (!queryInput.value.trim()) {
+            setPlaceholder();
+          }
+        }
+
+        queryInput.addEventListener('input', handleQueryChange);
+        queryInput.addEventListener('paste', () => {
+          requestAnimationFrame(handleQueryChange);
         });
 
         getRecipeBtn.addEventListener('click', (e) => {
@@ -538,7 +554,6 @@
           fetchRecipe();
         });
 
-        // Initialize default placeholder
         setPlaceholder();
       })();
     </script>
