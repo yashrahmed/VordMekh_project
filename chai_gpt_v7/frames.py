@@ -16,6 +16,7 @@ CONDITION_NORMAL = "normal"
 CONDITION_WINDY = "windy"
 CONDITION_RAINY = "rainy"
 CONDITION_DARK = "dark"
+CONDITION_LARGE_GROUP = "preparing for a large group"
 
 # Heat Source Constants
 HEAT_GAS_COOKTOP = "gas cooktop"
@@ -28,6 +29,7 @@ HEAT_INDUCTION_STOVE = "induction stove"
 VESSEL_POT = "pot"
 VESSEL_POT_NO_HANDLE = "pot with no handle"
 VESSEL_INDUCTION_POT = "induction pot"
+VESSEL_STOCKPOT_SPIGOT = "stockpot with spigot"
 
 # Cooking Vessel Handling tool constants
 HANDLING_TOOL_MITTEN = "mittens"
@@ -423,8 +425,26 @@ class CookingEquipmentSceneFrameVariants:
 
     def __init__(self) -> None:
         self.variants: List[CookingEquipmentInASceneFrame] = []
+        self.init_default_variants()
         self.init_home_variants()
         self.init_campsite_variants()
+
+    def init_default_variants(self) -> None:
+        self.variants.append(CookingEquipmentInASceneFrame(
+            scene_type=SCENE_ANY,
+            cooking_vessel=VESSEL_POT_NO_HANDLE,
+            cooking_vessel_handling_tools=HANDLING_TOOL_CLAMP
+        ))
+        self.variants.append(CookingEquipmentInASceneFrame(
+            scene_type=SCENE_ANY,
+            cooking_vessel=VESSEL_POT_NO_HANDLE,
+            cooking_vessel_handling_tools=HANDLING_TOOL_MITTEN
+        ))
+        self.variants.append(CookingEquipmentInASceneFrame(
+            scene_type=SCENE_ANY,
+            conditions={CONDITION_LARGE_GROUP},
+            cooking_vessel=VESSEL_STOCKPOT_SPIGOT
+        ))
 
     def init_home_variants(self) -> None:
         """Initialize home cooking scenarios."""
@@ -505,16 +525,6 @@ class CookingEquipmentSceneFrameVariants:
             cooking_platform=PLATFORM_PORTABLE_TABLE
         ))
 
-        self.variants.append(CookingEquipmentInASceneFrame(
-            scene_type=SCENE_ANY,
-            cooking_vessel=VESSEL_POT_NO_HANDLE,
-            cooking_vessel_handling_tools=HANDLING_TOOL_CLAMP
-        ))
-        self.variants.append(CookingEquipmentInASceneFrame(
-            scene_type=SCENE_ANY,
-            cooking_vessel=VESSEL_POT_NO_HANDLE,
-            cooking_vessel_handling_tools=HANDLING_TOOL_MITTEN
-        ))
 
     def get_scenes(self, scene_type: str) -> List[CookingEquipmentInASceneFrame]:
         """Get all scene variants for a specific scene type."""

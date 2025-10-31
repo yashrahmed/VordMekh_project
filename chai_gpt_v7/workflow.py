@@ -16,7 +16,7 @@ def get_recipe_step(llm: BaseChatModel, user_request: str) -> ChaiRecipe:
             Ingredients:
                 1.
                 2. .... ingredients and their quantities.
-            Stpes:
+            Preparation steps:
                 1. 
                 2. .... preparation steps
         

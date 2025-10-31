@@ -102,34 +102,9 @@ def get_prep_tools():
 def hello():
     return "hello there", 200
 
-def run_test():
-    
-    recipe_request = """
-    Give me the recipe for a serving for Masala Chai.
-    I wish to customize by adding crushed fennel and star anise for a bolder, spicier aroma.
-    I am going to prepare it for a large number of people (20)
-    """
-    recipe = get_recipe_step(llm_handle.llm, recipe_request)
-    # recipe = get_recipe_step(llm_handle.llm, "How do I change my car tyre?")
-
-    print(recipe.is_valid)
-    print('___________')
-    if recipe.is_valid:
-        print(recipe.recipe_text)
-        frame = parse_recipe_step(llm_handle.llm, recipe.recipe_text)
-        chai_tool_frame = infer_chai_prep_tools_step(frame)
-        print('################')
-        print(chai_tool_frame.generate_description())
-        
-
-    else:
-        print("Invalid request.....")
-
-
 if __name__ == "__main__":
     key_err = set_open_api_key(config_file_name="keys-config.yml")
     err, llm = setup_openai_model(model_name="gpt-5-chat-latest")
     llm_handle.llm = llm
-    run_test()
     port = int(os.getenv("PORT", 5051))
-    # app.run(host="127.0.0.1", port=port, debug=True)
+    app.run(host="127.0.0.1", port=port, debug=True)
