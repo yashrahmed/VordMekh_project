@@ -26,4 +26,80 @@ For some reason, dspy version of the parser prompt caches but launch does not.
 Update (Oct 18) - Prompt caching in dspy was done with the library itself in the ~/.dspy_cache folder and not the api.
 
 @Todo
-- N/A
+- Pick 15 chai recipes with 3 customizations for each.
+    Masala Chai:
+    - Add crushed fennel and star anise for a bolder, spicier aroma.
+    - Replace milk with oat milk for a lighter, nutty twist.
+    - Adjust sweetness: try jaggery instead of sugar for depth.
+
+    Adrak Chai:
+    - Mix fresh and dried ginger for layered heat.
+    - Add mint leaves for a cooling counterpoint.
+    - Adjust sweetness: honey softens the sharpness of ginger.
+
+    Sulaimani Chai:
+    - Add a small piece of dried lime for a Gulf-style sour note.
+    - Brew with cardamom and a drop of rose water for floral warmth.
+    - Adjust sweetness: keep it lightly sweet or serve unsweetened to highlight the spices.
+
+    Kashmiri Chai:
+    - Use saffron threads for richer color and fragrance.
+    - Add crushed pistachios or almonds for texture.
+    - Adjust sweetness: add a touch more sugar to balance salt and spice.
+
+    Kahwah:
+    - Infuse with cinnamon stick and cloves for added depth.
+    - Blend in rose petals and a few raisins for softness.
+    - Adjust sweetness: honey complements the green tea’s bitterness.
+
+    Tulsi Chai:
+    - Add lemongrass for brightness.
+    - Brew longer with black pepper for a sharper herbal tone.
+    - Adjust sweetness: jaggery or coconut sugar preserves the herbal balance.
+
+    Elaichi Chai:
+    - Toast cardamom pods before crushing to intensify flavor.
+    - Add a dash of vanilla essence for a creamy undertone.
+    - Adjust sweetness: keep it medium to prevent masking the cardamom.
+
+    Irani Chai:
+    - Use evaporated milk for a thick, café-style texture.
+    - Sprinkle crushed rose petals before serving.
+    - Adjust sweetness: traditionally very sweet, but you can halve the sugar for a balanced version.
+
+    Tandoori Chai:
+    - Smoke the clay cup with cinnamon bark for aroma.
+    - Add nutmeg and a pinch of black salt for a rustic edge.
+    - Adjust sweetness: moderate sugar works best to balance the smoky flavor.
+
+    Lemongrass Chai:
+    - Add orange peel or zest for extra citrus lift.
+    - Pair with fresh ginger to round the sharpness.
+    - Adjust sweetness: light honey enhances the freshness without overpowering it.
+
+    Bombay Cutting Chai:
+    - Brew extra-strong tea with less milk for a punchier flavor.
+    - Add a hint of mint or basil for a street-style twist.
+    - Adjust sweetness: half a spoon of sugar keeps it true to Mumbai stall taste.
+
+    Chocolate Chai:
+    - Add a pinch of chili powder for a Mexican-style spice kick.
+    - Blend dark cocoa with cinnamon for warmth.
+    - Adjust sweetness: use dark chocolate and minimal sugar for balance.
+
+    Ginger-Lemon Chai:
+    - Add crushed basil or tulsi leaves for added sharpness.
+    - Replace black tea with green tea for a lighter brew.
+    - Adjust sweetness: honey or stevia works better than sugar.
+
+    Mint Chai:
+    - Combine mint with crushed fennel seeds for a cooling-sweet finish.
+    - Use green tea base instead of black for a herbal variant.
+    - Adjust sweetness: a light touch of sugar or honey enhances freshness.
+
+    Nilgiri Chai:
+    - Add cinnamon and vanilla for a floral-spiced layer.
+    - Brew with milk for a creamy version or plain for clarity.
+    - Adjust sweetness: mild sugar helps bring out the tea’s natural briskness.
+- 2 options for scaling (1 for a small number of people and another for a large group)
+- Testing parsing for each chai-customization combo and adjust the ChaiToolingFrame and CookingEquipmentSceneFrameVariants if necessary.

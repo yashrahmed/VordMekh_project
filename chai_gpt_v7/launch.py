@@ -102,44 +102,25 @@ def get_prep_tools():
 def hello():
     return "hello there", 200
 
-def run_recipe_parse_test():
-    recipe = """
-    Ingredients
-        •	1 cup water
-        •	½ teaspoon Kashmiri green tea leaves (or other mild green tea)
-        •	2 green cardamom pods, lightly crushed
-        •	1 small pinch of saffron (2–3 strands)
-        •	2–3 almond slices (or 1 almond, blanched and slivered)
-        •	½ inch piece of cinnamon stick
-        •	1 clove (optional)
-        •	½ teaspoon honey or sugar (to taste)
-
-    ⸻
-
-    Steps
-        1.	In a small saucepan, combine water, cardamom, cinnamon, clove, and saffron.
-    Bring to a gentle boil, then simmer for about 2 minutes to release the aromas.
-        2.	Turn off the heat, add green tea leaves, and steep for 1–2 minutes.
-    Avoid boiling after adding tea—it should stay clear and fragrant.
-        3.	Strain the tea into a cup.
-        4.	Add sliced almonds and sweeten with honey or sugar.
-    Stir lightly and serve hot.
-
+def run_test():
+    
+    recipe_request = """
+    Give me the recipe for a serving for Masala Chai.
+    I wish to customize by adding crushed fennel and star anise for a bolder, spicier aroma.
+    I am going to prepare it for a large number of people (20)
     """
-    recipe = get_recipe_step(llm_handle.llm, "Give me the recipe for a serving of Kashmiri chai. Make it on the sweeter side")
+    recipe = get_recipe_step(llm_handle.llm, recipe_request)
     # recipe = get_recipe_step(llm_handle.llm, "How do I change my car tyre?")
 
     print(recipe.is_valid)
     print('___________')
     if recipe.is_valid:
+        print(recipe.recipe_text)
         frame = parse_recipe_step(llm_handle.llm, recipe.recipe_text)
         chai_tool_frame = infer_chai_prep_tools_step(frame)
-        # print('################')
-        combined_scene_description = generate_full_scene_descriptor_step("home", frame, chai_tool_frame)
-        # print(combined_scene_description)
-        # print('################')
-        nl_output = generate_full_nl_description_step(llm_handle.llm, combined_scene_description)
-        print(nl_output)
+        print('################')
+        print(chai_tool_frame.generate_description())
+        
 
     else:
         print("Invalid request.....")
@@ -149,5 +130,6 @@ if __name__ == "__main__":
     key_err = set_open_api_key(config_file_name="keys-config.yml")
     err, llm = setup_openai_model(model_name="gpt-5-chat-latest")
     llm_handle.llm = llm
+    run_test()
     port = int(os.getenv("PORT", 5051))
-    app.run(host="127.0.0.1", port=port, debug=True)
+    # app.run(host="127.0.0.1", port=port, debug=True)
