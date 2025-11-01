@@ -15,19 +15,5 @@ Tools and Libraries -
 3. DSPy.
 4.....Something from prompt caching.......
 
-
-Refining action extraction -
-1. Take a few recipes.
-2. Research them.
-3. Manually annotate them with action ingredient pairs.
-4. ...Will this become a dataset for dspy? Maybe......
-
-For some reason, dspy version of the parser prompt caches but launch does not.
-Update (Oct 18) - Prompt caching in dspy was done with the library itself in the ~/.dspy_cache folder and not the api.
-
 @Todo
-- Pick 15 chai recipes with 3 customizations for each.
-- 2 options for scaling (1 for a small number of people and another for a large group)
-- Generate recipe for every customization triplet and then 
-    - Have the LLM detect missing actions.
-    - Have the LLM recommend tools for large groups. 
+- Simplify the system by using a single frame with different detected attributes?

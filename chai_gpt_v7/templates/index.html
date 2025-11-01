@@ -3,7 +3,7 @@
   <head>
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-    <title>chai gpt v7</title>
+    <title>chai gpt [tool search edition] v7</title>
     <style>
       :root {
         --bg: radial-gradient(1200px 600px at 10% -20%, #e9d5ff 0, transparent 50%),
@@ -282,8 +282,8 @@
   <body>
     <div class="container">
       <div class="header">
-        <h1>Chai GPT v7</h1>
-        <span class="subtle">chai gpt v7 [grounded planning demo]</span>
+        <h1>Chai GPT v7 [Tool Search edition]</h1>
+        <span class="subtle">chai gpt v7 [tool search edition]</span>
       </div>
 
       <div class="panel">
@@ -303,7 +303,7 @@
         <div class="section-title">Recipe</div>
         <div id="recipeOutput"></div>
 
-        <div class="section-title">Preparation Tips</div>
+        <div class="section-title">Required tools</div>
         <div id="prepTipsOutput" class="tips"><p class="subtle">N/A</p></div>
       </div>
     </div>
@@ -399,7 +399,7 @@
           const btnHome = document.createElement('button');
           btnHome.className = 'btn-small';
           btnHome.textContent = 'Prep@Home';
-          btnHome.title = 'Preparation Tips: home';
+          btnHome.title = 'Required tools: home';
           btnHome.addEventListener('click', (e) => {
             e.preventDefault();
             requestPreparation('home');
@@ -408,7 +408,7 @@
           const btnCamp = document.createElement('button');
           btnCamp.className = 'btn-small';
           btnCamp.textContent = 'Prep@Campsite';
-          btnCamp.title = 'Preparation Tips: campsite';
+          btnCamp.title = 'Required tools: campsite';
           btnCamp.addEventListener('click', (e) => {
             e.preventDefault();
             requestPreparation('campsite');
@@ -429,7 +429,7 @@
         async function requestPreparation(scene) {
           if (!hasRenderedRecipe || !lastRecipeText) return;
 
-          tipsOutput.innerHTML = '<div class="spinner-row"><div class="spinner"></div><span class="subtle">Fetching preparation tips…</span></div>';
+          tipsOutput.innerHTML = '<div class="spinner-row"><div class="spinner"></div><span class="subtle">Fetching required tools…</span></div>';
           setSceneButtonsBusy(true);
 
           const prevBusyState = isRecipeRequestActive;

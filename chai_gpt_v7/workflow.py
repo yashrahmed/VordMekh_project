@@ -80,10 +80,6 @@ def generate_full_nl_description_step(llm: BaseChatModel, scene_and_tooling_desc
 
         You task is to generate the following "required tools" document. The document must have the following structure.
 
-        1. Ingredients - Contains details about ingredients and their quantities.
-        2. Required Equipment.
-
-        The "Required Equipment" section must be formatted like the following.
         1. [Tool 1]
             - Why it is needed (Reason #1)
             - Why it is needed (Reason #2)
@@ -93,6 +89,8 @@ def generate_full_nl_description_step(llm: BaseChatModel, scene_and_tooling_desc
 
         When generating the "Required Equipment" section, dedup the tools from all different preparation contexts with details about different usage contexts
         listed under that tool's entry.
+
+        Do not include ingredients in here as the recipe will be provided to the user separately.
 
         The document must be written in natural language and must NOT sound formulaic. The document must ONLY include the two sections and no other content like title, footer etc.
 
