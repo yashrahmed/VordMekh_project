@@ -35,6 +35,9 @@ VESSEL_STOCKPOT_SPIGOT = "stockpot with spigot"
 HANDLING_TOOL_MITTEN = "mittens"
 HANDLING_TOOL_CLAMP = "clamps/tongs"
 
+# Cooking Vessel Accessory Constants
+ACCESSORY_POT_LID = " Lid for the pot or the cup"
+
 # Cooking Platform Constants
 PLATFORM_PORTABLE_TABLE = "portable table"
 
@@ -137,6 +140,12 @@ TOOL_LADLE = "ladle"
 TOOL_STRAINER = "strainer"
 TOOL_MUSLIN_CLOTH = "muslin cloth"
 TOOL_FROTHER = "frother"
+TOOL_CITRUS_SQUEEZER = "citrus squeezer"
+TOOL_REAMER = "reamer"
+TOOL_FORK = "fork"
+TOOL_TOOTHPICK = "toothpick"
+TOOL_SKEWER = "skewer"
+TOOL_ZESTER = "zester"
 
 # ============================================================================
 # CHAI PREPARATION AND SCENARIO FRAMES
@@ -255,12 +264,16 @@ class ChaiPreparationIngredientsActionsFrame(BaseModel):
     
     3) Infer Action Flags:
        - An action flag should be set to True based on two conditions:
-         a) Explicit Instruction: The recipe steps explicitly state the action (e.g., "stir the chai," "strain into a cup").
+         a) Explicit Instruction: The recipe steps explicitly state the action (e.g., "stir the chai," "strain into a cup", "let steep covered for 5 minutes").
          b) Implied Action from Ingredient State: An ingredient's description implies the action. For example:
             - "peeled ginger" → `peel_ingredients=True`
             - "sliced lemon" → `slice_ingredients=True`
             - "crushed cardamom" → `crush_spices=True`
             - "grated turmeric" → `grate_ingredients=True`
+            - "lemon juice" or "squeezed lime" → `squeeze_ingredients=True`
+            - "pierced cardamom pods" → `pierce_ingredients=True`
+            - "lemon zest" or "zested orange peel" → `zest_ingredients=True`
+       - NOTE: Bruising and muddling herbs (e.g., "bruise mint leaves," "muddle tulsi," "muddle lemongrass") should be classified as crushing. Set `crush_spices=True` for these actions.
        - EXCEPTION: Do not infer an action for pre-processed dry goods. The most common case is "ground" spices (e.g., "ground ginger," "cinnamon powder"). These refer to a product form, not a preparation step. `grind_spices` should only be True if explicitly instructed (e.g., "grind the cloves").
 
     Summary:
@@ -313,6 +326,26 @@ class ChaiPreparationIngredientsActionsFrame(BaseModel):
         None,
         description="True if the recipe instructs pulling/frothing/aerating."
     )
+    squeeze_ingredients: Optional[bool] = Field(
+        None,
+        description="True if squeezing is instructed OR if an ingredient is listed as 'squeezed' (e.g., lemon juice, lime juice)."
+    )
+    pierce_ingredients: Optional[bool] = Field(
+        None,
+        description="True if piercing is instructed OR if an ingredient is listed as 'pierced' (e.g., pierced cardamom pods to release flavor)."
+    )
+    zest_ingredients: Optional[bool] = Field(
+        None,
+        description="True if zesting is instructed OR if an ingredient is listed as 'zested' (e.g., lemon zest, lime zest, orange zest)."
+    )
+    infuse_flavors: Optional[bool] = Field(
+        None,
+        description="True if the recipe instructs steeping, infusing, or covering to let flavors develop (e.g., 'let steep for 5 minutes', 'cover and simmer', 'infuse flavors')."
+    )
+    use_clay_vessel: Optional[bool] = Field(
+        None,
+        description="True if the recipe instructs preparing or serving in a clay pot or clay cup (e.g., 'prepare in earthenware', 'serve in kulhad', 'use clay pot')."
+    )
 
     def generate_description(self) -> str:
         """Generate a formatted description of ingredients and preparation actions."""
@@ -350,6 +383,16 @@ class ChaiPreparationIngredientsActionsFrame(BaseModel):
             actions.append("Strain chai before serving")
         if self.aerate_chai:
             actions.append("Aerate chai (pull/froth)")
+        if self.squeeze_ingredients:
+            actions.append("Squeeze ingredients (lemon, lime, etc.)")
+        if self.pierce_ingredients:
+            actions.append("Pierce ingredients (cardamom pods, etc.)")
+        if self.zest_ingredients:
+            actions.append("Zest citrus (lemon, lime, orange, etc.)")
+        if self.infuse_flavors:
+            actions.append("Infuse flavors (steep covered to develop taste)")
+        if self.use_clay_vessel:
+            actions.append("Prepare in clay pot or cup")
 
         for i, action in enumerate(actions, 1):
             description += f"{i}. {action}\n"
@@ -367,6 +410,11 @@ class ChaiPrepToolingFrame(BaseModel):
     stirring_tools: Optional[list[str]] = Field(None, description="Tools for mixing and stirring: spoon, ladle, whisk, etc.")
     straining_tools: Optional[list[str]] = Field(None, description="Tools for filtering tea: strainer, muslin cloth, tea filter, sieve, etc.")
     aerating_tools: Optional[list[str]] = Field(None, description="Tools for creating froth/aeration: whisk, deep ladle (for pulling), frother, etc.")
+    squeezing_tools: Optional[list[str]] = Field(None, description="Tools for squeezing citrus and other ingredients: citrus squeezer, reamer, etc.")
+    piercing_tools: Optional[list[str]] = Field(None, description="Tools for piercing ingredients to release flavor: fork, toothpick, skewer, etc.")
+    zesting_tools: Optional[list[str]] = Field(None, description="Tools for zesting citrus: zester, microplane, grater, etc.")
+    infusing_tools: Optional[list[str]] = Field(None, description="Tools for infusing flavors: pot lid to cover and trap aromas while steeping.")
+    clay_vessel_handling_tools: Optional[list[str]] = Field(None, description="Tools for handling hot clay pots or cups: clamps, tongs, etc.")
 
     def generate_description(self) -> str:
         """Generate a formatted description of preparation tools with their purposes."""
@@ -416,6 +464,31 @@ class ChaiPrepToolingFrame(BaseModel):
         if self.aerating_tools:
             tools_str = " or ".join(self.aerating_tools)
             description += f"{tool_count}. {tools_str} - for creating froth and aeration\n"
+            tool_count += 1
+
+        if self.squeezing_tools:
+            tools_str = " or ".join(self.squeezing_tools)
+            description += f"{tool_count}. {tools_str} - for squeezing citrus and other ingredients\n"
+            tool_count += 1
+
+        if self.piercing_tools:
+            tools_str = " or ".join(self.piercing_tools)
+            description += f"{tool_count}. {tools_str} - for piercing ingredients to release flavor\n"
+            tool_count += 1
+
+        if self.zesting_tools:
+            tools_str = " or ".join(self.zesting_tools)
+            description += f"{tool_count}. {tools_str} - for zesting citrus\n"
+            tool_count += 1
+
+        if self.infusing_tools:
+            tools_str = " or ".join(self.infusing_tools)
+            description += f"{tool_count}. {tools_str} - for infusing flavors and trapping aromas\n"
+            tool_count += 1
+
+        if self.clay_vessel_handling_tools:
+            tools_str = " or ".join(self.clay_vessel_handling_tools)
+            description += f"{tool_count}. {tools_str} - for handling hot clay pots or cups\n"
             tool_count += 1
 
         return description
@@ -560,6 +633,11 @@ def generate_chai_tooling(frame: ChaiPreparationIngredientsActionsFrame) -> Chai
         "stir_chai": ("stirring_tools", [TOOL_SPOON, TOOL_LADLE]),
         "strain_chai": ("straining_tools", [TOOL_STRAINER, TOOL_MUSLIN_CLOTH]),
         "aerate_chai": ("aerating_tools", [TOOL_LADLE, TOOL_FROTHER]),
+        "squeeze_ingredients": ("squeezing_tools", [TOOL_CITRUS_SQUEEZER, TOOL_REAMER]),
+        "pierce_ingredients": ("piercing_tools", [TOOL_FORK, TOOL_TOOTHPICK, TOOL_SKEWER]),
+        "zest_ingredients": ("zesting_tools", [TOOL_ZESTER, TOOL_MICROPLANE, TOOL_GRATER]),
+        "infuse_flavors": ("infusing_tools", [ACCESSORY_POT_LID]),
+        "use_clay_vessel": ("clay_vessel_handling_tools", [HANDLING_TOOL_CLAMP]),
     }
 
     # Initialize frame fields
