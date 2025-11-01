@@ -1,0 +1,553 @@
+Recipe for Masala Chai — instance 1
+- add sweetener (sugar/jaggery/honey/stevia)
+- bring to a gentle boil
+- ladle/transfer in batches
+- slowly pour in milk
+- simmer to extract/infuse
+- steep/rest to infuse flavors
+
+Recipe for Masala Chai — instance 2
+- bring to a gentle boil
+- slowly pour in milk
+- simmer to extract/infuse
+- steep/rest to infuse flavors
+
+Recipe for Masala Chai — instance 3
+- add sweetener (sugar/jaggery/honey/stevia)
+- bring to a gentle boil
+- slowly pour in milk
+- simmer to extract/infuse
+
+Recipe for Masala Chai — instance 4
+- add sweetener (sugar/jaggery/honey/stevia)
+- bring to a gentle boil
+- slowly pour in milk
+- simmer to extract/infuse
+
+Recipe for Masala Chai — instance 5
+- add sweetener (sugar/jaggery/honey/stevia)
+- bring to a gentle boil
+- simmer to extract/infuse
+- steep/rest to infuse flavors
+
+Recipe for Masala Chai — instance 6
+- add sweetener (sugar/jaggery/honey/stevia)
+- bring to a gentle boil
+- slowly pour in milk
+- simmer to extract/infuse
+
+Recipe for Adrak Chai — instance 1
+- add sweetener (sugar/jaggery/honey/stevia)
+- bring to a gentle boil
+- slowly pour in milk
+- simmer to extract/infuse
+- steep/rest to infuse flavors
+
+Recipe for Adrak Chai — instance 2
+- bring to a gentle boil
+- slowly pour in milk
+- simmer to extract/infuse
+
+Recipe for Adrak Chai — instance 3
+- add sweetener (sugar/jaggery/honey/stevia)
+- bring to a gentle boil
+- ladle/transfer in batches
+- slowly pour in milk
+- simmer to extract/infuse
+- steep/rest to infuse flavors
+
+Recipe for Adrak Chai — instance 4
+- add sweetener (sugar/jaggery/honey/stevia)
+- bring to a gentle boil
+- slowly pour in milk
+- simmer to extract/infuse
+
+Recipe for Adrak Chai — instance 5
+- bring to a gentle boil
+- slowly pour in milk
+- simmer to extract/infuse
+
+Recipe for Adrak Chai — instance 6
+- bring to a gentle boil
+- slowly pour in milk
+- simmer to extract/infuse
+
+Recipe for Sulaimani Chai — instance 1
+- bring to a gentle boil
+- pierce dried lime (loomi)
+- simmer to extract/infuse
+- steep/rest to infuse flavors
+
+Recipe for Sulaimani Chai — instance 2
+- add sweetener (sugar/jaggery/honey/stevia)
+- bring to a gentle boil
+- simmer to extract/infuse
+- steep/rest to infuse flavors
+
+Recipe for Sulaimani Chai — instance 3
+- bring to a gentle boil
+- simmer to extract/infuse
+- squeeze citrus (lemon/lime) juice
+- steep/rest to infuse flavors
+
+Recipe for Sulaimani Chai — instance 4
+- bring to a gentle boil
+- simmer to extract/infuse
+- squeeze citrus (lemon/lime) juice
+
+Recipe for Sulaimani Chai — instance 5
+- add sweetener (sugar/jaggery/honey/stevia)
+- bring to a gentle boil
+- ladle/transfer in batches
+- simmer to extract/infuse
+- steep/rest to infuse flavors
+
+Recipe for Sulaimani Chai — instance 6
+- add sweetener (sugar/jaggery/honey/stevia)
+- bring to a gentle boil
+- simmer to extract/infuse
+
+Recipe for Kashmiri Chai — instance 1
+- add baking soda
+- add sweetener (sugar/jaggery/honey/stevia)
+- bring to a gentle boil
+- shock with ice/add cold water
+- simmer to extract/infuse
+- warm milk separately
+
+Recipe for Kashmiri Chai — instance 2
+- add baking soda
+- add sweetener (sugar/jaggery/honey/stevia)
+- bring to a gentle boil
+- slowly pour in milk
+- shock with ice/add cold water
+- simmer to extract/infuse
+
+Recipe for Kashmiri Chai — instance 3
+- add baking soda
+- add sweetener (sugar/jaggery/honey/stevia)
+- bring to a gentle boil
+- shock with ice/add cold water
+
+Recipe for Kashmiri Chai — instance 4
+- add baking soda
+- add sweetener (sugar/jaggery/honey/stevia)
+- bring to a gentle boil
+- ladle/transfer in batches
+- shock with ice/add cold water
+- simmer to extract/infuse
+
+Recipe for Kashmiri Chai — instance 5
+- add baking soda
+- bring to a gentle boil
+- shock with ice/add cold water
+- simmer to extract/infuse
+
+Recipe for Kashmiri Chai — instance 6
+- add baking soda
+- add sweetener (sugar/jaggery/honey/stevia)
+- bring to a gentle boil
+- shock with ice/add cold water
+- simmer to extract/infuse
+
+Recipe for Kahwah — instance 1
+- simmer to extract/infuse
+- steep/rest to infuse flavors
+
+Recipe for Kahwah — instance 2
+- simmer to extract/infuse
+- steep/rest to infuse flavors
+
+Recipe for Kahwah — instance 3
+- bring to a gentle boil
+- simmer to extract/infuse
+- steep/rest to infuse flavors
+
+Recipe for Kahwah — instance 4
+- bring to a gentle boil
+- simmer to extract/infuse
+- steep/rest to infuse flavors
+
+Recipe for Kahwah — instance 5
+- bring to a gentle boil
+- simmer to extract/infuse
+- steep/rest to infuse flavors
+
+Recipe for Kahwah — instance 6
+- bring to a gentle boil
+- simmer to extract/infuse
+- steep/rest to infuse flavors
+
+Recipe for Tulsi Chai — instance 1
+- add sweetener (sugar/jaggery/honey/stevia)
+- bring to a gentle boil
+- bruise/muddle herbs (mint/tulsi/lemongrass)
+- ladle/transfer in batches
+- slowly pour in milk
+- simmer to extract/infuse
+
+Recipe for Tulsi Chai — instance 2
+- add sweetener (sugar/jaggery/honey/stevia)
+- bring to a gentle boil
+- slowly pour in milk
+- simmer to extract/infuse
+
+Recipe for Tulsi Chai — instance 3
+- add sweetener (sugar/jaggery/honey/stevia)
+- bring to a gentle boil
+- simmer to extract/infuse
+- steep/rest to infuse flavors
+
+Recipe for Tulsi Chai — instance 4
+- bring to a gentle boil
+- simmer to extract/infuse
+
+Recipe for Tulsi Chai — instance 5
+- add sweetener (sugar/jaggery/honey/stevia)
+- bring to a gentle boil
+- bruise/muddle herbs (mint/tulsi/lemongrass)
+- slowly pour in milk
+- simmer to extract/infuse
+
+Recipe for Tulsi Chai — instance 6
+- bring to a gentle boil
+- slowly pour in milk
+- simmer to extract/infuse
+
+Recipe for Elaichi Chai — instance 1
+- add sweetener (sugar/jaggery/honey/stevia)
+- bring to a gentle boil
+- slowly pour in milk
+- simmer to extract/infuse
+- steep/rest to infuse flavors
+
+Recipe for Elaichi Chai — instance 2
+- add sweetener (sugar/jaggery/honey/stevia)
+- bring to a gentle boil
+- simmer to extract/infuse
+
+Recipe for Elaichi Chai — instance 3
+- add sweetener (sugar/jaggery/honey/stevia)
+- bring to a gentle boil
+- ladle/transfer in batches
+- simmer to extract/infuse
+
+Recipe for Elaichi Chai — instance 4
+- add sweetener (sugar/jaggery/honey/stevia)
+- bring to a gentle boil
+- simmer to extract/infuse
+
+Recipe for Elaichi Chai — instance 5
+- add sweetener (sugar/jaggery/honey/stevia)
+- bring to a gentle boil
+- slowly pour in milk
+- simmer to extract/infuse
+
+Recipe for Elaichi Chai — instance 6
+- add sweetener (sugar/jaggery/honey/stevia)
+- bring to a gentle boil
+- slowly pour in milk
+- simmer to extract/infuse
+
+Recipe for Irani Chai — instance 1
+- add sweetener (sugar/jaggery/honey/stevia)
+- bring to a gentle boil
+- slowly pour in milk
+- simmer to extract/infuse
+
+Recipe for Irani Chai — instance 2
+- add sweetener (sugar/jaggery/honey/stevia)
+- bring to a gentle boil
+- slowly pour in milk
+- simmer to extract/infuse
+
+Recipe for Irani Chai — instance 3
+- add sweetener (sugar/jaggery/honey/stevia)
+- bring to a gentle boil
+- simmer to extract/infuse
+
+Recipe for Irani Chai — instance 4
+- add baking soda
+- add sweetener (sugar/jaggery/honey/stevia)
+- bring to a gentle boil
+- slowly pour in milk
+- simmer to extract/infuse
+
+Recipe for Irani Chai — instance 5
+- add baking soda
+- add sweetener (sugar/jaggery/honey/stevia)
+- bring to a gentle boil
+- slowly pour in milk
+- simmer to extract/infuse
+
+Recipe for Irani Chai — instance 6
+- add baking soda
+- add sweetener (sugar/jaggery/honey/stevia)
+- bring to a gentle boil
+- simmer to extract/infuse
+
+Recipe for Tandoori Chai — instance 1
+- add sweetener (sugar/jaggery/honey/stevia)
+- bring to a gentle boil
+- heat clay cup (kulhad) with tongs
+- pour into hot kulhad and back
+- slowly pour in milk
+- simmer to extract/infuse
+- smoke infusion using hot vessel/masala
+
+Recipe for Tandoori Chai — instance 2
+- add sweetener (sugar/jaggery/honey/stevia)
+- bring to a gentle boil
+- heat clay cup (kulhad) with tongs
+- pour into hot kulhad and back
+- simmer to extract/infuse
+- smoke infusion using hot vessel/masala
+- steep/rest to infuse flavors
+
+Recipe for Tandoori Chai — instance 3
+- add sweetener (sugar/jaggery/honey/stevia)
+- bring to a gentle boil
+- heat clay cup (kulhad) with tongs
+- pour into hot kulhad and back
+- slowly pour in milk
+- smoke infusion using hot vessel/masala
+
+Recipe for Tandoori Chai — instance 4
+- add sweetener (sugar/jaggery/honey/stevia)
+- bring to a gentle boil
+- heat clay cup (kulhad) with tongs
+- pour into hot kulhad and back
+- simmer to extract/infuse
+- smoke infusion using hot vessel/masala
+
+Recipe for Tandoori Chai — instance 5
+- add sweetener (sugar/jaggery/honey/stevia)
+- bring to a gentle boil
+- heat clay cup (kulhad) with tongs
+- ladle/transfer in batches
+- pour into hot kulhad and back
+- simmer to extract/infuse
+- smoke infusion using hot vessel/masala
+
+Recipe for Tandoori Chai — instance 6
+- add sweetener (sugar/jaggery/honey/stevia)
+- bring to a gentle boil
+- heat clay cup (kulhad) with tongs
+- simmer to extract/infuse
+- smoke infusion using hot vessel/masala
+- steep/rest to infuse flavors
+
+Recipe for Lemongrass Chai — instance 1
+- add sweetener (sugar/jaggery/honey/stevia)
+- bring to a gentle boil
+- bruise/muddle herbs (mint/tulsi/lemongrass)
+- ladle/transfer in batches
+- slowly pour in milk
+- simmer to extract/infuse
+- steep/rest to infuse flavors
+- zest citrus
+
+Recipe for Lemongrass Chai — instance 2
+- bring to a gentle boil
+- slowly pour in milk
+- simmer to extract/infuse
+- zest citrus
+
+Recipe for Lemongrass Chai — instance 3
+- add sweetener (sugar/jaggery/honey/stevia)
+- bring to a gentle boil
+- slowly pour in milk
+- simmer to extract/infuse
+- steep/rest to infuse flavors
+
+Recipe for Lemongrass Chai — instance 4
+- add sweetener (sugar/jaggery/honey/stevia)
+- bring to a gentle boil
+- slowly pour in milk
+- simmer to extract/infuse
+
+Recipe for Lemongrass Chai — instance 5
+- bring to a gentle boil
+- slowly pour in milk
+- simmer to extract/infuse
+- steep/rest to infuse flavors
+
+Recipe for Lemongrass Chai — instance 6
+- bring to a gentle boil
+- bruise/muddle herbs (mint/tulsi/lemongrass)
+- slowly pour in milk
+- simmer to extract/infuse
+- steep/rest to infuse flavors
+
+Recipe for Bombay Cutting Chai — instance 1
+- add sweetener (sugar/jaggery/honey/stevia)
+- bring to a gentle boil
+- slowly pour in milk
+- simmer to extract/infuse
+- steep/rest to infuse flavors
+
+Recipe for Bombay Cutting Chai — instance 2
+- add sweetener (sugar/jaggery/honey/stevia)
+- bring to a gentle boil
+- simmer to extract/infuse
+
+Recipe for Bombay Cutting Chai — instance 3
+- add sweetener (sugar/jaggery/honey/stevia)
+- bring to a gentle boil
+- slowly pour in milk
+- simmer to extract/infuse
+
+Recipe for Bombay Cutting Chai — instance 4
+- add sweetener (sugar/jaggery/honey/stevia)
+- bring to a gentle boil
+- simmer to extract/infuse
+
+Recipe for Bombay Cutting Chai — instance 5
+- add sweetener (sugar/jaggery/honey/stevia)
+- bring to a gentle boil
+- slowly pour in milk
+- simmer to extract/infuse
+
+Recipe for Bombay Cutting Chai — instance 6
+- add sweetener (sugar/jaggery/honey/stevia)
+- bring to a gentle boil
+- simmer to extract/infuse
+
+Recipe for Chocolate Chai — instance 1
+- add sweetener (sugar/jaggery/honey/stevia)
+- bring to a gentle boil
+- slowly pour in milk
+- simmer to extract/infuse
+- steep/rest to infuse flavors
+
+Recipe for Chocolate Chai — instance 2
+- add sweetener (sugar/jaggery/honey/stevia)
+- bring to a gentle boil
+- simmer to extract/infuse
+
+Recipe for Chocolate Chai — instance 3
+- add sweetener (sugar/jaggery/honey/stevia)
+- bring to a gentle boil
+- slowly pour in milk
+- simmer to extract/infuse
+
+Recipe for Chocolate Chai — instance 4
+- bring to a gentle boil
+- simmer to extract/infuse
+
+Recipe for Chocolate Chai — instance 5
+- bring to a gentle boil
+- slowly pour in milk
+- simmer to extract/infuse
+- steep/rest to infuse flavors
+
+Recipe for Chocolate Chai — instance 6
+- add sweetener (sugar/jaggery/honey/stevia)
+- bring to a gentle boil
+- simmer to extract/infuse
+
+Recipe for Ginger-Lemon Chai — instance 1
+- add sweetener (sugar/jaggery/honey/stevia)
+- bring to a gentle boil
+- simmer to extract/infuse
+
+Recipe for Ginger-Lemon Chai — instance 2
+- bring to a gentle boil
+- slowly pour in milk
+- simmer to extract/infuse
+
+Recipe for Ginger-Lemon Chai — instance 3
+- add sweetener (sugar/jaggery/honey/stevia)
+- bring to a gentle boil
+- simmer to extract/infuse
+- steep/rest to infuse flavors
+- warm milk separately
+- zest citrus
+
+Recipe for Ginger-Lemon Chai — instance 4
+- bring to a gentle boil
+- simmer to extract/infuse
+- steep/rest to infuse flavors
+- warm milk separately
+- zest citrus
+
+Recipe for Ginger-Lemon Chai — instance 5
+- bring to a gentle boil
+- simmer to extract/infuse
+- steep/rest to infuse flavors
+- zest citrus
+
+Recipe for Ginger-Lemon Chai — instance 6
+- add sweetener (sugar/jaggery/honey/stevia)
+- bring to a gentle boil
+- simmer to extract/infuse
+
+Recipe for Mint Chai — instance 1
+- add sweetener (sugar/jaggery/honey/stevia)
+- bring to a gentle boil
+- simmer to extract/infuse
+- steep/rest to infuse flavors
+
+Recipe for Mint Chai — instance 2
+- add sweetener (sugar/jaggery/honey/stevia)
+- bring to a gentle boil
+- slowly pour in milk
+- simmer to extract/infuse
+
+Recipe for Mint Chai — instance 3
+- bring to a gentle boil
+- simmer to extract/infuse
+- steep/rest to infuse flavors
+- warm milk separately
+
+Recipe for Mint Chai — instance 4
+- add sweetener (sugar/jaggery/honey/stevia)
+- bring to a gentle boil
+- simmer to extract/infuse
+- steep/rest to infuse flavors
+
+Recipe for Mint Chai — instance 5
+- bring to a gentle boil
+- simmer to extract/infuse
+- steep/rest to infuse flavors
+
+Recipe for Mint Chai — instance 6
+- add sweetener (sugar/jaggery/honey/stevia)
+- bring to a gentle boil
+- simmer to extract/infuse
+
+Recipe for Nilgiri Chai — instance 1
+- add sweetener (sugar/jaggery/honey/stevia)
+- bring to a gentle boil
+- ladle/transfer in batches
+- slowly pour in milk
+- simmer to extract/infuse
+
+Recipe for Nilgiri Chai — instance 2
+- add sweetener (sugar/jaggery/honey/stevia)
+- bring to a gentle boil
+- simmer to extract/infuse
+- steep/rest to infuse flavors
+
+Recipe for Nilgiri Chai — instance 3
+- add sweetener (sugar/jaggery/honey/stevia)
+- bring to a gentle boil
+- ladle/transfer in batches
+- slowly pour in milk
+- simmer to extract/infuse
+
+Recipe for Nilgiri Chai — instance 4
+- add sweetener (sugar/jaggery/honey/stevia)
+- bring to a gentle boil
+- simmer to extract/infuse
+
+Recipe for Nilgiri Chai — instance 5
+- bring to a gentle boil
+- slowly pour in milk
+- simmer to extract/infuse
+- steep/rest to infuse flavors
+
+Recipe for Nilgiri Chai — instance 6
+- add sweetener (sugar/jaggery/honey/stevia)
+- bring to a gentle boil
+- simmer to extract/infuse
