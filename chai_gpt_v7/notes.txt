@@ -17,3 +17,10 @@ Tools and Libraries -
 
 @Todo
 - Simplify the system by using a single frame with different detected attributes?
+- ChaiPrepToolingFrame can be removed.
+- CookingEquipmentInASceneFrame can be converted into a sceneConditonsFrame with slots like -
+    1. is_windy
+    2. is_dark
+    3. is_pot_without_handle.
+    4. type_of_cooktop.
+    5. has_prep_table etc...
