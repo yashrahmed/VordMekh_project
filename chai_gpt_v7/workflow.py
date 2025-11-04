@@ -3,7 +3,6 @@ from langchain_core.language_models.chat_models import BaseChatModel
 import re
 from .frames import (
     ChaiPreparationIngredientsActionsFrame as CPIAF,
-    ChaiPrepToolingFrame as CPF,
     SCENE_FRAMES_VARIANTS,
     ChaiRecipe,
     generate_chai_tooling
@@ -37,16 +36,15 @@ def parse_recipe_step(llm: BaseChatModel, recipe_text: str) -> CPIAF:
     parser_llm = llm.with_structured_output(CPIAF)
     return parser_llm.invoke(messages)
 
-def infer_chai_prep_tools_step(ingredient_prep_frame: CPIAF) -> CPF:
-    "Lookup the chai prep tools frame table using the above step's output as the input."
+def infer_chai_prep_tools_step(ingredient_prep_frame: CPIAF) -> str:
+    "Lookup the chai prep tools table using the above step's output as the input."
     return generate_chai_tooling(ingredient_prep_frame)
 
-def generate_full_scene_descriptor_step(scene_type: str, ingredient_prep_frame: CPIAF, tooling_prep_frame: CPF):
+def generate_full_scene_descriptor_step(scene_type: str, ingredient_prep_frame: CPIAF, tooling_description: str):
     "Combine the results from the previous steps with the cooking scenario descriptions like in V6."
     equipment_frames = SCENE_FRAMES_VARIANTS.get_scenes(scene_type)
     equipment_frames_descriptions = '____________________\n'.join([scene.generate_description() for scene in equipment_frames])
     ingredient_frame_description = ingredient_prep_frame.generate_description()
-    tooling_frame_description = tooling_prep_frame.generate_description()
     full_description = f"""
         Here are the details about preparing chai at {scene_type}.
 
@@ -56,7 +54,7 @@ def generate_full_scene_descriptor_step(scene_type: str, ingredient_prep_frame: 
 
         Chai preparation equipment - 
 
-        {tooling_frame_description}
+        {tooling_description}
 
         Preparation contexts and the required equipment -
         
@@ -101,4 +99,3 @@ def generate_full_nl_description_step(llm: BaseChatModel, scene_and_tooling_desc
     """
     user_message = [HumanMessage(user_prompt)]
     return llm.invoke(user_message).content
-

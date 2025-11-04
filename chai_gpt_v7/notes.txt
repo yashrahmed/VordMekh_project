@@ -17,10 +17,29 @@ Tools and Libraries -
 
 @Todo
 - Simplify the system by using a single frame with different detected attributes?
-- ChaiPrepToolingFrame can be removed.
-- CookingEquipmentInASceneFrame can be converted into a sceneConditonsFrame with slots like -
-    1. is_windy
-    2. is_dark
-    3. is_pot_without_handle.
-    4. type_of_cooktop.
-    5. has_prep_table etc...
+
+Anywhere
+
+  - IF scene_type=anywhere AND cooking_vessel_has_handle=false THEN require clamps/tongs.
+  - IF scene_type=anywhere AND cooking_vessel_has_handle=false THEN require mittens.
+  - IF scene_type=anywhere AND preparing_for_large_group=true THEN require stockpot with spigot.
+
+  Home
+
+  - IF scene_type=home AND heat_source=gas cooktop THEN require pot.
+  - IF scene_type=home AND heat_source=induction cooktop THEN require induction pot.
+
+  Campsite
+
+  - IF scene_type=campsite AND windy=true THEN require windshield.
+  - IF scene_type=campsite AND rainy=true THEN require rainfly.
+  - IF scene_type=campsite AND rainy=true THEN require canopy.
+  - IF scene_type=campsite AND dark=true THEN require lantern.
+  - IF scene_type=campsite AND dark=true THEN require headlamp.
+  - IF scene_type=campsite AND heat_source=butane stove THEN require butane canister.
+  - IF scene_type=campsite AND heat_source=propane stove AND fuel=propane tank THEN require propane hose adapter.
+  - IF scene_type=campsite AND heat_source=propane stove THEN require propane canister.
+  - IF scene_type=campsite AND heat_source=induction stove THEN require induction pot AND battery.
+  - IF scene_type=campsite AND ignition_needed=true THEN use lighter.
+  - IF scene_type=campsite AND ignition_needed=true THEN use matches.
+  - IF scene_type=campsite THEN require portable table.

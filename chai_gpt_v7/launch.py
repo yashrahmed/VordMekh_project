@@ -6,8 +6,7 @@ from dataclasses import dataclass
 
 from .frames import (
     ChaiRecipe,
-    ChaiPreparationIngredientsActionsFrame as CPIAF,
-    ChaiPrepToolingFrame as CPTF
+    ChaiPreparationIngredientsActionsFrame as CPIAF
 )
 
 from .workflow import (
@@ -92,8 +91,8 @@ def get_prep_tools():
     recipe_text = _sanitize_text(recipe_text)
 
     recipe_frame: CPIAF = parse_recipe_step(llm_handle.llm, recipe_text)
-    chai_tool_frame: CPTF = infer_chai_prep_tools_step(recipe_frame)
-    combined_scene_description = generate_full_scene_descriptor_step(scene_type, recipe_frame, chai_tool_frame)
+    tooling_description: str = infer_chai_prep_tools_step(recipe_frame)
+    combined_scene_description = generate_full_scene_descriptor_step(scene_type, recipe_frame, tooling_description)
     nl_output = generate_full_nl_description_step(llm_handle.llm, combined_scene_description)
     return jsonify({"scene_type": scene_type, "sanitized_text": nl_output}), 200
 

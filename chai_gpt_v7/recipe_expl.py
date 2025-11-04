@@ -9,7 +9,6 @@ from itertools import chain
 from bot_utils.tools import set_open_api_key, setup_openai_model  # type: ignore  # noqa: E402
 from .frames import (  # type: ignore  # noqa: E402
     ChaiPreparationIngredientsActionsFrame,
-    ChaiPrepToolingFrame,
     ChaiRecipe,
 )
 from .workflow import (  # type: ignore  # noqa: E402

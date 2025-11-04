@@ -340,7 +340,7 @@ class ChaiPreparationIngredientsActionsFrame(BaseModel):
     )
     infuse_flavors: Optional[bool] = Field(
         None,
-        description="True if the recipe instructs steeping, infusing, or covering to let flavors develop (e.g., 'let steep for 5 minutes', 'cover and simmer', 'infuse flavors')."
+        description="True if the recipe instructs steeping, infusing, or covering to let flavors develop (e.g., 'let steep for 5 minutes', 'cover and simmer', 'infuse flavors'). This step or the use of the lid must be specified explicitly. Set false otherwise."
     )
     use_clay_vessel: Optional[bool] = Field(
         None,
@@ -399,100 +399,6 @@ class ChaiPreparationIngredientsActionsFrame(BaseModel):
 
         return description
 
-class ChaiPrepToolingFrame(BaseModel):
-    """Frame to represent the tools needed for chai preparation actions."""
-    crushing_tools: Optional[list[str]] = Field(None, description="Tools for crushing spices: mortar and pestle, rolling pin, etc.")
-    slicing_tools: Optional[list[str]] = Field(None, description="Tools for slicing ingredients.")
-    chopping_tools: Optional[list[str]] = Field(None, description="Tools for chopping ingredients.")
-    peeling_tools: Optional[list[str]] = Field(None, description="Tools for peeling ginger, citrus: peeler, knife, spoon, etc.")
-    grinding_tools: Optional[list[str]] = Field(None, description="Tools for grinding spices just before brewing.")
-    grating_tools: Optional[list[str]] = Field(None, description="Tools for grating aromatics like ginger or nutmeg.")
-    stirring_tools: Optional[list[str]] = Field(None, description="Tools for mixing and stirring: spoon, ladle, whisk, etc.")
-    straining_tools: Optional[list[str]] = Field(None, description="Tools for filtering tea: strainer, muslin cloth, tea filter, sieve, etc.")
-    aerating_tools: Optional[list[str]] = Field(None, description="Tools for creating froth/aeration: whisk, deep ladle (for pulling), frother, etc.")
-    squeezing_tools: Optional[list[str]] = Field(None, description="Tools for squeezing citrus and other ingredients: citrus squeezer, reamer, etc.")
-    piercing_tools: Optional[list[str]] = Field(None, description="Tools for piercing ingredients to release flavor: fork, toothpick, skewer, etc.")
-    zesting_tools: Optional[list[str]] = Field(None, description="Tools for zesting citrus: zester, microplane, grater, etc.")
-    infusing_tools: Optional[list[str]] = Field(None, description="Tools for infusing flavors: pot lid to cover and trap aromas while steeping.")
-    clay_vessel_handling_tools: Optional[list[str]] = Field(None, description="Tools for handling hot clay pots or cups: clamps, tongs, etc.")
-
-    def generate_description(self) -> str:
-        """Generate a formatted description of preparation tools with their purposes."""
-        description = "Preparation tools:\n"
-        tool_count = 1
-
-        if self.crushing_tools:
-            tools_str = " or ".join(self.crushing_tools)
-            description += f"{tool_count}. {tools_str} - for crushing spices\n"
-            tool_count += 1
-
-        if self.grinding_tools:
-            tools_str = " or ".join(self.grinding_tools)
-            description += f"{tool_count}. {tools_str} - for grinding spices just before brewing\n"
-            tool_count += 1
-
-        if self.slicing_tools:
-            tools_str = " or ".join(self.slicing_tools)
-            description += f"{tool_count}. {tools_str} - for slicing ingredients\n"
-            tool_count += 1
-
-        if self.chopping_tools:
-            tools_str = " or ".join(self.chopping_tools)
-            description += f"{tool_count}. {tools_str} - for chopping ingredients\n"
-            tool_count += 1
-
-        if self.peeling_tools:
-            tools_str = " or ".join(self.peeling_tools)
-            description += f"{tool_count}. {tools_str} - for peeling\n"
-            tool_count += 1
-
-        if self.grating_tools:
-            tools_str = " or ".join(self.grating_tools)
-            description += f"{tool_count}. {tools_str} - for grating aromatics\n"
-            tool_count += 1
-
-        if self.stirring_tools:
-            tools_str = " or ".join(self.stirring_tools)
-            description += f"{tool_count}. {tools_str} - for mixing and stirring\n"
-            tool_count += 1
-
-        if self.straining_tools:
-            tools_str = " or ".join(self.straining_tools)
-            description += f"{tool_count}. {tools_str} - for filtering tea\n"
-            tool_count += 1
-
-        if self.aerating_tools:
-            tools_str = " or ".join(self.aerating_tools)
-            description += f"{tool_count}. {tools_str} - for creating froth and aeration\n"
-            tool_count += 1
-
-        if self.squeezing_tools:
-            tools_str = " or ".join(self.squeezing_tools)
-            description += f"{tool_count}. {tools_str} - for squeezing citrus and other ingredients\n"
-            tool_count += 1
-
-        if self.piercing_tools:
-            tools_str = " or ".join(self.piercing_tools)
-            description += f"{tool_count}. {tools_str} - for piercing ingredients to release flavor\n"
-            tool_count += 1
-
-        if self.zesting_tools:
-            tools_str = " or ".join(self.zesting_tools)
-            description += f"{tool_count}. {tools_str} - for zesting citrus\n"
-            tool_count += 1
-
-        if self.infusing_tools:
-            tools_str = " or ".join(self.infusing_tools)
-            description += f"{tool_count}. {tools_str} - for infusing flavors and trapping aromas\n"
-            tool_count += 1
-
-        if self.clay_vessel_handling_tools:
-            tools_str = " or ".join(self.clay_vessel_handling_tools)
-            description += f"{tool_count}. {tools_str} - for handling hot clay pots or cups\n"
-            tool_count += 1
-
-        return description
-   
 class CookingEquipmentSceneFrameVariants:
     """Collection of cooking equipment scene variants."""
 
@@ -619,36 +525,36 @@ class ChaiRecipe(BaseModel):
     recipe_text: Optional[str] = Field(None, description="The raw text of the recipe")
     is_valid: bool = Field(True, description="A boolean flag set to indicate if the response is valid. Flag is set to false if the system failed or used asked for a request that was unrelated to a chai recipe.")
 
-def generate_chai_tooling(frame: ChaiPreparationIngredientsActionsFrame) -> ChaiPrepToolingFrame:
-    """Generate a ChaiPrepToolingFrame instance with tool lists based on the detected actions."""
+def generate_chai_tooling(frame: ChaiPreparationIngredientsActionsFrame) -> str:
+    """Generate a formatted description of preparation tools with their purposes."""
 
-    # Mapping from action flag → (frame field, tools)
-    action_to_field_and_tools = {
-        "crush_spices": ("crushing_tools", [TOOL_MORTAR_PESTLE, TOOL_ROLLING_PIN]),
-        "grind_spices": ("grinding_tools", [TOOL_SPICE_GRINDER, TOOL_COFFEE_GRINDER]),
-        "peel_ingredients": ("peeling_tools", [TOOL_PEELER, TOOL_PARING_KNIFE]),
-        "slice_ingredients": ("slicing_tools", [TOOL_KNIFE, TOOL_MANDOLINE]),
-        "grate_ingredients": ("grating_tools", [TOOL_GRATER, TOOL_MICROPLANE]),
-        "chop_ingredients": ("chopping_tools", [TOOL_CHEFS_KNIFE, TOOL_CLEAVER]),
-        "stir_chai": ("stirring_tools", [TOOL_SPOON, TOOL_LADLE]),
-        "strain_chai": ("straining_tools", [TOOL_STRAINER, TOOL_MUSLIN_CLOTH]),
-        "aerate_chai": ("aerating_tools", [TOOL_LADLE, TOOL_FROTHER]),
-        "squeeze_ingredients": ("squeezing_tools", [TOOL_CITRUS_SQUEEZER, TOOL_REAMER]),
-        "pierce_ingredients": ("piercing_tools", [TOOL_FORK, TOOL_TOOTHPICK, TOOL_SKEWER]),
-        "zest_ingredients": ("zesting_tools", [TOOL_ZESTER, TOOL_MICROPLANE, TOOL_GRATER]),
-        "infuse_flavors": ("infusing_tools", [ACCESSORY_POT_LID]),
-        "use_clay_vessel": ("clay_vessel_handling_tools", [HANDLING_TOOL_CLAMP]),
-    }
+    tooling_rules = [
+        ("crush_spices", [TOOL_MORTAR_PESTLE, TOOL_ROLLING_PIN], "for crushing spices"),
+        ("grind_spices", [TOOL_SPICE_GRINDER, TOOL_COFFEE_GRINDER], "for grinding spices just before brewing"),
+        ("slice_ingredients", [TOOL_KNIFE, TOOL_MANDOLINE], "for slicing ingredients"),
+        ("chop_ingredients", [TOOL_CHEFS_KNIFE, TOOL_CLEAVER], "for chopping ingredients"),
+        ("peel_ingredients", [TOOL_PEELER, TOOL_PARING_KNIFE], "for peeling"),
+        ("grate_ingredients", [TOOL_GRATER, TOOL_MICROPLANE], "for grating aromatics"),
+        ("stir_chai", [TOOL_SPOON, TOOL_LADLE], "for mixing and stirring"),
+        ("strain_chai", [TOOL_STRAINER, TOOL_MUSLIN_CLOTH], "for filtering tea"),
+        ("aerate_chai", [TOOL_LADLE, TOOL_FROTHER], "for creating froth and aeration"),
+        ("squeeze_ingredients", [TOOL_CITRUS_SQUEEZER, TOOL_REAMER], "for squeezing citrus and other ingredients"),
+        ("pierce_ingredients", [TOOL_FORK, TOOL_TOOTHPICK, TOOL_SKEWER], "for piercing ingredients to release flavor"),
+        ("zest_ingredients", [TOOL_ZESTER, TOOL_MICROPLANE, TOOL_GRATER], "for zesting citrus"),
+        ("infuse_flavors", [ACCESSORY_POT_LID], "for infusing flavors and trapping aromas"),
+        ("use_clay_vessel", [HANDLING_TOOL_CLAMP], "for handling hot clay pots or cups"),
+    ]
 
-    # Initialize frame fields
-    tooling = ChaiPrepToolingFrame()
+    description = "Preparation tools:\n"
+    tool_count = 1
 
-    # Assign tool lists based on which actions are true
-    for action_flag, (field_name, tools) in action_to_field_and_tools.items():
+    for action_flag, tools, purpose in tooling_rules:
         if getattr(frame, action_flag, False):
-            setattr(tooling, field_name, tools)
+            tools_str = " or ".join(tools)
+            description += f"{tool_count}. {tools_str} - {purpose}\n"
+            tool_count += 1
 
-    return tooling
+    return description
 
 # ============================================================================
 # INSTANTIATED VARIANTS
