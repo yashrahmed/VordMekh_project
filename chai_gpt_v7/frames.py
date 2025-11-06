@@ -1,22 +1,10 @@
 from pydantic import BaseModel, Field
-from typing import Optional, List, Set
+from typing import Optional, List, Set, Tuple
 
 
 # ============================================================================
 # COOKING EQUIPMENT CONSTANTS
 # ============================================================================
-
-# Scene Type Constants
-SCENE_HOME = "home"
-SCENE_CAMPSITE = "campsite"
-SCENE_ANY = "anywhere"
-
-# Condition Constants
-CONDITION_NORMAL = "normal"
-CONDITION_WINDY = "windy"
-CONDITION_RAINY = "rainy"
-CONDITION_DARK = "dark"
-CONDITION_LARGE_GROUP = "preparing for a large group"
 
 # Heat Source Constants
 HEAT_GAS_COOKTOP = "gas cooktop"
@@ -27,7 +15,6 @@ HEAT_INDUCTION_STOVE = "induction stove"
 
 # Cooking Vessel Constants
 VESSEL_POT = "pot"
-VESSEL_POT_NO_HANDLE = "pot with no handle"
 VESSEL_INDUCTION_POT = "induction pot"
 VESSEL_STOCKPOT_SPIGOT = "stockpot with spigot"
 
@@ -66,62 +53,6 @@ LIGHTING_LANTERN = "lantern"
 LIGHTING_HEADLAMP = "headlamp"
 
 
-# ============================================================================
-# CHAI PREPARATION CONSTANTS
-# ============================================================================
-
-# Chai Type Constants
-CHAI_MASALA = "Masala Chai"
-CHAI_ADRAK = "Adrak Chai"
-CHAI_SULAIMANI = "Sulaimani Chai"
-CHAI_KASHMIRI = "Kashmiri Chai"
-CHAI_KAHWAH = "Kahwah"
-
-# Liquid Ingredient Constants
-LIQUID_WATER = "Water"
-LIQUID_WHOLE_MILK = "Whole Milk"
-
-# Tea Leaf Constants
-TEA_LOOSE_BLACK = "Loose Black Tea"
-TEA_KASHMIRI_GREEN = "Kashmiri Green Tea Leaves"
-TEA_GREEN = "Green Tea Leaves"
-
-# Sweetener Constants
-SWEETENER_JAGGERY_OR_SUGAR = "Jaggery or Sugar"
-SWEETENER_HONEY_OR_JAGGERY = "Honey or Jaggery"
-SWEETENER_HONEY_OR_SUGAR = "Honey or Sugar"
-
-# Salt Constants
-SALT = "Salt"
-
-# Ground Spice Constants
-SPICE_GROUND_GINGER = "Grated Fresh Ginger"
-SPICE_GROUND_CINNAMON = "Ground Cinnamon"
-
-# Whole Spice Constants
-SPICE_WHOLE_CARDAMOM = "Green Cardamom Pods"
-SPICE_WHOLE_CLOVES = "Whole Cloves"
-SPICE_WHOLE_PEPPERCORNS = "Black Peppercorns"
-SPICE_WHOLE_FENNEL = "Fennel Seeds"
-SPICE_WHOLE_SAFFRON = "Saffron Threads"
-
-# Herb Constants
-HERB_MINT = "Fresh Mint Leaves"
-
-# Floral Constants
-FLORAL_ROSE_PETALS = "Dried Rose Petals"
-
-# Citrus Constants
-CITRUS_LEMON_JUICE = "Lemon Juice"
-
-# Process Modifier Constants
-PROCESS_BAKING_SODA = "Baking Soda"
-PROCESS_ICE = "Ice"
-
-# Garnish Constants
-GARNISH_CRUSHED_NUTS = "Crushed Nuts"
-GARNISH_ALMONDS = "Slivered Almonds"
-
 # Chai Preparation Tool Constants
 TOOL_MORTAR_PESTLE = "mortar and pestle"
 TOOL_ROLLING_PIN = "rolling pin"
@@ -151,106 +82,17 @@ TOOL_ZESTER = "zester"
 # CHAI PREPARATION AND SCENARIO FRAMES
 # ============================================================================
 
-class CookingEquipmentInASceneFrame(BaseModel):
-    """Frame to represent the *required* equipment for cooking."""
+class CookingSceneConditionFrame(BaseModel):
+    """Frame capturing environmental and preparation details for a cooking scene."""
+    heat_source: Optional[str] = HEAT_PROPANE_STOVE
+    is_ignition_needed: Optional[bool] = None
+    is_windy: Optional[bool] = None
+    is_rainy: Optional[bool] = None
+    is_dark: Optional[bool] = None
+    has_uneven_groumd: Optional[bool] = None
+    does_vessel_have_handle: Optional[bool] = None
+    preparaing_for_a_large_group: Optional[bool] = None
 
-    # Core
-    scene_type: str = Field(SCENE_HOME, description="Type of scene: home, campsite, or anywhere.")
-    conditions: Optional[Set[str]] = Field(None, description="Environmental conditions (e.g., normal, windy, rainy, dark).")
-    heat_source: Optional[str] = Field(None, description="Heat source for cooking (e.g., gas cooktop, propane stove).")
-    cooking_vessel: Optional[str] = Field(None, description="Vessel used for cooking (e.g., pot, induction pot).")
-    cooking_vessel_handling_tools: Optional[str] = Field(None, description="Tools for handling hot vessels (e.g., mittens, clamps).")
-    cooking_platform: Optional[str] = Field(None, description="Platform for cooking setup (e.g., portable table).")
-    ignition_tool: Optional[str] = Field(None, description="Tool for ignition (e.g., lighter, matches).")
-    fuel_or_power_attachment: Optional[str] = Field(None, description="Fuel or power source (e.g., propane canister, battery).")
-    fuel_connectors: Optional[str] = Field(None, description="Connectors for fuel (e.g., propane hose adapter).")
-
-    # Environment Mitigation
-    wind_mitigation_equipment: Optional[str] = Field(None, description="Equipment to mitigate wind (e.g., windshield).")
-    rain_mitigation_equipment: Optional[str] = Field(None, description="Equipment to mitigate rain (e.g., rainfly, canopy).")
-    lighting_equipment: Optional[str] = Field(None, description="Lighting equipment for dark conditions (e.g., lantern, headlamp).")
-
-    def model_post_init(self, __context) -> None:
-        """Set default values after initialization."""
-        # Set default conditions
-        if self.conditions is None:
-            self.conditions = {CONDITION_NORMAL}
-
-        # Set defaults based on scene type
-        if self.scene_type in [SCENE_HOME, SCENE_ANY]:
-            if not self.heat_source:
-                self.heat_source = HEAT_GAS_COOKTOP
-            if not self.cooking_vessel:
-                self.cooking_vessel = VESSEL_POT
-
-        if self.scene_type == SCENE_CAMPSITE:
-            if not self.heat_source:
-                self.heat_source = HEAT_PROPANE_STOVE
-            if not self.cooking_vessel:
-                self.cooking_vessel = VESSEL_POT
-            if not self.fuel_or_power_attachment:
-                self.fuel_or_power_attachment = FUEL_PROPANE_CANISTER
-
-    def generate_description(self) -> str:
-        """Generate a formatted description of cooking equipment for the scene.
-
-        Casual relation will NOT be explicitly stated. E.g.
-
-        CookingEquipmentInASceneFrame -
-            scene_type='any'
-            conditions={'normal'}
-            heat_source='gas cooktop'
-            cooking_vessel='pot with no handle'
-            cooking_vessel_handling_tools='mittens'
-            ........
-
-        The fact about mittens being used as the pot has no handle will NOT be explicitly modeled.
-        That will be left up to the LLMs to infer.
-        """
-        # Format scene type
-        scene_str = f"at {self.scene_type}" if self.scene_type else "anywhere"
-
-        # Format conditions
-        if self.conditions:
-            conditions_list = sorted(list(self.conditions))
-            conditions_str = ", ".join(conditions_list)
-        else:
-            conditions_str = "normal"
-
-        description = f"When cooking {scene_str}\n"
-        description += f"Under {conditions_str} conditions\n"
-        description += "Here are the tools and equipment that is needed -\n"
-
-        # Collect all equipment
-        equipment_list = []
-
-        if self.heat_source:
-            equipment_list.append(self.heat_source)
-        if self.cooking_vessel:
-            equipment_list.append(self.cooking_vessel)
-        if self.cooking_vessel_handling_tools:
-            equipment_list.append(self.cooking_vessel_handling_tools)
-        if self.cooking_platform:
-            equipment_list.append(self.cooking_platform)
-        if self.ignition_tool:
-            equipment_list.append(self.ignition_tool)
-        if self.fuel_or_power_attachment:
-            equipment_list.append(self.fuel_or_power_attachment)
-        if self.fuel_connectors:
-            equipment_list.append(self.fuel_connectors)
-        if self.wind_mitigation_equipment:
-            equipment_list.append(self.wind_mitigation_equipment)
-        if self.rain_mitigation_equipment:
-            equipment_list.append(self.rain_mitigation_equipment)
-        if self.lighting_equipment:
-            equipment_list.append(self.lighting_equipment)
-
-        # Add numbered list
-        for idx, equipment in enumerate(equipment_list, start=1):
-            description += f"{idx}. {equipment}\n"
-
-        return description
-    
 class ChaiPreparationIngredientsActionsFrame(BaseModel):
     """
     Frame to extract chai ingredients and infer preparation actions from the recipe text.
@@ -399,123 +241,6 @@ class ChaiPreparationIngredientsActionsFrame(BaseModel):
 
         return description
 
-class CookingEquipmentSceneFrameVariants:
-    """Collection of cooking equipment scene variants."""
-
-    def __init__(self) -> None:
-        self.variants: List[CookingEquipmentInASceneFrame] = []
-        self.init_default_variants()
-        self.init_home_variants()
-        self.init_campsite_variants()
-
-    def init_default_variants(self) -> None:
-        self.variants.append(CookingEquipmentInASceneFrame(
-            scene_type=SCENE_ANY,
-            cooking_vessel=VESSEL_POT_NO_HANDLE,
-            cooking_vessel_handling_tools=HANDLING_TOOL_CLAMP
-        ))
-        self.variants.append(CookingEquipmentInASceneFrame(
-            scene_type=SCENE_ANY,
-            cooking_vessel=VESSEL_POT_NO_HANDLE,
-            cooking_vessel_handling_tools=HANDLING_TOOL_MITTEN
-        ))
-        self.variants.append(CookingEquipmentInASceneFrame(
-            scene_type=SCENE_ANY,
-            conditions={CONDITION_LARGE_GROUP},
-            cooking_vessel=VESSEL_STOCKPOT_SPIGOT
-        ))
-
-    def init_home_variants(self) -> None:
-        """Initialize home cooking scenarios."""
-        self.variants.append(CookingEquipmentInASceneFrame(
-            scene_type=SCENE_HOME,
-            heat_source=HEAT_GAS_COOKTOP,
-            cooking_vessel=VESSEL_POT
-        ))
-        self.variants.append(CookingEquipmentInASceneFrame(
-            scene_type=SCENE_HOME,
-            heat_source=HEAT_INDUCTION_COOKTOP,
-            cooking_vessel=VESSEL_INDUCTION_POT
-        ))
-
-    def init_campsite_variants(self) -> None:
-        """Initialize campsite cooking scenarios."""
-        self.variants.append(CookingEquipmentInASceneFrame(
-            scene_type=SCENE_CAMPSITE,
-            conditions={CONDITION_WINDY},
-            wind_mitigation_equipment=WIND_WINDSHIELD
-        ))
-        self.variants.append(CookingEquipmentInASceneFrame(
-            scene_type=SCENE_CAMPSITE,
-            conditions={CONDITION_RAINY},
-            rain_mitigation_equipment=RAIN_RAINFLY
-        ))
-        self.variants.append(CookingEquipmentInASceneFrame(
-            scene_type=SCENE_CAMPSITE,
-            conditions={CONDITION_RAINY},
-            rain_mitigation_equipment=RAIN_CANOPY
-        ))
-        self.variants.append(CookingEquipmentInASceneFrame(
-            scene_type=SCENE_CAMPSITE,
-            conditions={CONDITION_DARK},
-            lighting_equipment=LIGHTING_LANTERN
-        ))
-        self.variants.append(CookingEquipmentInASceneFrame(
-            scene_type=SCENE_CAMPSITE,
-            conditions={CONDITION_DARK},
-            lighting_equipment=LIGHTING_HEADLAMP
-        ))
-
-        self.variants.append(CookingEquipmentInASceneFrame(
-            scene_type=SCENE_CAMPSITE,
-            heat_source=HEAT_BUTANE_STOVE,
-            fuel_or_power_attachment=FUEL_BUTANE_CANISTER
-        ))
-        self.variants.append(CookingEquipmentInASceneFrame(
-            scene_type=SCENE_CAMPSITE,
-            heat_source=HEAT_PROPANE_STOVE,
-            fuel_or_power_attachment=FUEL_PROPANE_TANK,
-            fuel_connectors=CONNECTOR_PROPANE_HOSE_ADAPTER
-        ))
-        self.variants.append(CookingEquipmentInASceneFrame(
-            scene_type=SCENE_CAMPSITE,
-            heat_source=HEAT_PROPANE_STOVE,
-            fuel_or_power_attachment=FUEL_PROPANE_CANISTER
-        ))
-
-        self.variants.append(CookingEquipmentInASceneFrame(
-            scene_type=SCENE_CAMPSITE,
-            heat_source=HEAT_INDUCTION_STOVE,
-            cooking_vessel=VESSEL_INDUCTION_POT,
-            fuel_or_power_attachment=FUEL_BATTERY
-        ))
-
-        self.variants.append(CookingEquipmentInASceneFrame(
-            scene_type=SCENE_CAMPSITE,
-            ignition_tool=IGNITION_LIGHTER
-        ))
-        self.variants.append(CookingEquipmentInASceneFrame(
-            scene_type=SCENE_CAMPSITE,
-            ignition_tool=IGNITION_MATCHES
-        ))
-
-        self.variants.append(CookingEquipmentInASceneFrame(
-            scene_type=SCENE_CAMPSITE,
-            cooking_platform=PLATFORM_PORTABLE_TABLE
-        ))
-
-
-    def get_scenes(self, scene_type: str) -> List[CookingEquipmentInASceneFrame]:
-        """Get all scene variants for a specific scene type."""
-        result = [
-            frame for frame in self.variants if frame.scene_type in [scene_type, SCENE_ANY]
-        ]
-
-        if not len(result):
-            raise LookupError(f"Invalid scene type specified: {scene_type}")
-
-        return result
-
 # ============================================================================
 # HELPER CLASSES AND FUNCTIONS
 # ============================================================================
@@ -556,8 +281,63 @@ def generate_chai_tooling(frame: ChaiPreparationIngredientsActionsFrame) -> str:
 
     return description
 
-# ============================================================================
-# INSTANTIATED VARIANTS
-# ============================================================================
+def get_tooling_for_scene(
+    scene_conditions: CookingSceneConditionFrame,
+) -> str:
+    """Generate tooling requirements based on scene and environment context."""
+    if scene_conditions is None:
+        raise ValueError("scene_conditions must be provided.")
 
-SCENE_FRAMES_VARIANTS = CookingEquipmentSceneFrameVariants()
+    def add_item(item: Optional[str], reason: str, items: List[Tuple[str, str]], seen: Set[str]) -> None:
+        if item and item not in seen:
+            items.append((item, reason))
+            seen.add(item)
+
+    tooling: List[Tuple[str, str]] = []
+    seen_items: Set[str] = set()
+    effective_heat_source = scene_conditions.heat_source
+
+    # Always include the heat source itself when known
+    if effective_heat_source:
+        add_item(effective_heat_source, "primary heat source for cooking", tooling, seen_items)
+
+    if scene_conditions.does_vessel_have_handle is False:
+        add_item(HANDLING_TOOL_CLAMP, "vessel has no handle", tooling, seen_items)
+        add_item(HANDLING_TOOL_MITTEN, "vessel has no handle", tooling, seen_items)
+    if scene_conditions.preparaing_for_a_large_group:
+        add_item(VESSEL_STOCKPOT_SPIGOT, "preparing for a large group", tooling, seen_items)
+    if effective_heat_source == HEAT_GAS_COOKTOP:
+        add_item(VESSEL_POT, "heat source is gas cooktop", tooling, seen_items)
+    if effective_heat_source == HEAT_INDUCTION_COOKTOP:
+        add_item(VESSEL_INDUCTION_POT, "heat source is induction cooktop", tooling, seen_items)
+    if scene_conditions.is_windy:
+        add_item(WIND_WINDSHIELD, "conditions are windy", tooling, seen_items)
+    if scene_conditions.is_rainy:
+        add_item(RAIN_RAINFLY, "conditions are rainy", tooling, seen_items)
+        add_item(RAIN_CANOPY, "conditions are rainy", tooling, seen_items)
+    if scene_conditions.is_dark:
+        add_item(LIGHTING_LANTERN, "conditions are dark", tooling, seen_items)
+        add_item(LIGHTING_HEADLAMP, "conditions are dark", tooling, seen_items)
+    if effective_heat_source == HEAT_BUTANE_STOVE:
+        add_item(FUEL_BUTANE_CANISTER, "heat source is butane stove", tooling, seen_items)
+    if effective_heat_source == HEAT_PROPANE_STOVE:
+        add_item(FUEL_PROPANE_CANISTER, "heat source is propane stove", tooling, seen_items)
+        add_item(FUEL_PROPANE_TANK, "propane stove can connect to refillable tank", tooling, seen_items)
+        add_item(CONNECTOR_PROPANE_HOSE_ADAPTER, "propane tank setup may require hose adapter", tooling, seen_items)
+    if effective_heat_source == HEAT_INDUCTION_STOVE:
+        add_item(VESSEL_INDUCTION_POT, "heat source is induction stove", tooling, seen_items)
+        add_item(FUEL_BATTERY, "induction stove requires portable power", tooling, seen_items)
+    if scene_conditions.is_ignition_needed:
+        add_item(IGNITION_LIGHTER, "ignition is needed", tooling, seen_items)
+        add_item(IGNITION_MATCHES, "ignition is needed", tooling, seen_items)
+    if scene_conditions.has_uneven_groumd:
+        add_item(PLATFORM_PORTABLE_TABLE, "ground is uneven", tooling, seen_items)
+
+    description = "Tooling required based on the provided scene conditions:\n"
+    if tooling:
+        for idx, (item, reason) in enumerate(tooling, start=1):
+            description += f"{idx}. {item} (because {reason})\n"
+    else:
+        description += "No additional tooling required based on the provided conditions.\n"
+
+    return description

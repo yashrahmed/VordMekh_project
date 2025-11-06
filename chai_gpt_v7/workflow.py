@@ -1,11 +1,12 @@
-from langchain_core.messages import HumanMessage, AIMessage, SystemMessage
+from langchain_core.messages import HumanMessage, AIMessage
 from langchain_core.language_models.chat_models import BaseChatModel
 import re
 from .frames import (
     ChaiPreparationIngredientsActionsFrame as CPIAF,
-    SCENE_FRAMES_VARIANTS,
+    CookingSceneConditionFrame as CSCF,
     ChaiRecipe,
-    generate_chai_tooling
+    generate_chai_tooling,
+    get_tooling_for_scene
 )
 
 def get_recipe_step(llm: BaseChatModel, user_request: str) -> ChaiRecipe:
@@ -41,9 +42,20 @@ def infer_chai_prep_tools_step(ingredient_prep_frame: CPIAF) -> str:
     return generate_chai_tooling(ingredient_prep_frame)
 
 def generate_full_scene_descriptor_step(scene_type: str, ingredient_prep_frame: CPIAF, tooling_description: str):
+    # @ToDo scene type should be replaced with a scene description.
     "Combine the results from the previous steps with the cooking scenario descriptions like in V6."
-    equipment_frames = SCENE_FRAMES_VARIANTS.get_scenes(scene_type)
-    equipment_frames_descriptions = '____________________\n'.join([scene.generate_description() for scene in equipment_frames])
+    scene_tooling_description = get_tooling_for_scene(
+        CSCF( # @ToDo - How do I get a result for multiple heat sources.
+            is_ignition_needed=True,
+            is_windy=True,
+            is_rainy=True,
+            is_dark=True,
+            has_uneven_groumd=True,
+            does_vessel_have_handle=True,
+            preparaing_for_a_large_group=True,
+        )
+    )
+
     ingredient_frame_description = ingredient_prep_frame.generate_description()
     full_description = f"""
         Here are the details about preparing chai at {scene_type}.
@@ -58,7 +70,7 @@ def generate_full_scene_descriptor_step(scene_type: str, ingredient_prep_frame: 
 
         Preparation contexts and the required equipment -
         
-        {equipment_frames_descriptions}
+        {scene_tooling_description}
     """
     full_description = '\n'.join([re.sub(r'^[\s^\n]+', '' ,line) for line in full_description.split('\n')])
     return full_description
