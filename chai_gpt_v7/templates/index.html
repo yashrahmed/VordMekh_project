@@ -398,26 +398,16 @@
           row.className = 'scene-buttons';
           const btnHome = document.createElement('button');
           btnHome.className = 'btn-small';
-          btnHome.textContent = 'Prep@Home';
-          btnHome.title = 'Required tools: home';
+          btnHome.textContent = 'Search for tools';
+          btnHome.title = 'Search for required tools';
           btnHome.addEventListener('click', (e) => {
             e.preventDefault();
-            requestPreparation('home');
-          });
-
-          const btnCamp = document.createElement('button');
-          btnCamp.className = 'btn-small';
-          btnCamp.textContent = 'Prep@Campsite';
-          btnCamp.title = 'Required tools: campsite';
-          btnCamp.addEventListener('click', (e) => {
-            e.preventDefault();
-            requestPreparation('campsite');
+            requestPreparation();
           });
 
           row.appendChild(btnHome);
-          row.appendChild(btnCamp);
           btnHomeRef = btnHome;
-          btnCampRef = btnCamp;
+          btnCampRef = null;
           return row;
         }
 
@@ -426,7 +416,7 @@
           if (btnCampRef) btnCampRef.disabled = !!busy;
         }
 
-        async function requestPreparation(scene) {
+        async function requestPreparation() {
           if (!hasRenderedRecipe || !lastRecipeText) return;
 
           tipsOutput.innerHTML = '<div class="spinner-row"><div class="spinner"></div><span class="subtle">Fetching required tools…</span></div>';
@@ -444,7 +434,6 @@
                 'Accept': 'application/json, text/plain;q=0.8, */*;q=0.5'
               },
               body: JSON.stringify({
-                scene_type: scene,
                 recipe_text: lastRecipeText,
               }),
             });
