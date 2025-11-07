@@ -50,7 +50,7 @@ def generate_full_scene_descriptor_step(ingredient_prep_frame: CPIAF, tooling_de
             is_windy=True,
             is_rainy=True,
             is_dark=True,
-            has_uneven_groumd=True,
+            has_uneven_ground=True,
             does_vessel_have_handle=True,
             preparaing_for_a_large_group=True,
         )

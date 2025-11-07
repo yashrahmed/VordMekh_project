@@ -10,6 +10,7 @@ from bot_utils.tools import set_open_api_key, setup_openai_model  # type: ignore
 from .frames import (  # type: ignore  # noqa: E402
     ChaiPreparationIngredientsActionsFrame,
     ChaiRecipe,
+    CookingSceneConditionFrame,
 )
 from .workflow import (  # type: ignore  # noqa: E402
     generate_full_nl_description_step,
@@ -52,55 +53,100 @@ def load_llm(model_name: str, config_path = 'keys-config.yml'):
         raise RuntimeError(err)
     return llm
 
+
+def parse_scene_conditions(natural_language_input: str, llm):
+    """
+    Parse natural language description into CookingSceneConditionFrame using structured output.
+
+    Args:
+        natural_language_input: Natural language description of cooking scene conditions
+        llm: Optional pre-loaded LLM instance. If None, will load default model.
+        config_path: Path to config file for API keys (used if llm is None)
+
+    Returns:
+        CookingSceneConditionFrame: Parsed scene conditions
+    """
+    import json
+
+    # Create structured output parser
+    structured_llm = llm.with_structured_output(CookingSceneConditionFrame)
+
+    # Create prompt for parsing
+    prompt = f"""Parse the following natural language description into cooking scene conditions.
+Follow the guidelines in the CookingSceneConditionFrame docstring carefully.
+
+Description: {natural_language_input}
+
+Extract all relevant scene conditions from the text."""
+
+    # Invoke LLM with structured output
+    messages = [HumanMessage(prompt)]
+    scene_frame = structured_llm.invoke(messages)
+
+    # Print as JSON
+    print(json.dumps(scene_frame.model_dump(), indent=2))
+
+    return scene_frame
+
+
 def main():
     llm = load_llm(model_name="gpt-5-chat-latest")
-    serving_situation_options = [
-        'Preparing chai for a large group of people i.e > 10.',
-        'Preparing chai for a small number of people i.e. 1-4'
-    ]
-    chai_customizations = load_yaml_dict("chai_gpt_v7/recipe-exploration/customization-1.yml")
-    recipe_responses = []
-    item_num = 1
-    total = len(list(chain.from_iterable(chai_customizations.values()))) * 2
-    limit = -1 #-1 indicates no limit; Used for testing when I do not want to run the llm for all customizations.
-    for chai_name, customizations in chai_customizations.items():
-        if limit > -1 and item_num > limit: break
-        for cust_item in customizations:
-            if limit > -1 and item_num > limit: break
-            for serving_situation in serving_situation_options:
-                if limit > -1 and item_num > limit: break
-                recipe_query = f"""
-                    I wish to prepare {chai_name}.
-                    I wish to customize it like so -
-                    {cust_item}
-                    Here is the preparation context -
-                    {serving_situation}
+    nl_input = """
+    I am preparing masala chai. I want it extra strong with low sugar.
+    I am preparing it at a campsite. It is going to be very windy and I have an induction cooktop.
+    The pot I will be using is an old one without a handle.
 
-                    Give me the recipe for prearing the above.
-                    Take into account the following -
-                    1. I do not have much help handling heavy tools/utensils.
-                    2. I am preparing this solo.
 
-                    - The recipe must be structured as follows - 
-                        Ingredients:
-                            1.
-                            2. .... ingredients and their quantities.
-                        Preparation steps:
-                            1. 
-                            2. .... preparation steps
+    """
+    print(parse_scene_conditions(nl_input, llm))
+
+    # serving_situation_options = [
+    #     'Preparing chai for a large group of people i.e > 10.',
+    #     'Preparing chai for a small number of people i.e. 1-4'
+    # ]
+    # chai_customizations = load_yaml_dict("chai_gpt_v7/recipe-exploration/customization-1.yml")
+    # recipe_responses = []
+    # item_num = 1
+    # total = len(list(chain.from_iterable(chai_customizations.values()))) * 2
+    # limit = -1 #-1 indicates no limit; Used for testing when I do not want to run the llm for all customizations.
+    # for chai_name, customizations in chai_customizations.items():
+    #     if limit > -1 and item_num > limit: break
+    #     for cust_item in customizations:
+    #         if limit > -1 and item_num > limit: break
+    #         for serving_situation in serving_situation_options:
+    #             if limit > -1 and item_num > limit: break
+    #             recipe_query = f"""
+    #                 I wish to prepare {chai_name}.
+    #                 I wish to customize it like so -
+    #                 {cust_item}
+    #                 Here is the preparation context -
+    #                 {serving_situation}
+
+    #                 Give me the recipe for prearing the above.
+    #                 Take into account the following -
+    #                 1. I do not have much help handling heavy tools/utensils.
+    #                 2. I am preparing this solo.
+
+    #                 - The recipe must be structured as follows - 
+    #                     Ingredients:
+    #                         1.
+    #                         2. .... ingredients and their quantities.
+    #                     Preparation steps:
+    #                         1. 
+    #                         2. .... preparation steps
                     
-                    - Output only the recipe.
-                    - No follow up questions.
-                    - Do NOT respond if the user's request has nothing to do with a chai recipe. 
-                """
-                messages = [HumanMessage(recipe_query)]
-                output = llm.invoke(messages)
-                recipe_response = f"""Recipe for {chai_name}\n\n{output.content}"""
-                recipe_responses.append(recipe_response)
-                print(f"{item_num} / {total} done!")
-                item_num += 1
+    #                 - Output only the recipe.
+    #                 - No follow up questions.
+    #                 - Do NOT respond if the user's request has nothing to do with a chai recipe. 
+    #             """
+    #             messages = [HumanMessage(recipe_query)]
+    #             output = llm.invoke(messages)
+    #             recipe_response = f"""Recipe for {chai_name}\n\n{output.content}"""
+    #             recipe_responses.append(recipe_response)
+    #             print(f"{item_num} / {total} done!")
+    #             item_num += 1
                     
-    write_text_file("chai_gpt_v7/recipe-exploration/recipe-responses.txt", SEPARATOR.join(recipe_responses))
+    # write_text_file("chai_gpt_v7/recipe-exploration/recipe-responses.txt", SEPARATOR.join(recipe_responses))
                     
 
 

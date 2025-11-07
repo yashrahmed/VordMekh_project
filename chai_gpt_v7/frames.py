@@ -147,7 +147,7 @@ class CookingSceneConditionFrame(BaseModel):
     is_windy: Optional[bool] = None
     is_rainy: Optional[bool] = None
     is_dark: Optional[bool] = None
-    has_uneven_groumd: Optional[bool] = None
+    has_uneven_ground: Optional[bool] = None
     does_vessel_have_handle: Optional[bool] = None
     preparaing_for_a_large_group: Optional[bool] = None
 
@@ -394,7 +394,7 @@ def get_tooling_for_scene(
     if scene_conditions.is_ignition_needed:
         add_item(IGNITION_LIGHTER, "ignition is needed", tooling, seen_items)
         add_item(IGNITION_MATCHES, "ignition is needed", tooling, seen_items)
-    if scene_conditions.has_uneven_groumd:
+    if scene_conditions.has_uneven_ground:
         add_item(PLATFORM_PORTABLE_TABLE, "ground is uneven", tooling, seen_items)
 
     description = "Tooling required based on the provided scene conditions:\n"
