@@ -75,26 +75,19 @@ def get_recipe():
 
 @app.route("/get-prep-tools", methods=["POST"])
 def get_prep_tools():
-    scene_type = None
     recipe_text = None
     if request.is_json:
         body = request.get_json(silent=True) or {}
-        scene_type = body.get("scene_type")
         recipe_text = body.get("recipe_text")
-    if not scene_type:
-        return jsonify({"error": "Missing scene_type"}), 400
-    valid_scenes = ["home", "campsite"]
-    if scene_type not in valid_scenes:
-        return jsonify({"error": f"scene_type must be one of {' or '.join(valid_scenes)}"}), 400
     if not recipe_text:
         return jsonify({"error": "Missing text payload"}), 400
     recipe_text = _sanitize_text(recipe_text)
 
     recipe_frame: CPIAF = parse_recipe_step(llm_handle.llm, recipe_text)
     tooling_description: str = infer_chai_prep_tools_step(recipe_frame)
-    combined_scene_description = generate_full_scene_descriptor_step(scene_type, recipe_frame, tooling_description)
+    combined_scene_description = generate_full_scene_descriptor_step(recipe_frame, tooling_description)
     nl_output = generate_full_nl_description_step(llm_handle.llm, combined_scene_description)
-    return jsonify({"scene_type": scene_type, "sanitized_text": nl_output}), 200
+    return jsonify({"sanitized_text": nl_output}), 200
 
 
 @app.route("/hello", methods=["GET"])
