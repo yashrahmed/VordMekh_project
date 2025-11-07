@@ -41,7 +41,7 @@ def infer_chai_prep_tools_step(ingredient_prep_frame: CPIAF) -> str:
     "Lookup the chai prep tools table using the above step's output as the input."
     return generate_chai_tooling(ingredient_prep_frame)
 
-def generate_full_scene_descriptor_step(scene_type: str, ingredient_prep_frame: CPIAF, tooling_description: str):
+def generate_full_scene_descriptor_step(ingredient_prep_frame: CPIAF, tooling_description: str):
     # @ToDo scene type should be replaced with a scene description.
     "Combine the results from the previous steps with the cooking scenario descriptions like in V6."
     scene_tooling_description = get_tooling_for_scene(
@@ -58,7 +58,7 @@ def generate_full_scene_descriptor_step(scene_type: str, ingredient_prep_frame: 
 
     ingredient_frame_description = ingredient_prep_frame.generate_description()
     full_description = f"""
-        Here are the details about preparing chai at {scene_type}.
+        Here are the details about preparing chai.
 
         Ingredients and actions -
         

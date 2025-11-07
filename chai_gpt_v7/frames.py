@@ -83,8 +83,66 @@ TOOL_ZESTER = "zester"
 # ============================================================================
 
 class CookingSceneConditionFrame(BaseModel):
-    """Frame capturing environmental and preparation details for a cooking scene."""
-    heat_source: Optional[str] = HEAT_PROPANE_STOVE
+    """
+    Frame capturing environmental and preparation details for a cooking scene.
+
+    Fill procedure (step-by-step):
+    1) Heat Source Options:
+       - By default, all heat sources are available (gas cooktop, induction cooktop, propane stove, butane stove, induction stove).
+       - If the text explicitly mentions specific heat sources (e.g., "using a propane stove", "on a gas cooktop"),
+         set heat_source_options to only include those mentioned.
+       - If no heat source is mentioned, keep the default list of all options.
+       - Examples:
+         * "brewing chai on a propane stove" → heat_source_options = ["propane stove"]
+         * "using either gas or induction cooktop" → heat_source_options = ["gas cooktop", "induction cooktop"]
+         * "making chai outdoors" (no specific heat source) → keep default list
+
+    2) Ignition Requirement (is_ignition_needed):
+       - Set to True if the text mentions needing to light/ignite the heat source.
+       - Keywords: "light the stove", "ignite", "use lighter", "use matches", "strike a match"
+       - Set to False if using electric/battery-powered heat sources.
+       - Leave None if not specified.
+
+    3) Environmental Conditions:
+       - is_windy: Set to True if text mentions wind, breeze, gusts, or wind protection needs.
+         Examples: "windy conditions", "protect from wind", "breeze blowing", "need windshield"
+
+       - is_rainy: Set to True if text mentions rain, wet conditions, or rain protection needs.
+         Examples: "rainy weather", "protect from rain", "drizzling", "need cover", "use rainfly"
+
+       - is_dark: Set to True if text mentions darkness, low light, nighttime, or lighting needs.
+         Examples: "brewing at night", "dark conditions", "need light", "can't see well", "early morning darkness"
+
+    4) Ground and Surface Conditions (has_uneven_groumd):
+       - Set to True if text mentions uneven, rocky, sloped, or unstable ground/surface.
+       - Keywords: "uneven ground", "rocky terrain", "sloped surface", "need stable surface", "unstable ground"
+       - Set to False if explicitly mentions flat/level surface.
+       - Leave None if not specified.
+
+    5) Vessel Characteristics (does_vessel_have_handle):
+       - Set to True if text mentions the pot/vessel has a handle or is easy to grip.
+       - Set to False if text mentions no handle, need for clamps/tongs, or difficulty holding.
+       - Keywords for False: "no handle", "need clamps", "use tongs", "difficult to hold", "hot to touch"
+       - Leave None if not specified.
+
+    6) Group Size (preparaing_for_a_large_group):
+       - Set to True if text mentions preparing for many people, a large group, crowd, or gathering.
+       - Keywords: "large group", "many people", "crowd", "20+ servings", "party", "gathering", "event"
+       - Set to False if explicitly mentions small group (1-4 people) or personal use.
+       - Leave None if not specified.
+
+    Summary:
+       - This model helps LLMs extract cooking scene context from natural language descriptions.
+       - It captures environmental challenges, equipment constraints, and preparation scale.
+       - Boolean fields should be set based on explicit mentions or strong implications in the text.
+    """
+    heat_source_options: List[str] = [
+        HEAT_GAS_COOKTOP,
+        HEAT_INDUCTION_COOKTOP,
+        HEAT_PROPANE_STOVE,
+        HEAT_BUTANE_STOVE,
+        HEAT_INDUCTION_STOVE
+    ]
     is_ignition_needed: Optional[bool] = None
     is_windy: Optional[bool] = None
     is_rainy: Optional[bool] = None
@@ -295,21 +353,36 @@ def get_tooling_for_scene(
 
     tooling: List[Tuple[str, str]] = []
     seen_items: Set[str] = set()
-    effective_heat_source = scene_conditions.heat_source
+    heat_source_options = scene_conditions.heat_source_options
 
-    # Always include the heat source itself when known
-    if effective_heat_source:
-        add_item(effective_heat_source, "primary heat source for cooking", tooling, seen_items)
+    # Always include all heat source options
+    if heat_source_options:
+        for heat_source in heat_source_options:
+            add_item(heat_source, "available heat source option for cooking", tooling, seen_items)
 
     if scene_conditions.does_vessel_have_handle is False:
         add_item(HANDLING_TOOL_CLAMP, "vessel has no handle", tooling, seen_items)
         add_item(HANDLING_TOOL_MITTEN, "vessel has no handle", tooling, seen_items)
     if scene_conditions.preparaing_for_a_large_group:
         add_item(VESSEL_STOCKPOT_SPIGOT, "preparing for a large group", tooling, seen_items)
-    if effective_heat_source == HEAT_GAS_COOKTOP:
-        add_item(VESSEL_POT, "heat source is gas cooktop", tooling, seen_items)
-    if effective_heat_source == HEAT_INDUCTION_COOKTOP:
-        add_item(VESSEL_INDUCTION_POT, "heat source is induction cooktop", tooling, seen_items)
+
+    # Process each heat source option for specific equipment needs
+    if heat_source_options:
+        for heat_source in heat_source_options:
+            if heat_source == HEAT_GAS_COOKTOP:
+                add_item(VESSEL_POT, "gas cooktop option available", tooling, seen_items)
+            if heat_source == HEAT_INDUCTION_COOKTOP:
+                add_item(VESSEL_INDUCTION_POT, "induction cooktop option available", tooling, seen_items)
+            if heat_source == HEAT_BUTANE_STOVE:
+                add_item(FUEL_BUTANE_CANISTER, "butane stove option available", tooling, seen_items)
+            if heat_source == HEAT_PROPANE_STOVE:
+                add_item(FUEL_PROPANE_CANISTER, "propane stove option available", tooling, seen_items)
+                add_item(FUEL_PROPANE_TANK, "propane stove can connect to refillable tank", tooling, seen_items)
+                add_item(CONNECTOR_PROPANE_HOSE_ADAPTER, "propane tank setup may require hose adapter", tooling, seen_items)
+            if heat_source == HEAT_INDUCTION_STOVE:
+                add_item(VESSEL_INDUCTION_POT, "induction stove option available", tooling, seen_items)
+                add_item(FUEL_BATTERY, "induction stove requires portable power", tooling, seen_items)
+
     if scene_conditions.is_windy:
         add_item(WIND_WINDSHIELD, "conditions are windy", tooling, seen_items)
     if scene_conditions.is_rainy:
@@ -318,15 +391,6 @@ def get_tooling_for_scene(
     if scene_conditions.is_dark:
         add_item(LIGHTING_LANTERN, "conditions are dark", tooling, seen_items)
         add_item(LIGHTING_HEADLAMP, "conditions are dark", tooling, seen_items)
-    if effective_heat_source == HEAT_BUTANE_STOVE:
-        add_item(FUEL_BUTANE_CANISTER, "heat source is butane stove", tooling, seen_items)
-    if effective_heat_source == HEAT_PROPANE_STOVE:
-        add_item(FUEL_PROPANE_CANISTER, "heat source is propane stove", tooling, seen_items)
-        add_item(FUEL_PROPANE_TANK, "propane stove can connect to refillable tank", tooling, seen_items)
-        add_item(CONNECTOR_PROPANE_HOSE_ADAPTER, "propane tank setup may require hose adapter", tooling, seen_items)
-    if effective_heat_source == HEAT_INDUCTION_STOVE:
-        add_item(VESSEL_INDUCTION_POT, "heat source is induction stove", tooling, seen_items)
-        add_item(FUEL_BATTERY, "induction stove requires portable power", tooling, seen_items)
     if scene_conditions.is_ignition_needed:
         add_item(IGNITION_LIGHTER, "ignition is needed", tooling, seen_items)
         add_item(IGNITION_MATCHES, "ignition is needed", tooling, seen_items)
