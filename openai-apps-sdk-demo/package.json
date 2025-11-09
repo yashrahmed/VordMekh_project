@@ -1,0 +1,24 @@
+{
+  "name": "openai-apps-sdk-demo",
+  "version": "1.0.0",
+  "description": "Simple Node entry point for the VordMekh OpenAI Apps SDK demo.",
+  "type": "module",
+  "engines": {
+    "node": "22.11.0"
+  },
+  "scripts": {
+    "start": "node index.js",
+    "lint": "echo \"No linting configured\""
+  },
+  "keywords": [
+    "openai",
+    "apps-sdk",
+    "demo"
+  ],
+  "author": "",
+  "license": "MIT",
+  "dependencies": {
+    "@modelcontextprotocol/sdk": "^1.21.1",
+    "zod": "^3.25.76"
+  }
+}
