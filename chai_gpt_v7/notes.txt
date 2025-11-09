@@ -16,6 +16,17 @@ Tools and Libraries -
 4.....Something from prompt caching.......
 
 @Todo
-- Find a way to specify multiple possible heat source in the CookingSceneConditionFrame.
-- Remove scene_type and replace with a scene description?
+- Add more detections for sky-diving/earthquake etc.
+- Use a talking form as way for the user to specify prepration context.
+- Partial notes -
+    The entire frame assumes:
+        •	a surface exists (ground, cooktop),
+        •	fuel-based or electric heat sources are plausible,
+        •	the environment is static (you stand, cook, manipulate utensils).
 
+    In a skydiving context:
+        •	There’s no stable surface,
+        •	No containment for heat (flame extinguished instantly),
+        •	No usable gravity reference (so “up”, “down”, “pour”, “place” lose meaning).
+
+    Hence, every attribute either becomes meaningless or underspecified.
