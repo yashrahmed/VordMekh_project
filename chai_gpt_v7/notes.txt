@@ -30,3 +30,28 @@ Tools and Libraries -
         •	No usable gravity reference (so “up”, “down”, “pour”, “place” lose meaning).
 
     Hence, every attribute either becomes meaningless or underspecified.
+
+    Sure — here’s that table rendered in plain ASCII text:
+
+    +--------------------+-------------------------------------+--------------------------------------------+
+    | Terrain Type       | Recommended Tool/Approach           | Purpose                                    |
+    +--------------------+-------------------------------------+--------------------------------------------+
+    | Slightly uneven    | Adjustable legs / canister          | Fine leveling                             |
+    | soil or gravel     | stabilizer                          |                                            |
+    +--------------------+-------------------------------------+--------------------------------------------+
+    | Rocky terrain      | Tripod stand or sand/rock base      | Stability & weight distribution            |
+    +--------------------+-------------------------------------+--------------------------------------------+
+    | Steep slope        | Platform board + wedges             | Level surface creation                     |
+    +--------------------+-------------------------------------+--------------------------------------------+
+    | Cliff / extreme    | Hanging or suspension mount         | Safety and balance                         |
+    | incline            |                                     |                                            |
+    +--------------------+-------------------------------------+--------------------------------------------+
+    | Soft wet ground    | Board or metal plate                | Prevent sinking & level support            |
+    +--------------------+-------------------------------------+--------------------------------------------+
+
+    Some new things I want to add.
+
+    - has_stable_surface [terminal i.e. fail if false]
+    - is_ground_soft_or_wet
+    - has_oxygen [terminal i.e. fail if false]
+    - is_ground_uneven
