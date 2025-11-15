@@ -1,0 +1,16 @@
+<html>
+    <body>
+    <div id="app"></div>
+    <div id="app2"></div>
+    <script src="https://unpkg.com/react@18/umd/react.development.js"></script>
+    <script src="https://unpkg.com/react-dom@18/umd/react-dom.development.js"></script>
+    <script src="https://unpkg.com/@babel/standalone/babel.min.js"></script>
+    <script type = "text/jsx">
+        const root1 = ReactDOM.createRoot(document.getElementById('app'));
+        root1.render(<h1>Hello There!</h1>);
+
+        const root2 = ReactDOM.createRoot(document.getElementById('app2'));
+        root2.render(<h1>Hello There 2!</h1>);
+    </script>
+    </body>
+</html>
