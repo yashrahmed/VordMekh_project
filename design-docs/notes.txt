@@ -62,3 +62,13 @@ Pivoting to a CampRaG system.
 - Extract semantic labels from it.
 - Search for tools from a database using those semantic labels.
 - The database must be built from a camping guide book.
+
+Plan for CampRAG:
+- Learn React/Next.
+- Maybe FastAPI
+- Build a DB using a camping guide book.
+- Design a frame with slots having conditions to search against the DB.
+- Test frame parsing for scenarios.
+- search with Frames.
+- Build the integrated system.
+- Polish.
