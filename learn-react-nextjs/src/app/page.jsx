@@ -1,17 +1,4 @@
-import List from "./List";
+import {Home} from "@/components/Home";
+import "./index.css";
 
-const synonyms = ["essentials", "fundamentals", "core concepts"]
-
-function getRandomSyn() {
-  let idx = Math.floor(Math.random() * synonyms.length);
-  return synonyms[idx];
-}
-
-export default function Home() {
-  return (
-    <div>
-       This is the homepage for React {getRandomSyn()}.
-       <List/>
-    </div>
-  );
-}
+export default Home;
