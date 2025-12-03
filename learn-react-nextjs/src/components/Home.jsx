@@ -1,5 +1,4 @@
 'use client';
-
 import { useState } from "react";
 
 import { CORE_CONCEPTS, EXAMPLES } from "@/resources/data";
@@ -48,7 +47,6 @@ export function Home() {
                                 {EXAMPLES[clickedButton].code}
                             </code>
                         </pre>
-                        {clickedButton}
                     </div>
                 }
             </section>
