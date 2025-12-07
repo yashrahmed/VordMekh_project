@@ -1,0 +1,79 @@
+Idea for a schema - 
+    Tool name
+    Synonyms (options)
+    Description
+    Image
+    actions attrs - Determined by schema design.
+
+
+Examples -
+1. Tourné knife.
+    Name: Tourné knife
+    Description:
+        Tournée is French word for "turned". It is used to refer to a special type of vegetable cut which results in a 7 sided cut. Some consider to be a type of paring knife.
+    Image: TBD
+    actions:
+        peel_round_produce
+        extract_stem_core
+        remove_surface_blemish
+        sculpt_decorative_shape
+
+2. Paring knife.
+    Name: Paring knife.
+    Description:
+        A small, short-bladed knife (usually 3-4 inches) with a straight or slightly convex edge. It is the most versatile tool for precision tasks that require control, usable both in the hand (peeling) and on a cutting board (mincing).
+    Image: TBD
+    actions:
+        peel_round_produce,
+        peel_irregular_produce,
+        extract_stem_core,
+        slice_small_produce,
+        mince_small_aromatics,
+        trim_meat_fat,
+        pierce_check_texture,
+        sever_binding_material
+
+3. Slicer knife.
+    Name: Slicer knife
+    Description:    
+        Long blade with a round or pointed tip; blade may be flexible or rigid, tapered or round, or have a fluted edge.
+    Image: TBD
+    actions:
+        carve_cooked_protein
+        slice_cured_fish
+        slice_uniform_portions
+        portion_boneless_meat
+
+4. Boning knife.
+    Name: Boning knife
+    Description:    
+        Blade is thinner than that of chefs knife, about 6 inches long, and rigid. It is used for separating raw meat from bone.
+    Image: TBD
+    actions:
+        debone_raw_protein
+        disjoint_carcass
+        trim_connective_tissue
+        extract_buried_bone
+        butterfly_thick_protein
+
+5. Mandoline.
+    Name: Mandoline Slicer.
+    Description: Blades of high-carbon steel. Levers adjust blades to achieve cut and thickness desired. Guard provides safety. Slicing, julienning, cutting gaufre ttes and batonnets.
+    Image: TBD.
+    actions:
+        slice_uniform_produce
+        julienne_vegetables
+        cut_french_fries
+        cut_waffle_pattern
+        shave_delicate_produce
+
+6. Sauce whisk.
+    Name: Sauce whisk.
+    Description: Balloon whisks are sphere shaped and have thin wires to incorporate air when making foams. Sauce whisks are narrower and frequently have thick wires.
+    Image: TBD.
+    actions:
+        emulsify_liquid_fat
+        smooth_heavy_sauce
+        access_pan_corners
+        dissolve_starch_thickener
+        
