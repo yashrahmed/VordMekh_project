@@ -1,7 +1,7 @@
-- Create a set of queries and test the parsing with a limited set of tools.
-- Write search functionality and test against the queries.
-- Then...
-    -  Add new tools (Max of 25).
-    -  Create new set of queries.
-    -  test the parsing + search functionality.
+- Start by..
+    -  ✓ Add new tools (Max of 25).
+    -  ✓ test the parsing by spot checking.
+- Write search functionality.
+- Create new set of queries for testing.
+- Test against the queries (both parsing / search).
 - ... App development....  

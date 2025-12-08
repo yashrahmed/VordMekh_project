@@ -46,7 +46,7 @@ def launch():
     _, llm = setup_openai_model(model_name="gpt-5-chat-latest")
     llm_handle.llm = llm
     prompt = """
-        How do I cut carrots into small long pieces. I need to do so to garnishing.
+        I need stir fry some chicken in order to get the color.
       """
     cooking_actions = parse_actions(prompt)
     print(cooking_actions.pretty_print())
