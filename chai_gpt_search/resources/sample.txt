@@ -77,3 +77,31 @@ Examples -
         access_pan_corners
         dissolve_starch_thickener
         
+7. Cleaver - A heavy knife use to cut through bones. Cleaver's typically have a rectangular blade.
+8. Utility knife - Smaller and lighter than a chef's knife useed for various cutting chores.
+9. Chef's/French knives - Has blades 8-12 inches long. All purpose utility knife for a variety of chopping mincing and slicing chores.
+
+10. Balloon whisks - Are ballon shaped and have thin wires. They are used for beating blending and whipping.
+11. Peelers - Tools used for peeling vegeteables and fruits. The blade may be mounted horizontally or vertically.
+12. Rolling pins - A rolling pin is a cylindrical food preparation utensil used to shape and flatten dough. Two styles of rolling pin are found: rollers and rods. They are used for different tasks in cooking and baking.
+
+13. Stockpot/Marmite - A stock pot is a large, often deep pot that is used to prepare soups or simmer liquids. They are meant to handle large quantities of liquid.  It is taller than it is wide, with straight sides, and sometimes has a spigot.
+14. Sauce pot - They are tall. But not as tall as a stockpot. They are used for simmering and reducing sauces. The wider base helps the liquid head evenly.
+15. Sauce pan - Narrower than a sauce pot but typically just as tall. They have a long handle on one side.
+16. Sauteuses/Saute pan - Shallow skillet with sloping sides and a long handle.
+17. Fish poacher - It is a long narrow lidded pot with straight sides that includes a perforated rack for holding fish.
+
+18. Measuring spoons - Measuring spoons are essential kitchen tools used to determine the amount of an ingredient needed for a recipe. They usually come in sets that include several sizes. Unlike measuring cups, which are typically used for dry and liquid ingredients in larger volumes, measuring spoons are ideal for smaller amounts, such as spices, herbs, and concentrated liquids.
+19. Measuring pitcher - A measuring pitcher is a kitchen utensil used to measure liquid and sometimes dry ingredients accurately. It usually features graduated markings to indicate different volumes, often in both metric (milliliters/liters) and imperial units.
+20. Probe thermometer - A kitchen probe thermometer is a device used to measure the internal temperature of food while it cooks, allowing for accurate monitoring without opening the oven or grill. They are especially useful for roasting, baking, grilling, and smoking, providing real-time temperature readings.
+
+21. Colander - A colander is a kitchen utensil perforated with holes used to strain foods such as pasta or to rinse vegetables. The perforations of the colander allow liquid to drain through while retaining the solids inside.
+22. Ricer - A potato ricer (also called a ricer) is a kitchen implement used to process potatoes or other food by forcing it through a sheet of small holes, which are typically about the diameter of a grain of rice. This form of food processing is called ricing.
+23. Chinois/Conical Sieve - Also known as a bouillon strainer, is a conical sieve with an extremely fine mesh. It is used to strain custards, purees, soups, and sauces, producing a very smooth texture. It can also be used to dust food with a fine layer of powdered ingredient.
+
+24. Roasting pan - Used for roasting or baking. It is a rectangular pan with medium high sides.
+24. Loaf pan - Rectangular deep pan with straight or flared sides. It is used for baking breads and meatloves.
+25. Ramekin - It is a round straight-sided ceramic dishes. Used for molding while baking souffles etc.
+
+26. Blender - Used for pureeing, liquefying and emulsifying foods. It consists of a base that houses the motor and a removalable lidded jar.
+27. Stand mixer - Used for mixing, beating, whipping and kneading. It is an electrical machine with detachable bowls of various quantities and supports various attachments.
