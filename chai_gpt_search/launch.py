@@ -16,12 +16,6 @@ class LLMHandle:
 
 llm_handle = LLMHandle
 
-# ATTRIBUTE_PROMPT_PATH = Path(__file__).resolve().parent / "resources" / "attribute-prompt.txt"
-# try:
-#     ATTRIBUTE_PROMPT = ATTRIBUTE_PROMPT_PATH.read_text(encoding="utf-8").strip()
-# except FileNotFoundError:
-#     ATTRIBUTE_PROMPT = ""
-
 def parse_actions(user_query):
     ## Build a human message object.
     ## recreate the LLM object with structured output enabled.
@@ -45,7 +39,7 @@ def parse_actions(user_query):
 
 def launch():
     _ = set_open_api_key(config_file_name="keys-config.yml")
-    _, llm = setup_openai_model(model_name="gpt-5-chat-latest")
+    _, llm = setup_openai_model(model_name="gpt-5.1")
     db = load_db()
     llm_handle.llm = llm
     prompt = """

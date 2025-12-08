@@ -2,7 +2,9 @@
     -  ✓ Add new tools (Max of 25).
     -  ✓ test the parsing by spot checking.
 - ✓ Write search functionality.
+- Build the API.
+- Build the UI.
 - Create new set of queries for testing.
-- Test against the queries (both parsing / search).
+- Test against the queries.
 - Prompt tuning.
-- ... App development....  
+- Retest and refine.
