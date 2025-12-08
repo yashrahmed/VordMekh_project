@@ -6,7 +6,8 @@ from langchain_core.language_models.chat_models import BaseChatModel
 
 from bot_utils.tools import set_open_api_key, setup_openai_model
 
-from chai_gpt_search.frame import CookingActions
+from chai_gpt_search.models import CookingActions
+from chai_gpt_search.db_search import load_db
 
 
 @dataclass
@@ -53,4 +54,5 @@ def launch():
 
 
 if __name__ == '__main__':
-    launch()
+    print(load_db())
+    # launch()

@@ -1,7 +1,14 @@
-from typing import Optional
+from typing import Optional, List
 
 from pydantic import BaseModel, Field
 
+class Item(BaseModel):
+    """Inventory item describing a tool, vessel, or appliance plus its supported actions."""
+
+    key: str = Field(..., description="Unique machine-friendly identifier that matches items.yml.")
+    name: str = Field(..., description="Human-readable label for the item.")
+    description: str = Field(..., description="Text describing construction, form factor, or usage context.")
+    actions: List[str] = Field(..., description="List of CookingActions keys this item can perform.")
 
 class CookingActions(BaseModel):
     """Structured checklist of kitchen tasks for LLM parsing to flag relevant actions."""
