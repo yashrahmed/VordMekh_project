@@ -7,7 +7,7 @@ from langchain_core.language_models.chat_models import BaseChatModel
 from bot_utils.tools import set_open_api_key, setup_openai_model
 
 from chai_gpt_search.models import CookingActions
-from chai_gpt_search.db_search import load_db
+from chai_gpt_search.db_search import load_db, search_db_given_actions
 
 
 @dataclass
@@ -30,14 +30,15 @@ def parse_actions(user_query):
 
     system_prompt = (
         "You are an extraction agent that maps natural language queries about cooking"
-        "to the CookingActions schema. Mark an action True when the query implies the "
-        "cook needs that skill, False only when the text explicitly rules it out, and "
-        "leave it null when it is not mentioned."
+        "to the CookingActions schema. Mark an action True when the query implies that the "
+        "cooking action is required, False only when the text explicitly rules it out, and "
+        "leave it null when it is not mentioned. Users may post queries about specific steps involved in preparation."
+        "In such cases, the only the actions relevant to the steps must be specified."
     )
     system_message = SystemMessage(system_prompt)
     human_message = HumanMessage(
-        "Identify which actions are required for the following request. "
-        "Only rely on the provided actions list.\n\nRequest:\n" + user_query.strip()
+        "Identify which actions are required for the following request.\n"
+        + user_query.strip()
     )
 
     return structured_llm.invoke([system_message, human_message])
@@ -45,14 +46,20 @@ def parse_actions(user_query):
 def launch():
     _ = set_open_api_key(config_file_name="keys-config.yml")
     _, llm = setup_openai_model(model_name="gpt-5-chat-latest")
+    db = load_db()
     llm_handle.llm = llm
     prompt = """
-        I need stir fry some chicken in order to get the color.
+        How do I prepare the spices before cooking when making Indian chicken curry?
       """
     cooking_actions = parse_actions(prompt)
     print(cooking_actions.pretty_print())
+    print('######')
+    search_result = search_db_given_actions(db, cooking_actions)
+    for result in search_result:
+        print(result.pretty_print())
+        print('_____________')
+
 
 
 if __name__ == '__main__':
-    print(load_db())
-    # launch()
+    launch()

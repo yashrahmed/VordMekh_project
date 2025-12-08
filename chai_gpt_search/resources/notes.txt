@@ -1,7 +1,8 @@
 - Start by..
     -  ✓ Add new tools (Max of 25).
     -  ✓ test the parsing by spot checking.
-- Write search functionality.
+- ✓ Write search functionality.
 - Create new set of queries for testing.
 - Test against the queries (both parsing / search).
+- Prompt tuning.
 - ... App development....  

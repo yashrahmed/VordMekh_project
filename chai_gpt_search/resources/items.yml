@@ -80,7 +80,6 @@
     blade.
   actions:
     - chop_through_bone
-    - crush_aromatics
     - tenderize_meat
 
 - key: utility_knife
@@ -103,7 +102,6 @@
     - rock_chop_herbs
     - push_cut_vegetables
     - slice_large_produce
-    - crush_garlic_clove
 
 - key: balloon_whisk
   name: Balloon whisks
@@ -290,3 +288,12 @@
     - whip_heavy_cream
     - mix_cake_batter
     - cream_butter_sugar
+
+- key: mortar_pestle
+  name: Mortar and pestle
+  description: >-
+    A sturdy bowl paired with a matching club used to grind or crush ingredients
+    manually for pastes, spice blends, and aromatics.
+  actions:
+    - crush_aromatics
+    - crush_garlic_clove

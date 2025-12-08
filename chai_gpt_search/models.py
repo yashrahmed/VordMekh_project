@@ -10,6 +10,15 @@ class Item(BaseModel):
     description: str = Field(..., description="Text describing construction, form factor, or usage context.")
     actions: List[str] = Field(..., description="List of CookingActions keys this item can perform.")
 
+    def pretty_print(self) -> str:
+        """Readable representation that lists the metadata and supported actions."""
+        actions_text = ", ".join(self.actions) if self.actions else "None"
+        return (
+            f"{self.name} ({self.key})\n"
+            f"Description: {self.description}\n"
+            f"Supported actions: {actions_text}"
+        )
+
 class CookingActions(BaseModel):
     """Structured checklist of kitchen tasks for LLM parsing to flag relevant actions."""
 
