@@ -11,3 +11,4 @@
 
 UI launch command - 
 npx http-server -o ./chai_gpt_search/static -p 3000
+

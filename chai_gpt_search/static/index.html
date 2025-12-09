@@ -1,52 +1,307 @@
-<html>
-    <body>
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <title>ChaiGPT Search</title>
+    <style>
+        * {
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: Helvetica, Arial, sans-serif;
+            background: #fdfdfd;
+            display: flex;
+            justify-content: center;
+            padding: 30px;
+            color: #333;
+        }
+
+        .app-shell {
+            width: 880px;
+            border: 1px solid #404040;
+            background: #fff;
+            padding: 18px;
+        }
+
+        .header {
+            margin-bottom: 6px;
+        }
+
+        .header-title {
+            font-size: 20px;
+            font-weight: 600;
+        }
+
+        .header-subtitle {
+            font-size: 16px;
+            color: #555;
+        }
+
+        .search-panel {
+            border: none;
+            padding: 0;
+            margin-bottom: 16px;
+        }
+
+        textarea {
+            width: 100%;
+            height: 180px;
+            border: 1px solid #404040;
+            padding: 8px;
+            font-size: 14px;
+            resize: none;
+            border-radius: 8px;
+        }
+
+        .actions-row {
+            display: flex;
+            justify-content: flex-end;
+            margin-top: 10px;
+            gap: 6px;
+        }
+
+        .button {
+            border: 1px solid #404040;
+            padding: 4px 14px;
+            background: #fff;
+            font-size: 14px;
+            cursor: pointer;
+        }
+
+        .button:disabled {
+            color: #999;
+            border-color: #ccc;
+            cursor: not-allowed;
+        }
+
+        .button-clear {
+            color: #0058ff;
+        }
+
+        .button-search {
+            color: #0a5a00;
+        }
+
+        .results-wrapper {
+            border: 1px solid rgba(64, 64, 64, 0.5);
+            padding: 12px;
+            display: flex;
+            flex-direction: column;
+            gap: 12px;
+            min-height: 140px;
+        }
+
+        .result-card {
+            border: 1px solid #404040;
+            padding: 12px;
+        }
+
+        .tool-name {
+            font-weight: 600;
+        }
+
+        .tool-description {
+            font-size: 14px;
+            color: #555;
+            margin-top: 4px;
+        }
+
+        .status-line {
+            font-size: 14px;
+            color: #666;
+            text-align: center;
+            padding: 10px 0 0;
+            align-self: center;
+        }
+
+        .status-line.error {
+            color: #b40000;
+        }
+
+        .llm-answer {
+            border: 1px solid rgba(64, 64, 64, 0.4);
+            padding: 10px;
+            background: #f7f7f7;
+            font-size: 14px;
+            color: #444;
+        }
+    </style>
+</head>
+<body>
     <div id="app"></div>
-    <div id="app2"></div>
     <script src="https://unpkg.com/react@18/umd/react.development.js"></script>
     <script src="https://unpkg.com/react-dom@18/umd/react-dom.development.js"></script>
     <script src="https://unpkg.com/@babel/standalone/babel.min.js"></script>
-    <script type = "text/jsx">
-       
-        function ListOfNames() {
-            const names = ['Ada Lovelace', 'Grace Hopper', 'Margaret Hamilton'];
+    <script type="text/jsx">
+        const DEFAULT_PROMPT = "Type Whatever. A recipe, question or your insane rambling...";
 
-            // Hooks and their handlers must be defined within the component.
-            const [likes, setLikes] = React.useState(0);
-
-            function likeClickHandler() {
-                setLikes(likes + 1);
-            }
-
-            return <div>
-                <ul>
-                    {
-                        names.map((name) => (
-                        <li key={name}>
-                            {name} 
-                        </li>))
-                    }
-                </ul>
-                <button onClick={likeClickHandler}>Like this article!</button>
-                <p>Liked by {likes} people!</p>
-            </div>;
+        function Title() {
+            return (
+                <div className="header">
+                    <div className="header-title">ChaiGPT Search</div>
+                </div>
+            );
         }
 
-        function Header(props) {// all props imported as a dictionary.
-            let {title} = props // ES destructuring.
-            console.log(title); 
-            return <h1>Developer Preview for {title}!</h1>;
+        function SearchBox({ query, onChange, onClear, onSearch, isSearching }) {
+            const hasText = query.trim().length > 0;
+            return (
+                <section className="search-panel">
+                    <textarea
+                        value={query}
+                        onChange={(event) => onChange(event.target.value)}
+                        aria-label="Search prompt"
+                    />
+                    <div className="actions-row">
+                        <button
+                            className="button button-clear"
+                            type="button"
+                            onClick={onClear}
+                        >
+                            Clear
+                        </button>
+                        <button
+                            className="button button-search"
+                            type="button"
+                            disabled={!hasText || isSearching}
+                            onClick={onSearch}
+                        >
+                            {isSearching ? "Searching..." : "Search"}
+                        </button>
+                    </div>
+                </section>
+            );
+        }
+
+        function SearchResult({ entry }) {
+            return (
+                <div className="result-card">
+                    <div className="tool-name">{entry.name || entry.key}</div>
+                    <div className="tool-description">
+                        {entry.description || "........... Tool description"}
+                    </div>
+                </div>
+            );
+        }
+
+        function SearchResults({ results, error, isLoading, hasSearched, llmAnswer }) {
+            if (error) {
+                return (
+                    <div className="results-wrapper">
+                        <div className="status-line error">{error}</div>
+                    </div>
+                );
+            }
+
+            if (isLoading) {
+                return (
+                    <div className="results-wrapper">
+                        <div className="status-line">Searching...</div>
+                    </div>
+                );
+            }
+
+            if (!hasSearched) {
+                return (
+                    <div className="results-wrapper">
+                        <div className="status-line">Results will appear here.</div>
+                    </div>
+                );
+            }
+
+            if (results.length === 0) {
+                return (
+                    <div className="results-wrapper">
+                        <div className="status-line">No tools found for that description.</div>
+                    </div>
+                );
+            }
+
+            return (
+                <div className="results-wrapper">
+                    {llmAnswer && (
+                        <div className="llm-answer">{llmAnswer}</div>
+                    )}
+                    {results.map((entry) => (
+                        <SearchResult key={entry.key || entry.name} entry={entry} />
+                    ))}
+                </div>
+            );
         }
 
         function HomePage() {
-            return <div>
-                <Header title="React Tutorial"/>
-                <p>Here is some content</p>
-                <ListOfNames/>
-            </div>;
+            const [query, setQuery] = React.useState(DEFAULT_PROMPT);
+            const [results, setResults] = React.useState([]);
+            const [error, setError] = React.useState("");
+            const [isLoading, setIsLoading] = React.useState(false);
+            const [hasSearched, setHasSearched] = React.useState(false);
+            const [llmAnswer, setLlmAnswer] = React.useState("");
+
+            const runSearch = async () => {
+                if (!query.trim()) {
+                    return;
+                }
+                setIsLoading(true);
+                setError("");
+                setHasSearched(true);
+                try {
+                    const response = await fetch("http://localhost:4050/search", {
+                        method: "POST",
+                        headers: { "Content-Type": "application/json" },
+                        body: JSON.stringify({ query }),
+                    });
+                    const payload = await response.json();
+                    if (!response.ok) {
+                        throw new Error(payload.error || "Search failed.");
+                    }
+                    setResults(Array.isArray(payload.results) ? payload.results : []);
+                    const answerFromPayload =
+                        payload.llmAnswer ||
+                        (Array.isArray(payload.results) && payload.results.length > 0
+                            ? payload.results[0].llmAnswer
+                            : "");
+                    setLlmAnswer(answerFromPayload || "");
+                } catch (err) {
+                    setError(err.message || "Unable to search right now.");
+                    setResults([]);
+                    setLlmAnswer("");
+                } finally {
+                    setIsLoading(false);
+                }
+            };
+
+            const clearQuery = () => {
+                setQuery("");
+                setResults([]);
+                setError("");
+                setHasSearched(false);
+                setLlmAnswer("");
+            };
+
+            return (
+                <div className="app-shell">
+                    <Title />
+                    <SearchBox
+                        query={query}
+                        onChange={setQuery}
+                        onClear={clearQuery}
+                        onSearch={runSearch}
+                        isSearching={isLoading}
+                    />
+                    <SearchResults
+                        results={results}
+                        error={error}
+                        isLoading={isLoading}
+                        hasSearched={hasSearched}
+                        llmAnswer={llmAnswer}
+                    />
+                </div>
+            );
         }
 
-        const root1 = ReactDOM.createRoot(document.getElementById('app'));
-        root1.render(<HomePage/>);
+        const root = ReactDOM.createRoot(document.getElementById("app"));
+        root.render(<HomePage />);
     </script>
-    </body>
+</body>
 </html>

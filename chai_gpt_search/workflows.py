@@ -6,7 +6,7 @@ from chai_gpt_search.models import CookingActions
 
 
 
-def parse_actions_flow(base_llm: BaseChatModel, user_query: str, debug: bool = False) -> CookingActions:
+def answer_then_parse_actions_flow(base_llm: BaseChatModel, user_query: str, debug: bool = False) -> CookingActions:
     """Multi-step workflow that enriches a query then extracts structured actions."""
     actions_dict = CookingActionsDictionary()
     chat_messages = []
@@ -21,6 +21,7 @@ def parse_actions_flow(base_llm: BaseChatModel, user_query: str, debug: bool = F
         "Respond to the user's query and provide extra details where necessary especially about required cooking actions like peeling, cutting, sauteeing etc."
         "If the query has nothing to do with cooking, then respond by saying 'Not Applicable! Not related to Cooking!"
         "Do not end your reply with follow up questions."
+        "Do your best to satisfy the user's constraints."
     )
     system_message = SystemMessage(system_prompt)
     chat_messages.append(system_message)
@@ -42,4 +43,4 @@ def parse_actions_flow(base_llm: BaseChatModel, user_query: str, debug: bool = F
             print(msg.content)
             print()
 
-    return structured_llm.invoke(chat_messages)
+    return (step_1_op, structured_llm.invoke(chat_messages))
