@@ -23,8 +23,9 @@ Before launching the assistant, you need to provide your Google API key.
 
 ## Launch Instructions
 
-To run ChaiGPT V2, execute the following command from the root directory of the `VordMekh_project`:
+To run ChaiGPT V2, execute the following command from the `@chai-chat-bot-expr` directory:
 
 ```bash
+cd @chai-chat-bot-expr
 python3 -m chai_gpt_v2.launch
 ```

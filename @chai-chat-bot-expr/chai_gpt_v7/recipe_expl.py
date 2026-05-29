@@ -104,7 +104,7 @@ def main():
     #     'Preparing chai for a large group of people i.e > 10.',
     #     'Preparing chai for a small number of people i.e. 1-4'
     # ]
-    # chai_customizations = load_yaml_dict("chai_gpt_v7/recipe-exploration/customization-1.yml")
+    # chai_customizations = load_yaml_dict("@chai-chat-bot-expr/chai_gpt_v7/recipe-exploration/customization-1.yml")
     # recipe_responses = []
     # item_num = 1
     # total = len(list(chain.from_iterable(chai_customizations.values()))) * 2
@@ -146,7 +146,7 @@ def main():
     #             print(f"{item_num} / {total} done!")
     #             item_num += 1
                     
-    # write_text_file("chai_gpt_v7/recipe-exploration/recipe-responses.txt", SEPARATOR.join(recipe_responses))
+    # write_text_file("@chai-chat-bot-expr/chai_gpt_v7/recipe-exploration/recipe-responses.txt", SEPARATOR.join(recipe_responses))
                     
 
 

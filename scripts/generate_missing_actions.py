@@ -1,7 +1,7 @@
 import re
 from pathlib import Path
 
-SRC = Path('chai_gpt_v7/recipe-exploration/recipe-responses.txt')
+SRC = Path('@chai-chat-bot-expr/chai_gpt_v7/recipe-exploration/recipe-responses.txt')
 OUT = Path('missing-actions.txt')
 
 # Actions covered by ChaiPreparationIngredientsActionsFrame

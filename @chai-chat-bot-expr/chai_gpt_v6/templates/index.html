@@ -3,7 +3,7 @@
   <head>
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-    <title>chai gpt v5</title>
+    <title>chai gpt v6</title>
     <style>
       :root {
         --bg: radial-gradient(1200px 600px at 10% -20%, #e9d5ff 0, transparent 50%),
@@ -240,8 +240,8 @@
   <body>
     <div class="container">
       <div class="header">
-        <h1>Chai GPT V5</h1>
-        <span class="subtle">chai gpt v5 [grounded planning demo]</span>
+        <h1>Chai GPT V6</h1>
+        <span class="subtle">chai gpt v6 [grounded planning demo]</span>
       </div>
 
       <div class="panel">
@@ -250,9 +250,12 @@
           <span class="select">
             <select id="chaiSelect" aria-label="Chai type">
           <option value="" selected>Select a chai…</option>
-          <!-- Options sourced from chai_gpt_v4/recipes.yaml -->
+          <!-- Options sourced from @chai-chat-bot-expr/chai_gpt_v6/recipes.yaml -->
           <option value="Masala Chai">Masala Chai</option>
+          <option value="Adrak Chai">Adrak Chai</option>
+          <option value="Sulaimani Chai">Sulaimani Chai</option>
           <option value="Kashmiri Chai">Kashmiri Chai</option>
+          <option value="Kahwah">Kahwah</option>
             </select>
           </span>
           <button id="getRecipeBtn" disabled>Get Recipe</button>
@@ -320,7 +323,7 @@
           const type = select.value;
           let msg = 'No Recipe Selected. Please select a recipe!';
           if (type) {
-            msg = `${type} selected! Hit the 'Get Recipe' to get the recipe!`;
+            msg = `${type} selected! Hit the 'Get Recipe' button to get the recipe!`;
           }
           output.innerHTML = '';
           const wrap = document.createElement('div');

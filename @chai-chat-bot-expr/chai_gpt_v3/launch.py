@@ -8,7 +8,10 @@ from rich.console import Console
 
 from pydantic import BaseModel, Field
 from typing import Optional, List
+from pathlib import Path
 import json
+
+PACKAGE_DIR = Path(__file__).resolve().parent
 
 class ChaiOrderState(BaseModel):
     selected_chai_recipe: Optional[str] = Field(
@@ -224,7 +227,7 @@ def main():
         display_exit_message(console, str(err))
         return
     
-    recipe_err, recipes = load_yaml("./chai_gpt_v3/recipes.yaml")
+    recipe_err, recipes = load_yaml(PACKAGE_DIR / "recipes.yaml")
     chai_recipes = recipes["chai_recipes"]
     # return
 

@@ -112,7 +112,7 @@ class CookingActionsDictionary:
         return "\n".join(rows) if rows else "No actions defined."
         
 
-def load_db(file_path = "./chai_gpt_search/resources/items.yml"):
+def load_db(file_path = Path(__file__).resolve().parent / "resources" / "items.yml"):
     # Function loads the yml data from a file and returns a list of Item objects
     file_path_obj = Path(file_path)
 

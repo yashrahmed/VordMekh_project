@@ -1,8 +1,11 @@
-from bot_utils.tools import set_google_api_key, set_open_api_key, setup_google_model, setup_openai_model, SimpleChatBot
+from bot_utils.tools import set_google_api_key, setup_google_model, SimpleChatBot
 
+from pathlib import Path
 from rich.prompt import Prompt
 from rich.text import Text
 from rich.console import Console
+
+PACKAGE_DIR = Path(__file__).resolve().parent
 
 
 def display_bot_message(console: Console, message: str):
@@ -34,6 +37,9 @@ def load_prompt_from_file(file_path):
 
     return md_text
 
+
+
+
 def main():
     #0. Set up terminal user interface.
     console = Console()
@@ -50,7 +56,7 @@ def main():
         return
 
     #2. Set up chatbot
-    system_prompt = load_prompt_from_file("./chai_gpt_v2/chai_gpt_sys_prompt_soarv2.txt")
+    system_prompt = load_prompt_from_file(PACKAGE_DIR / "chai_gpt_sys_prompt_states.md")
     greeting_message = "Hello! I am ChaiGPT, your personal assistant for preparing delicious chai. How can I help you today?"
     bot = SimpleChatBot(llm, system_prompt, greeting_message)
 
