@@ -26,3 +26,8 @@
 - Imagine that you hold the part of an alphabet or a numeral with your hand. Based on the position of your hand and fingers AND the position on the alphabet there are a few configurations to grasp that part. These configurations are topologically linked to each other and can be used as embeddings.
 - The above approach has some resemblance to shape similarities.
 - **In THEORY**, this approach must work in noisy environments, in presence of multiple shapes and would allow switching between scales.
+
+## The RTS editor
+- An Editor that can display and navigate all files at time with semantic connections between them like. 
+- Support Java and TS.
+- Have an RTS like UI that shows the files as a graph. (No idea how to build this).
