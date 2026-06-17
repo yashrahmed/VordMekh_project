@@ -1,0 +1,31 @@
+Results summary for:
+/Users/yashrahmed/Documents/personal-github-repos/Thoth/packages/conv-agent/src/domain/services/background-llm-completion-run-service.ts
+
+Imports only:
+- LlmCompletionInputFile from @thoth/conv-agent/src/domain/objects/llm
+- LlmCompletionInputMessage from @thoth/conv-agent/src/domain/objects/llm
+- LlmCompletionMessage from @thoth/conv-agent/src/domain/objects/llm
+- LLMCompletionRunService from @thoth/conv-agent/src/domain/contracts/llm-completion-run-service
+- LlmError from @thoth/conv-agent/src/domain/objects/errors
+- LlmErrorCode from @thoth/conv-agent/src/domain/objects/errors
+- LLMMessageType from @thoth/conv-agent/src/domain/objects/llm
+- Message from @thoth/conv-agent/src/domain/objects/message-types
+- NotFoundError from @thoth/conv-agent/src/domain/objects/errors
+- Result from @thoth/conv-agent/src/domain/objects/result
+- RunLlmCompletionInput from @thoth/conv-agent/src/domain/contracts/llm-completion-run-service
+- SignedFileAccess from @thoth/conv-agent/src/domain/services/file-access-domain-service
+- StoreError from @thoth/conv-agent/src/domain/objects/errors
+- success from @thoth/conv-agent/src/domain/objects/result
+- ValidationError from @thoth/conv-agent/src/domain/objects/errors
+
+Inject via constructor:
+- AppendUserMessageDomainService from @thoth/conv-agent/src/domain/services/append-user-message-domain-service
+- FileAccessDomainService from @thoth/conv-agent/src/domain/services/file-access-domain-service
+- FileDomainService from @thoth/conv-agent/src/domain/services/file-domain-service
+- LlmPromptDomainService from @thoth/conv-agent/src/domain/services/llm-prompt-domain-service
+- LlmService from @thoth/conv-agent/src/domain/contracts/llm-service
+- MessageDomainService from @thoth/conv-agent/src/domain/services/message-domain-service
+
+Confirmation:
+- The constructor-injected imported dependencies above appear as constructor parameter types and are excluded from Imports only.
+- scheduleBackgroundTask is constructor-injected with an inline function type and is not imported, so it is not listed in either category.

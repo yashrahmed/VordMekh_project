@@ -1,0 +1,12 @@
+{
+  "name": "experimental-editor",
+  "private": true,
+  "type": "commonjs",
+  "scripts": {
+    "list-ts-deps": "bun scripts/list-ts-dependencies.js"
+  },
+  "dependencies": {
+    "tree-sitter": "^0.21.1",
+    "tree-sitter-typescript": "^0.23.2"
+  }
+}
