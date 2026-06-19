@@ -155,3 +155,78 @@ net.
 **Active-perception bonus:** once readings are predictable, pick the *next* pose
 that most reduces uncertainty (the active-touch loop) — turning "relate multiple
 measurements" into "choose which measurement to take."
+
+## 4. Relation to SDF, DeepSDF, and directed distance fields
+
+This idea is the **ray-based dual of a signed distance function (SDF)**.
+
+**A finger reading is a ray-march of an SDF.** With `f(x)` the SDF (`f = 0` on
+the boundary, `< 0` inside, `|∇f| = 1`), a finger `(O, D)` returns `ℓ` = the
+first positive root of `f(O + tD) = 0`: free space (`f > 0`) for `t ∈ [0, ℓ)`,
+contact (`f = 0`) at `t = ℓ`. That root-finding is exactly **sphere tracing**, so
+the label-generation procedure *is* "ray-march the shape's SDF along 5 beams,"
+and each finger reading is a constraint on `f`.
+
+**Directional vs. omnidirectional.** `|f(O)|` is the nearest distance over *all*
+directions; a finger gives the distance along *one* `D`, so `ℓ_i ≥ |f(O)|` with
+equality only for the finger pointing at the nearest boundary point
+(`D = -∇f`). A dense fan recovers both `|f(O)|` (= `min_i ℓ_i`) and the normal
+`-∇f` (the argmin direction); 5 fingers under-sample this. The "inside → 0" rule
+keeps only the *sign* of `f` and discards interior magnitude — measuring the
+**exit distance** when inside would restore the negative side. Fingers also see
+only the first, line-of-sight boundary (occlusion); the SDF sees the nearest
+regardless.
+
+**Exact named correspondence — directed/oriented distance fields.** A field
+`f(O, D) → ℓ` (ray → surface distance) is exactly one finger; sampling it at five
+rays is the label vector. So **DeepSDF : SDF :: (the planned net) : a directed
+distance field** (PRIF, PDDF, NeuralODF, DRDF in the list below).
+
+**DeepSDF specifically.** DeepSDF learns `f_θ(z, x) → signed dist` with a
+per-shape latent code `z`, and infers shapes from partial observations by
+optimizing `z`. Three ties: (1) the speculative "grasp embedding" ≈ DeepSDF's
+latent `z` — aggregation route (c) above is a DeepSDF auto-decoder supervised by
+ray readings instead of SDF samples; (2) sparse grasp readings are the "partial
+observations" DeepSDF completes from; (3) **differentiable sphere tracing**
+(DIST) makes grasp labels a valid end-to-end supervision signal for an SDF net
+(render `f_θ` along the finger rays, compare to measured `ℓ_i`, backprop).
+
+**Two dual architectures for the eventual net:**
+
+| Style | Representation | Output | Contact distance via | Analogue |
+|---|---|---|---|---|
+| SDF-style | `f_θ(z, x) → signed dist` | the field | you ray-march it | DeepSDF |
+| Ray-field-style | `f_θ(z, O, D) → ℓ` | the measurement | one forward pass | PRIF / DDF |
+
+The ray-field style outputs grasp labels natively (fast, differentiable, no
+marching) but gives no clean signed field; the SDF style gives the full field /
+watertight surface but needs marching. Since the goal is predicting grasp
+readings for image patches, the **ray-field formulation is the more natural
+target**, with SDF/DeepSDF as the ground-truth field to distill from or
+regularize against. Caveat: 5 beams under-determine the local field, so recover
+true nearest-distance / normals via many directions or many poses.
+
+## 5. Similar ideas, by decreasing recency
+
+Consolidated index of related work (section 2 groups these thematically; this
+list is chronological, newest first). Years from publication venue or arXiv id.
+
+| Year | Work | Why it's similar |
+|---|---|---|
+| 2025 | [Proactive Tactile Exploration for object-agnostic shape reconstruction](https://arxiv.org/abs/2505.11975) | Active touch: chooses probes to reconstruct shape from minimal priors — the "which measurement next" loop. |
+| 2024 | [Unsigned Orthogonal Distance Fields (UODF), CVPR](https://arxiv.org/pdf/2403.01414) | Neural implicit built from distances measured *along rays* — a ray-distance representation. |
+| 2023 | [Neural Directional Distance Field for path-traced rendering](https://arxiv.org/abs/2306.16142) | Learns `ray → distance` as a renderable object representation. |
+| 2023 | [ACTOR: Active Tactile transparent-object reconstruction](https://arxiv.org/pdf/2307.16254) | Active touch-driven shape reconstruction. |
+| 2022 | [PRIF: Primary Ray-based Implicit Function, ECCV](https://arxiv.org/pdf/2208.06143) | `ray → surface hit point`; closest single-finger analogue. |
+| 2022 | [DRDF: Directed Ray Distance Functions, ECCV](https://nileshkulkarni.github.io/scene_drdf/) | Ray distance field for scene reconstruction from depth. |
+| 2022 | [NeuralODF: Omnidirectional Distance Fields](https://arxiv.org/pdf/2206.05837) | 5D `ray → depth` field — the "all rays from all positions" generalization of the hand. |
+| 2022 | [Probabilistic Directed Distance Fields (PDDF), CVPR](https://www.researchgate.net/publication/363917403_Representing_3D_Shapes_with_Probabilistic_Directed_Distance_Fields) | `ray → (visibility, depth)`; as accurate as SDF, faster to query. |
+| 2022 | [OverlapTransformer, RA-L](https://arxiv.org/pdf/2203.03397) | Rotation-invariant descriptor from LiDAR range images (a dense version of a probe). |
+| 2022 | [Active Visuo-Haptic Object Shape Completion](https://arxiv.org/pdf/2203.09149) | Uncertainty-driven choice of where to touch. |
+| 2021 | [Active 3D Shape Reconstruction from Vision and Touch, NeurIPS](https://arxiv.org/abs/2107.09584) | Active selection of tactile readings to maximize reconstruction gain. |
+| 2020 | [DIST: differentiable sphere tracing of DeepSDF, CVPR](https://openaccess.thecvf.com/content_CVPR_2020/papers/Liu_DIST_Rendering_Deep_Implicit_Signed_Distance_Function_With_Differentiable_Sphere_CVPR_2020_paper.pdf) | Renders an SDF along rays — the mechanism that turns grasp readings into SDF supervision. |
+| 2019 | [DeepSDF, CVPR](https://openaccess.thecvf.com/content_CVPR_2019/papers/Park_DeepSDF_Learning_Continuous_Signed_Distance_Functions_for_Shape_Representation_CVPR_2019_paper.pdf) | Latent-code SDF auto-decoder — the "field" counterpart and the embedding-code template. |
+| 2019 | [Active Haptic Perception in Robots: a Review](https://pmc.ncbi.nlm.nih.gov/articles/PMC6651744/) | Survey of where-to-probe-next strategies. |
+| 2018 | Scan Context (IROS) / PointNetVLAD (CVPR) | Learned global descriptors from range scans for place recognition. |
+| ~2000s | Radial / centroid-distance "ray" signatures + Fourier descriptors | A movable, local version is the single-origin finger fan. |
+| 2000/02 | [Shape Context (Belongie & Malik), NIPS/TPAMI](https://en.wikipedia.org/wiki/Shape_context) | Local descriptor relative to a point — closest classical cousin. |
