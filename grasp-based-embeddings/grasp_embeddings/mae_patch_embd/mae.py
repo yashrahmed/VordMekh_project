@@ -6,11 +6,12 @@ of the patches, encode only the visible ones with a Transformer, then decode
 from the visible tokens plus learned mask tokens and reconstruct the missing
 pixels. The loss is the MSE on the masked patches only.
 
-    python -m mae_patch_embd.mae                   # train with defaults
-    python -m mae_patch_embd.mae --epochs 5 --mask-ratio 0.75
+    python -m grasp_embeddings.mae_patch_embd.mae                   # defaults
+    python -m grasp_embeddings.mae_patch_embd.mae --epochs 5 --mask-ratio 0.75
 
 Downloads MNIST into <project>/dataset and writes the trained weights to
-<project>/models/mae_mnist.pt (both are gitignored).
+<project>/models/mae_mnist.pt (both are gitignored). Here <project> is the
+grasp-based-embeddings root.
 """
 
 from __future__ import annotations
@@ -24,7 +25,7 @@ import torch.nn.functional as F
 from torch.utils.data import DataLoader
 from torchvision import datasets, transforms
 
-PROJECT_ROOT = Path(__file__).resolve().parents[1]
+PROJECT_ROOT = Path(__file__).resolve().parents[2]
 DATASET_DIR = PROJECT_ROOT / "dataset"
 MODELS_DIR = PROJECT_ROOT / "models"
 

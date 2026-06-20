@@ -31,11 +31,6 @@ A sample is then: `(p, h, l1, l2, l3, l4, l5)`.
 (The `(p, h)` is the *query pose*; the `l_i` vector is the *grasp label* /
 local-shape descriptor at that pose.)
 
-### End goal
-Train a neural net that, given an **image patch** (later) — for now a 2D
-mesh/polygon — outputs these grasp labels. Visualization is preferred but not
-mandatory. Starting with 2D meshes.
-
 ## Open questions / analysis to do
 - Is there any point to this idea? (utility of the descriptor)
 - Has something similar been tried? (shape context, ray/radial signatures,
@@ -51,13 +46,12 @@ mandatory. Starting with 2D meshes.
   space into the space of grasp embeddings, then a lot of human cognitive feats
   can be replicated.
 
-## Build plan (V0.1)
-- [x] Project scaffold (Python).
-- [x] Geometry: ray–segment intersection, point-in-polygon (even-odd, holes ok).
-- [x] Shape: polygon with optional holes + example shapes (square, circle, "A").
-- [x] Hand: configurable fingers (origin offset + angle offset), `sense(shape)`.
-- [x] Sampler: generate labeled dataset `(p, h, l1..l5)`, save to disk.
-- [x] Visualization: draw shape + fingers + contacts (matplotlib).
-- [ ] Dataset over many shapes; normalize/augment.
-- [ ] Neural net: pose+patch -> grasp label (later, when moving to images).
-- [ ] Shape-context aggregation experiments (see analysis #3).
+## Work log
+### 2026-06-20
+- Built a ViT-style **Masked Autoencoder** (`mae_patch_embd/mae.py`): patchify,
+  75% random masking, encode visible patches only, decode with mask tokens,
+  MSE loss on masked patches. Trained on MNIST (50 epochs).
+- Wrote a nearest-neighbor **retrieval** demo (`mae_patch_embd/retrieve.py`):
+  samples 5 images per class (0-9), picks a random query, embeds with the
+  (unmasked) encoder, and shows the query + top-3 cosine matches.
+

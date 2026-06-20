@@ -5,3 +5,6 @@ __pycache__/
 out/
 *.npz
 images/
+dataset/
+models/
+*.png

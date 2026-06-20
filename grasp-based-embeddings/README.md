@@ -56,3 +56,22 @@ data = generate_dataset(shape, hand, n=2000, rng=np.random.default_rng(0))
 - `sampler.py` — `generate_dataset()` and save/load helpers.
 - `visualize.py` — matplotlib rendering of a probe and of a dataset.
 - `demo.py` — runnable entry point.
+- `mae_patch_embd/` — a small ViT-style **Masked Autoencoder** (He et al. 2021)
+  trained on MNIST, with a nearest-neighbor retrieval demo over its encoder
+  embeddings. See below.
+
+## MAE patch embeddings (`mae_patch_embd`)
+
+A self-contained subpackage: patchify an image, drop ~75% of the patches,
+encode only the visible ones with a Transformer, then reconstruct the missing
+pixels (MSE on masked patches only).
+
+```bash
+# Train (downloads MNIST to dataset/, writes weights to models/mae_mnist.pt)
+uv run python -m grasp_embeddings.mae_patch_embd.mae --epochs 50
+
+# Nearest-neighbor retrieval with the trained encoder
+uv run python -m grasp_embeddings.mae_patch_embd.retrieve --seed 0 --save out.png
+```
+
+`dataset/`, `models/`, and `*.png` are gitignored.
