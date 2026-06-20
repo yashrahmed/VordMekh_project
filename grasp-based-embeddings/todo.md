@@ -75,7 +75,7 @@ by pretraining length (see below).
 | eval | ViT | CNN | I-JEPA | raw pixels |
 |---|---|---|---|---|
 | 5-NN, frozen embedding | 97.16% | 91.29% | **97.91%** (300 ep) | 96.88% |
-| linear probe (frozen head) | 97.4% | -- | -- | -- |
+| linear probe (frozen head) | 97.4% | -- | 98.24% (300 ep) | -- |
 | fine-tune (unfrozen, 50 ep) | 98.7% | **99.0%** | 98.69% | -- |
 
 I-JEPA frozen-5-NN vs pretraining length: 50 ep **93.30%** → 200 ep **97.59%** →
@@ -89,9 +89,11 @@ I-JEPA frozen-5-NN vs pretraining length: 50 ep **93.30%** → 200 ep **97.59%**
 2. **Latent prediction (I-JEPA) gives the best frozen embedding — once trained
    long enough.** At 50 ep it was undertrained (93.30%, below the pixel floor);
    at 300 ep it's the best off-the-shelf embedding (97.91%), clearing the floor
-   and beating the ViT MAE. Its EMA target evolves slowly, so it needs a longer
-   schedule than the MAEs (OneCycle: more epochs = higher sustained LR, not a
-   resumable add-on).
+   and beating the ViT MAE. A linear probe on the *frozen* encoder hits 98.24% —
+   within ~0.45 pts of full fine-tuning (98.69%), i.e. the frozen representation
+   already does almost all the work. Its EMA target evolves slowly, so it needs a
+   longer schedule than the MAEs (OneCycle: more epochs = higher sustained LR,
+   not a resumable add-on).
 3. **Fine-tuning erases the differences** — all three land 98.7-99.0%. On a task
    this easy (pixel floor ~97%) the pretext barely matters once labels are added.
 
