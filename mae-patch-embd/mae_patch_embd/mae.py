@@ -6,8 +6,8 @@ of the patches, encode only the visible ones with a Transformer, then decode
 from the visible tokens plus learned mask tokens and reconstruct the missing
 pixels. The loss is the MSE on the masked patches only.
 
-    python -m grasp_embeddings.mae                 # train with defaults
-    python -m grasp_embeddings.mae --epochs 5 --mask-ratio 0.75
+    python -m mae_patch_embd.mae                   # train with defaults
+    python -m mae_patch_embd.mae --epochs 5 --mask-ratio 0.75
 
 Downloads MNIST into <project>/dataset and writes the trained weights to
 <project>/models/mae_mnist.pt (both are gitignored).
