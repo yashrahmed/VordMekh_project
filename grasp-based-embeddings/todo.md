@@ -20,31 +20,30 @@ label is what a "feeling hand" would sense at a given pose.
   **inside** the shape, its extension length is `0`.
 - Units are arbitrary — everything is relative.
 
-### Procedure to generate one labeled sample
-1. Sample a position `p` and orientation `h`.
-2. Place and orient the hand.
-3. Extend all fingers until each makes contact (or hits `L_max`).
-4. Measure each extension.
+## Relation to Signed Distance Fields
 
-A sample is then: `(p, h, l1, l2, l3, l4, l5)`.
+This is the **ray-based dual of a signed distance function (SDF)**. With `f(x)`
+the SDF (`f = 0` on the boundary, `< 0` inside), a finger `(O, D)` returns the
+first positive root of `f(O + tD) = 0` — i.e. each finger reading is a
+**ray-march (sphere trace) of the shape's SDF along one beam**. So generating the
+labels is exactly "ray-march the SDF along 5 rays," and a net that predicts
+`(O, D) → ℓ` is learning a *directed distance field* (cf. PRIF, DeepSDF's
+ray-based cousins). DeepSDF : SDF :: the planned net : a directed distance field.
 
-(The `(p, h)` is the *query pose*; the `l_i` vector is the *grasp label* /
-local-shape descriptor at that pose.)
 
-## Open questions / analysis to do
-- Is there any point to this idea? (utility of the descriptor)
-- Has something similar been tried? (shape context, ray/radial signatures,
-  2D LiDAR scans, tactile/haptic shape recognition, DeepSDF-style probes)
-- How to relate **multiple measurements** into a coherent **shape context**?
+## What I wish to test.
+1. Learning Patch embeddings.
+   1. [ ] Train an auto encoder with handcrafted BRIEF.
+   2. [ ] Train a classifier with brief.
+   3. [ ] Test shape descriptors on MNIST and measure similarity.
+   4. [x] Train a regular VAE on MNIST and measure similarity. 
+   5. [ ] Train a regular VAE on MNIST and measure classification accuracy. 
+2. BRIEF like features.
+   1. A brief feature that moves. Similar to a hand but with a single finger.
+   2. Imagine that this moves from one point to another sampling values. And there are two of these. Then shape descriptors could be used to find correspondence and similarity perhaps.
+   3. What is unclear is correspondence is by shape descriptor value but how do I account for the value of the feature "head" i.e. the sum of the area where the value is sampled?
+3. Can shape descriptors meant for 3-d meshes be extended to 5d point where a point is (x, y, dr, dg, db)? Worth looking into. --- Use r,g,b as "locations" and connect adjacent points to create the mesh. The position dimensions are not necessary. r,g,b as locations may not work as it creates a risk of the mesh folding in weird ways as color does not have spatil separation gaurantees. But I think it is worth try with a single channel image.
 
-## Next steps (original notes, kept)
-- Check similarities with shape context methods.
-- Find a way to calculate hand grasps on high planar shapes.
-- See the "Biology of LLM" paper by anthropic.
-- TBD....
-- Its a LOOONG shot..but if there exists a way to map any complicated embedding
-  space into the space of grasp embeddings, then a lot of human cognitive feats
-  can be replicated.
 
 ## Work log
 ### 2026-06-20
