@@ -36,8 +36,12 @@ ray-based cousins). DeepSDF : SDF :: the planned net : a directed distance field
    1. [ ] Train an auto encoder with handcrafted BRIEF.
    2. [ ] Train a classifier with brief.
    3. [ ] Test shape descriptors on MNIST and measure similarity.
-   4. [x] Train a regular VAE on MNIST and measure similarity. 
-   5. [ ] Train a regular VAE on MNIST and measure classification accuracy. 
+   4. [x] Train a VIT/MAE on MNIST and measure similarity. 
+   5. [x] Train a VIT/MAE on MNIST and measure classification accuracy after finetuning.
+   6. [ ] Train a Conv-net MAE on MNIST and measure similarity. 
+   7. [ ] Train a Conv-net MAE on MNIST and measure classification accuracy after finetuning.
+   8. [ ] Train an I-JEPA on MNIST and measure similarity. 
+   9. [ ] Train an I-JEPA on MNIST and measure classification accuracy (maybe after finetuning?).
 2. BRIEF like features.
    1. A brief feature that moves. Similar to a hand but with a single finger.
    2. Imagine that this moves from one point to another sampling values. And there are two of these. Then shape descriptors could be used to find correspondence and similarity perhaps.
@@ -52,5 +56,28 @@ ray-based cousins). DeepSDF : SDF :: the planned net : a directed distance field
   MSE loss on masked patches. Trained on MNIST (50 epochs).
 - Wrote a nearest-neighbor **retrieval** demo (`mae_patch_embd/retrieve.py`):
   samples 5 images per class (0-9), picks a random query, embeds with the
-  (unmasked) encoder, and shows the query + top-3 cosine matches.
+  (unmasked) encoder, and shows the query + top-3 cosine matches. Trained
+  encoder retrieves the right class; a random encoder (`--no-model-init`)
+  collapses to ~0.98 cosine for everything (item 1.4 — similarity).
+- Wrote a **classification** eval (`mae_patch_embd/classify.py`): linear head on
+  the encoder, frozen by default (linear probe) or fine-tuned with `--unfreeze`;
+  reports train/test error. The encoder is the ViT pretrained by MAE; the head
+  is the only thing that trains in probe mode (item 1.5 — classification).
+
+  Results (MNIST, mean-pooled tokens -> linear head):
+  | setup | encoder | train acc | test acc |
+  |---|---|---|---|
+  | linear probe (50 ep) | trained, frozen | 97.3% | 97.4% |
+  | linear probe (50 ep) | random (`--no-model-init`) | 59.4% | 59.1% |
+  | fine-tune (10 ep) | trained, unfrozen | 99.7% | 98.8% |
+  | fine-tune (50 ep, wd=0) | trained, unfrozen | 99.8% | 98.7% |
+  | fine-tune (50 ep, wd=0.05) | trained, unfrozen | 99.7% | 98.7% |
+
+  Notes: weight decay (now default 0.05) only slightly narrows the train/test
+  gap — the model isn't overfitting much. Test accuracy plateaus ~98.7-98.8%
+  and stays below CNN-level MNIST SOTA (~99.3%+). The cap is architectural, not
+  capacity: a plain ViT has no conv inductive bias (data-hungry on small
+  images), 7x7 patches give only 16 coarse tokens, and mean-pooling is a lossy
+  readout. Next levers: conv stem / smaller patches / a CLS token (motivates
+  items 1.6-1.7, the conv-net MAE).
 
