@@ -17,8 +17,9 @@ Two modes:
     python -m grasp_embeddings.mae_patch_embd.classify --arch cnn --unfreeze
     python -m grasp_embeddings.mae_patch_embd.classify --no-model-init  # baseline
 
-``--arch {vit,cnn}`` selects which pretrained encoder to load (and must match an
-architecture trained by ``mae.py``). This model is evaluation-only, never saved.
+``--arch {vit,cnn,jepa}`` selects which pretrained encoder to load (and must
+match an architecture trained by ``mae.py``). For ``jepa`` the encoder is the
+I-JEPA target encoder. This model is evaluation-only, never saved.
 """
 
 from __future__ import annotations
@@ -150,6 +151,12 @@ def run_frozen(model: nn.Module, enc_dim: int, args, device):
 
 def run_unfrozen(model: nn.Module, enc_dim: int, args, device):
     """Fine-tune the encoder + head end-to-end on the labels."""
+    # Make the whole encoder trainable. Matters for the I-JEPA target encoder,
+    # which ships frozen (requires_grad=False) from EMA pretraining; a no-op for
+    # the MAE/ConvMAE encoders, whose parameters are already trainable.
+    for p in model.parameters():
+        p.requires_grad_(True)
+
     head = nn.Linear(enc_dim, N_CLASSES).to(device)
     opt = torch.optim.AdamW(
         list(model.parameters()) + list(head.parameters()),

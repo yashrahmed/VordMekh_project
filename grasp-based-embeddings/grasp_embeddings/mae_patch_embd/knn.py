@@ -11,10 +11,10 @@ trained, so it complements the linear probe in ``classify.py``.
     python -m grasp_embeddings.mae_patch_embd.knn --arch no-enc  # raw-pixel baseline
     python -m grasp_embeddings.mae_patch_embd.knn --no-model-init  # baseline
 
-``--arch {vit,cnn}`` selects which pretrained encoder to load. ``--arch no-enc``
-skips the encoder entirely and runs k-NN on the raw flattened pixels (Euclidean
-image difference) -- the floor that any learned embedding should beat.
-``--no-model-init`` uses a random, untrained encoder as a baseline.
+``--arch {vit,cnn,jepa}`` selects which pretrained encoder to load. ``--arch
+no-enc`` skips the encoder entirely and runs k-NN on the raw flattened pixels
+(Euclidean image difference) -- the floor that any learned embedding should
+beat. ``--no-model-init`` uses a random, untrained encoder as a baseline.
 """
 
 from __future__ import annotations

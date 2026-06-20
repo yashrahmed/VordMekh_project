@@ -56,24 +56,30 @@ data = generate_dataset(shape, hand, n=2000, rng=np.random.default_rng(0))
 - `sampler.py` — `generate_dataset()` and save/load helpers.
 - `visualize.py` — matplotlib rendering of a probe and of a dataset.
 - `demo.py` — runnable entry point.
-- `mae_patch_embd/` — a small **Masked Autoencoder** (He et al. 2021) trained on
-  MNIST, in two flavors (ViT and conv-net), with nearest-neighbor retrieval and
-  classification evals over its encoder embeddings. See below.
+- `mae_patch_embd/` — small **self-supervised encoders** trained on MNIST: a
+  Masked Autoencoder (He et al. 2021) in ViT and conv-net flavors, plus an
+  I-JEPA (Assran et al. 2023), with nearest-neighbor retrieval, k-NN, and
+  classification evals over their encoder embeddings. See below.
 
 ## MAE patch embeddings (`mae_patch_embd`)
 
-A self-contained subpackage with two MAE architectures, selected via
-`--arch {vit,cnn}`:
+A self-contained subpackage with three self-supervised architectures, selected
+via `--arch {vit,cnn,jepa}`:
 
 - **`vit`** — patchify, *drop* ~75% of the patches, encode the visible ones with
   a Transformer, reconstruct the missing pixels (MSE on masked patches).
 - **`cnn`** — a masked conv autoencoder (Context-Encoder style): masked patches
   are *zeroed* in the input, a conv encoder/decoder reconstructs the image.
+- **`jepa`** — an I-JEPA (Assran et al. 2023): a context encoder sees the visible
+  patches, an EMA target encoder sees the full image, and a predictor predicts
+  the target's *latent* representations at the masked positions (no pixel
+  decoder — the loss is in representation space).
 
 ```bash
 # Train (downloads MNIST to dataset/, writes models/mae_mnist_<arch>.pt)
 uv run python -m grasp_embeddings.mae_patch_embd.mae --arch vit --epochs 50
 uv run python -m grasp_embeddings.mae_patch_embd.mae --arch cnn --epochs 50
+uv run python -m grasp_embeddings.mae_patch_embd.mae --arch jepa --epochs 50
 
 # Nearest-neighbor retrieval with the trained encoder
 uv run python -m grasp_embeddings.mae_patch_embd.retrieve --arch vit --seed 0 --save out.png

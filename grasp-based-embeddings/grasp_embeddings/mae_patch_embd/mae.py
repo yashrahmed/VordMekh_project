@@ -1,6 +1,6 @@
 """A small modern Masked Autoencoder (MAE) trained on MNIST.
 
-Two encoder architectures, selected with ``--arch``:
+Three encoder architectures, selected with ``--arch``:
 
 * ``vit`` -- a ViT-style MAE in the spirit of He et al., 2021 ("Masked
   Autoencoders Are Scalable Vision Learners"): patchify the image, randomly
@@ -9,11 +9,19 @@ Two encoder architectures, selected with ``--arch``:
 * ``cnn`` -- a masked conv autoencoder (Context-Encoder style, Pathak 2016).
   Convolutions need a dense grid, so masked patches are *zeroed* in the input
   rather than dropped; a conv encoder -> conv decoder reconstructs the image.
+* ``jepa`` -- an I-JEPA (Assran et al., 2023, "Self-Supervised Learning from
+  Images with a Joint-Embedding Predictive Architecture"): a trainable context
+  encoder encodes the visible patches, an EMA *target* encoder encodes the full
+  image into patch-level targets, and a predictor predicts the target's latent
+  representations at the masked positions.
 
-Either way the loss is the MSE on the masked patches only.
+For ``vit``/``cnn`` the loss is the MSE on the masked *pixels*; for ``jepa`` it
+is the MSE on the masked patches' *latent representations* -- prediction happens
+in representation space, not pixel space.
 
     python -m grasp_embeddings.mae_patch_embd.mae                   # vit
     python -m grasp_embeddings.mae_patch_embd.mae --arch cnn --epochs 50
+    python -m grasp_embeddings.mae_patch_embd.mae --arch jepa --epochs 50
 
 Downloads MNIST into <project>/dataset and writes the trained weights to
 <project>/models/mae_mnist_<arch>.pt (both are gitignored). Here <project> is
@@ -250,10 +258,167 @@ class ConvMAE(nn.Module):
         return loss, pred, mask
 
 
+class ViTTower(nn.Module):
+    """patch-embed + positional embedding + Transformer -> per-patch tokens.
+
+    The shared building block for I-JEPA's twin encoders. Unlike :class:`MAE`,
+    it carries no decoder -- it just maps patches to a grid of token vectors.
+    """
+
+    def __init__(
+        self,
+        patch_dim: int,
+        n_patches: int,
+        dim: int,
+        depth: int,
+        heads: int,
+    ):
+        super().__init__()
+        self.patch_embed = nn.Linear(patch_dim, dim)
+        self.pos = nn.Parameter(torch.zeros(1, n_patches, dim))
+        self.encoder = TransformerEncoder(dim, depth, heads)
+        nn.init.trunc_normal_(self.pos, std=0.02)
+
+    def tokens(self, imgs: torch.Tensor) -> torch.Tensor:
+        """(B, 1, 28, 28) -> (B, N, dim): encode every patch (no masking)."""
+        x = self.patch_embed(patchify(imgs)) + self.pos
+        return self.encoder(x)
+
+    def tokens_from(
+        self, patches: torch.Tensor, ids_keep: torch.Tensor
+    ) -> torch.Tensor:
+        """Encode only the ``ids_keep`` patches, with their position embeddings.
+
+        ``patches`` is (B, N, patch_dim); ``ids_keep`` is (B, n_keep). Returns
+        (B, n_keep, dim).
+        """
+        b, n_keep = ids_keep.shape
+        d = self.pos.size(-1)
+        kept = torch.gather(
+            patches, 1, ids_keep.unsqueeze(-1).expand(-1, -1, patches.size(-1))
+        )
+        pos = torch.gather(
+            self.pos.expand(b, -1, -1), 1, ids_keep.unsqueeze(-1).expand(-1, -1, d)
+        )
+        return self.encoder(self.patch_embed(kept) + pos)
+
+
+class JEPA(nn.Module):
+    """I-JEPA: predict masked patches' *latent* representations (Assran 2023).
+
+    Three parts:
+
+    * **context encoder** (trainable :class:`ViTTower`) -- sees only the visible
+      (context) patches.
+    * **target encoder** (an EMA copy of the context encoder, no gradients) --
+      sees the *full* image and produces the patch-level prediction targets.
+      Being an EMA with stop-gradient is what prevents representation collapse.
+    * **predictor** (a slim Transformer) -- given the encoded context tokens plus
+      learned mask tokens at the target positions, predicts the target encoder's
+      representations there.
+
+    The loss is the MSE between the predictor's output and the (stop-gradient)
+    target representations at the masked positions -- entirely in latent space,
+    with no pixel decoder. Downstream :meth:`encode` uses the *target* encoder
+    over the full image (it is the tower that has always seen whole images).
+    """
+
+    def __init__(
+        self,
+        patch_dim: int = PATCH_SIZE * PATCH_SIZE,
+        n_patches: int = (IMG_SIZE // PATCH_SIZE) ** 2,
+        enc_dim: int = 128,
+        enc_depth: int = 4,
+        enc_heads: int = 4,
+        pred_dim: int = 64,
+        pred_depth: int = 2,
+        pred_heads: int = 4,
+        momentum: float = 0.996,
+    ):
+        super().__init__()
+        self.n_patches = n_patches
+        self.patch_dim = patch_dim
+        self.embed_dim = enc_dim
+        self.pred_dim = pred_dim
+        self.momentum = momentum
+
+        self.context = ViTTower(patch_dim, n_patches, enc_dim, enc_depth, enc_heads)
+        self.target = ViTTower(patch_dim, n_patches, enc_dim, enc_depth, enc_heads)
+        self.target.load_state_dict(self.context.state_dict())
+        for p in self.target.parameters():
+            p.requires_grad_(False)  # EMA-updated, never by the optimizer
+
+        # Predictor: context tokens (+ positions) + mask tokens -> target reps.
+        self.pred_embed = nn.Linear(enc_dim, pred_dim)
+        self.mask_token = nn.Parameter(torch.zeros(1, 1, pred_dim))
+        self.pred_pos = nn.Parameter(torch.zeros(1, n_patches, pred_dim))
+        self.predictor = TransformerEncoder(pred_dim, pred_depth, pred_heads)
+        self.pred_proj = nn.Linear(pred_dim, enc_dim)
+
+        nn.init.trunc_normal_(self.pred_pos, std=0.02)
+        nn.init.trunc_normal_(self.mask_token, std=0.02)
+
+    @torch.no_grad()
+    def ema_update(self) -> None:
+        """Nudge the target encoder toward the context encoder (called per step)."""
+        m = self.momentum
+        for tp, cp in zip(self.target.parameters(), self.context.parameters()):
+            tp.mul_(m).add_(cp.detach(), alpha=1.0 - m)
+
+    def encode(self, imgs: torch.Tensor) -> torch.Tensor:
+        """(B, 1, 28, 28) -> (B, embed_dim): target encoder, mean-pooled tokens.
+
+        Differentiable, so gradients flow into the target encoder when it is
+        unfrozen for fine-tuning downstream.
+        """
+        return self.target.tokens(imgs).mean(dim=1)
+
+    def forward(self, imgs: torch.Tensor, mask_ratio: float = 0.75):
+        b = imgs.size(0)
+        patches = patchify(imgs)  # (B, N, patch_dim)
+        n, d = self.n_patches, self.embed_dim
+
+        # --- targets: full-image target encoder, stop-gradient ---
+        with torch.no_grad():
+            target_tokens = self.target.tokens(imgs)  # (B, N, enc_dim)
+
+        # --- split patches into context (visible) and predicted (masked) ---
+        keep = max(1, int(round(n * (1 - mask_ratio))))
+        ids_shuffle = torch.rand(b, n, device=imgs.device).argsort(dim=1)
+        ids_keep = ids_shuffle[:, :keep]  # context positions
+        ids_pred = ids_shuffle[:, keep:]  # masked positions to predict
+        n_pred = n - keep
+
+        # --- encode context with the context encoder ---
+        ctx = self.context.tokens_from(patches, ids_keep)  # (B, keep, enc_dim)
+
+        # --- predictor: context tokens + mask tokens at target positions ---
+        pred_pos = self.pred_pos.expand(b, -1, -1)
+        ctx_tok = self.pred_embed(ctx) + torch.gather(
+            pred_pos, 1, ids_keep.unsqueeze(-1).expand(-1, -1, self.pred_dim)
+        )
+        mask_tok = self.mask_token.expand(b, n_pred, -1) + torch.gather(
+            pred_pos, 1, ids_pred.unsqueeze(-1).expand(-1, -1, self.pred_dim)
+        )
+        seq = self.predictor(torch.cat([ctx_tok, mask_tok], dim=1))
+        pred = self.pred_proj(seq[:, keep:])  # (B, n_pred, enc_dim)
+
+        # --- latent-space MSE on the masked positions only ---
+        tgt = torch.gather(
+            target_tokens, 1, ids_pred.unsqueeze(-1).expand(-1, -1, d)
+        )
+        loss = F.mse_loss(pred, tgt)
+
+        # 0/1 mask (1 = predicted) in original patch order, for interface parity.
+        mask = torch.ones(b, n, device=imgs.device)
+        mask.scatter_(1, ids_keep, 0.0)
+        return loss, pred, mask
+
+
 # --------------------------------------------------------------------------- #
 # Architecture registry
 # --------------------------------------------------------------------------- #
-ARCHES = ("vit", "cnn")
+ARCHES = ("vit", "cnn", "jepa")
 
 
 def build_model(arch: str) -> nn.Module:
@@ -262,6 +427,8 @@ def build_model(arch: str) -> nn.Module:
         return MAE()
     if arch == "cnn":
         return ConvMAE()
+    if arch == "jepa":
+        return JEPA()
     raise ValueError(f"Unknown arch {arch!r}; choose from {ARCHES}.")
 
 
@@ -312,6 +479,8 @@ def train(
             loss.backward()
             opt.step()
             sched.step()
+            if hasattr(model, "ema_update"):
+                model.ema_update()  # I-JEPA: nudge the target encoder
             running += loss.item() * imgs.size(0)
             seen += imgs.size(0)
         print(f"epoch {epoch:3d}/{epochs}  recon_mse {running / seen:.5f}")

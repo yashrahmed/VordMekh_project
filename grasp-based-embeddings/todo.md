@@ -41,8 +41,9 @@ ray-based cousins). DeepSDF : SDF :: the planned net : a directed distance field
    6. [x] Train a Conv-net MAE on MNIST and measure similarity. 
    7. [x] Train a Conv-net MAE on MNIST and measure classification accuracy after finetuning.
    8. [x] Test KNN with ConvNet and VIT.
-   9. [ ] Train an I-JEPA on MNIST and measure similarity. 
-   10. [ ] Train an I-JEPA on MNIST and measure classification accuracy (maybe after finetuning?).
+   9. [x] Train an I-JEPA on MNIST and measure similarity. 
+   10. [x] Train an I-JEPA on MNIST and measure classification accuracy (maybe after finetuning?).
+   11. [x] Test KNN with I-JEPA.
 2. BRIEF like features.
    1. A brief feature that moves. Similar to a hand but with a single finger.
    2. Imagine that this moves from one point to another sampling values. And there are two of these. Then shape descriptors could be used to find correspondence and similarity perhaps.
@@ -52,105 +53,50 @@ ray-based cousins). DeepSDF : SDF :: the planned net : a directed distance field
 
 ## Work log
 ### 2026-06-20
-- Built a ViT-style **Masked Autoencoder** (`mae_patch_embd/mae.py`): patchify,
-  75% random masking, encode visible patches only, decode with mask tokens,
-  MSE loss on masked patches. Trained on MNIST (50 epochs).
-- Wrote a nearest-neighbor **retrieval** demo (`mae_patch_embd/retrieve.py`):
-  samples 5 images per class (0-9), picks a random query, embeds with the
-  (unmasked) encoder, and shows the query + top-3 cosine matches. Trained
-  encoder retrieves the right class; a random encoder (`--no-model-init`)
-  collapses to ~0.98 cosine for everything (item 1.4 — similarity).
-- Wrote a **classification** eval (`mae_patch_embd/classify.py`): linear head on
-  the encoder, frozen by default (linear probe) or fine-tuned with `--unfreeze`;
-  reports train/test error. The encoder is the ViT pretrained by MAE; the head
-  is the only thing that trains in probe mode (item 1.5 — classification).
+Built three self-supervised encoders on MNIST in `mae_patch_embd/`, plus evals
+over their frozen and fine-tuned embeddings (items 1.4-1.11):
 
-  Results (MNIST, mean-pooled tokens -> linear head):
-  | setup | encoder | train acc | test acc |
-  |---|---|---|---|
-  | linear probe (50 ep) | trained, frozen | 97.3% | 97.4% |
-  | linear probe (50 ep) | random (`--no-model-init`) | 59.4% | 59.1% |
-  | fine-tune (10 ep) | trained, unfrozen | 99.7% | 98.8% |
-  | fine-tune (50 ep, wd=0) | trained, unfrozen | 99.8% | 98.7% |
-  | fine-tune (50 ep, wd=0.05) | trained, unfrozen | 99.7% | 98.7% |
+- **`mae.py`** (`--arch {vit,cnn,jepa}`, checkpoints `models/mae_mnist_<arch>.pt`):
+  - `vit` — ViT MAE (He 2021): drop 75% of patches, encode the visible ones,
+    decode the missing pixels (MSE on masked patches).
+  - `cnn` — conv MAE (Context-Encoder, Pathak 2016): masked patches *zeroed*,
+    conv enc/dec reconstructs (MSE on masked pixels).
+  - `jepa` — I-JEPA (Assran 2023): context encoder + EMA target encoder +
+    predictor; predicts the target's *latent* representations at masked
+    positions (MSE in representation space, no pixel decoder).
+- **`retrieve.py`** — cosine nearest-neighbour retrieval demo (item 1.4).
+- **`classify.py`** — linear probe (frozen) or `--unfreeze` end-to-end fine-tune.
+- **`knn.py`** — 5-NN over the full 60k/10k splits; `--arch no-enc` = a raw-pixel
+  Euclidean floor any learned embedding should beat.
 
-  Notes: weight decay (now default 0.05) only slightly narrows the train/test
-  gap — the model isn't overfitting much. Test accuracy plateaus ~98.7-98.8%
-  and stays below CNN-level MNIST SOTA (~99.3%+). The cap is architectural, not
-  capacity: a plain ViT has no conv inductive bias (data-hungry on small
-  images), 7x7 patches give only 16 coarse tokens, and mean-pooling is a lossy
-  readout. Next levers: conv stem / smaller patches / a CLS token (motivates
-  items 1.6-1.7, the conv-net MAE).
+**Headline results (MNIST test set).** ViT/CNN trained 50 epochs; I-JEPA swept
+by pretraining length (see below).
 
-- Added a **conv-net MAE** (`ConvMAE` in `mae.py`, Context-Encoder style):
-  convolutions need a dense grid, so masked patches are *zeroed* in the input
-  (not dropped); a conv encoder (28->14->7, ch 1->32->64->128) and conv decoder
-  (7->14->28) reconstruct, MSE on masked patches. The image embedding is the
-  global-avg-pool of the final 7x7 feature map (mirrors the ViT token mean-pool).
-  `mae.py`/`classify.py`/`retrieve.py` all take `--arch {vit,cnn}`; checkpoints
-  are `models/mae_mnist_<arch>.pt`. Both trained 50 epochs (recon MSE: vit
-  0.0363, cnn 0.0410) (items 1.6-1.7).
+| eval | ViT | CNN | I-JEPA | raw pixels |
+|---|---|---|---|---|
+| 5-NN, frozen embedding | 97.16% | 91.29% | **97.91%** (300 ep) | 96.88% |
+| linear probe (frozen head) | 97.4% | -- | -- | -- |
+| fine-tune (unfrozen, 50 ep) | 98.7% | **99.0%** | 98.69% | -- |
 
-  Two findings, and they point opposite ways:
+I-JEPA frozen-5-NN vs pretraining length: 50 ep **93.30%** → 200 ep **97.59%** →
+300 ep **97.91%** (pretext MSE 0.140 → 0.047 → 0.039; diminishing returns).
 
-  **Classification after fine-tune (item 1.7):**
-  | arch | epochs | train acc | test acc |
-  |---|---|---|---|
-  | ViT | 50 (wd=0.05) | 99.7% | 98.7% |
-  | CNN | 10 | 97.8% | 97.8% |
-  | CNN | 50 | 99.8% | **99.0%** |
+**What we learned:**
+1. **Reconstruction ≠ good embeddings.** The conv MAE's frozen 5-NN (91.29%) is
+   *below* the raw-pixel floor (96.88%) — its inpainting features destroy
+   similarity info bare pixels keep — yet it's the best *trainable* extractor
+   (fine-tune 99.0%). Better trainable features, worse off-the-shelf embedding.
+2. **Latent prediction (I-JEPA) gives the best frozen embedding — once trained
+   long enough.** At 50 ep it was undertrained (93.30%, below the pixel floor);
+   at 300 ep it's the best off-the-shelf embedding (97.91%), clearing the floor
+   and beating the ViT MAE. Its EMA target evolves slowly, so it needs a longer
+   schedule than the MAEs (OneCycle: more epochs = higher sustained LR, not a
+   resumable add-on).
+3. **Fine-tuning erases the differences** — all three land 98.7-99.0%. On a task
+   this easy (pixel floor ~97%) the pretext barely matters once labels are added.
 
-  The conv bias does what the analysis predicted: at equal budget the CNN clears
-  the ViT's ~98.7% plateau and reaches ~99.0% (CNN-MNIST territory). But it needs
-  the full 50 epochs — at 10 epochs it's undertrained (loss still falling
-  0.076 -> 0.016), so the ViT looks better only because it converges faster.
-
-  **Retrieval / similarity, frozen pretrained encoder (item 1.6):** the
-  *opposite* — the ViT is clearly better off-the-shelf. Top-1 cosine NN over a
-  5-per-class gallery (seeds 0-3): ViT gets the right class nearly every time
-  with well-separated cosines (~0.65-0.95 top vs ~0.34-0.37 runners-up); the CNN
-  often misses (e.g. query 4 -> 9) and its cosines are *saturated* at ~0.94-0.99
-  with almost no spread — close to the random-encoder collapse.
-
-  Why the dissociation: retrieval reads the *self-supervised representation
-  as-is*, where the ViT's global attention + token mean-pool yields a
-  discriminative pooled vector, while the conv MAE's local inpainting pretext +
-  global-avg-pool produces features tuned to fill zeroed holes (low-level,
-  saturated), poor for instance similarity. Once labels + fine-tuning are
-  available, the conv inductive bias wins on classification. Lesson: conv MAE !=
-  better embeddings; it's better *trainable* features. A contrastive/JEPA-style
-  pretext (item 1.9-1.10) is the natural next thing to try for similarity.
-
-- Added **k-NN** eval (`mae_patch_embd/knn.py`, item 1.8): embeds the *full*
-  train (60k) and test (10k) splits with the frozen encoder, L2-normalises, and
-  classifies each test image by majority vote over its `k`=5 nearest training
-  neighbours (chunked cosine top-k; no head trained). `--arch {vit,cnn}` picks
-  the encoder; `--arch no-enc` skips the encoder entirely and runs k-NN on the
-  raw flattened pixels (Euclidean distance) -- the floor any learned embedding
-  should beat. The raw-pixel floor turns the dissociation into a *signed*
-  result: the ViT only just clears it, while the CNN embedding falls *below* it
-  (worse than doing nothing) -- its global-avg-pooled inpainting features
-  actively destroy similarity information bare pixels retain.
-
-  **Consolidated results (MNIST test set).** Three evals over the same two
-  pretrained encoders: 5-NN on the frozen embedding (item 1.6/1.8, similarity),
-  the linear probe (frozen encoder, head only), and end-to-end fine-tune
-  (item 1.5/1.7, classification). Recon MSE during MAE pretraining: ViT 0.0363,
-  CNN 0.0410.
-
-  | eval | setup | ViT | CNN |
-  |---|---|---|---|
-  | 5-NN (frozen embed) | k=5, cosine | **97.16%** | 91.29% |
-  | 5-NN raw-pixel floor | k=5, Euclidean, `no-enc` | 96.88% | 96.88% |
-  | linear probe | frozen encoder, 50 ep | 97.4% | -- |
-  | linear probe | random encoder (`--no-model-init`) | 59.1% | -- |
-  | fine-tune | unfrozen, 10 ep | 98.8% | 97.8% |
-  | fine-tune | unfrozen, 50 ep | 98.7% | **99.0%** |
-
-  The two columns cross over: **frozen/similarity favours the ViT (+5.9 pts at
-  k-NN), fine-tuning favours the CNN (+0.3 pts).** The raw-pixel floor (96.88%,
-  identical for both since no encoder is used) sits above the CNN's learned
-  embedding and just below the ViT's -- the cleanest one-number summary of why
-  the conv MAE is a better *trainable* feature extractor but a worse
-  *off-the-shelf* embedding.
+**Open caveat — not yet epoch-matched:** I-JEPA's frozen-embedding win is at
+300 ep vs the ViT/CNN MAEs at 50 ep. Re-train the ViT MAE at 300 ep before
+treating "JEPA > MAE for embeddings" as settled. To give any pretext real
+headroom, move off MNIST (CIFAR-10) or into the scarce-label regime.
 

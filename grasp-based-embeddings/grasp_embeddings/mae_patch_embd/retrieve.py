@@ -19,13 +19,14 @@ Usage:
     python -m grasp_embeddings.mae_patch_embd.retrieve --arch cnn --seed 0
     python -m grasp_embeddings.mae_patch_embd.retrieve --no-model-init  # baseline
 
-``--arch {vit,cnn}`` selects which pretrained encoder to load.
+``--arch {vit,cnn,jepa}`` selects which pretrained encoder to load.
 ``--no-model-init`` skips the checkpoint and embeds with a random, untrained
 encoder -- a baseline showing how much the training actually buys you.
 
 The embedding for an image is the encoder's pooled representation with no
 masking applied (the full image is seen): mean-pooled tokens for the ViT,
-global-avg-pooled feature map for the CNN.
+global-avg-pooled feature map for the CNN, mean-pooled target-encoder tokens
+for I-JEPA.
 """
 
 from __future__ import annotations
