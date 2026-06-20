@@ -1,5 +1,7 @@
 # Grasp-based embeddings
 
+## Goal - The only experimental project in the current track.
+
 ## The idea
 
 Generate labeled data describing the **local shape** of 2D objects, where the

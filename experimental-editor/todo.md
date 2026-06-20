@@ -1,3 +1,5 @@
+## Goal
+- [Career - Agent assisted coding] - The RTS like code visualizer + editor addons.
 
 ## V0.1
 - Learn Three.js.
