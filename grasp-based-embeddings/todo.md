@@ -38,8 +38,8 @@ ray-based cousins). DeepSDF : SDF :: the planned net : a directed distance field
    3. [ ] Test shape descriptors on MNIST and measure similarity.
    4. [x] Train a VIT/MAE on MNIST and measure similarity. 
    5. [x] Train a VIT/MAE on MNIST and measure classification accuracy after finetuning.
-   6. [ ] Train a Conv-net MAE on MNIST and measure similarity. 
-   7. [ ] Train a Conv-net MAE on MNIST and measure classification accuracy after finetuning.
+   6. [x] Train a Conv-net MAE on MNIST and measure similarity. 
+   7. [x] Train a Conv-net MAE on MNIST and measure classification accuracy after finetuning.
    8. [ ] Train an I-JEPA on MNIST and measure similarity. 
    9. [ ] Train an I-JEPA on MNIST and measure classification accuracy (maybe after finetuning?).
 2. BRIEF like features.
@@ -80,4 +80,43 @@ ray-based cousins). DeepSDF : SDF :: the planned net : a directed distance field
   images), 7x7 patches give only 16 coarse tokens, and mean-pooling is a lossy
   readout. Next levers: conv stem / smaller patches / a CLS token (motivates
   items 1.6-1.7, the conv-net MAE).
+
+- Added a **conv-net MAE** (`ConvMAE` in `mae.py`, Context-Encoder style):
+  convolutions need a dense grid, so masked patches are *zeroed* in the input
+  (not dropped); a conv encoder (28->14->7, ch 1->32->64->128) and conv decoder
+  (7->14->28) reconstruct, MSE on masked patches. The image embedding is the
+  global-avg-pool of the final 7x7 feature map (mirrors the ViT token mean-pool).
+  `mae.py`/`classify.py`/`retrieve.py` all take `--arch {vit,cnn}`; checkpoints
+  are `models/mae_mnist_<arch>.pt`. Both trained 50 epochs (recon MSE: vit
+  0.0363, cnn 0.0410) (items 1.6-1.7).
+
+  Two findings, and they point opposite ways:
+
+  **Classification after fine-tune (item 1.7):**
+  | arch | epochs | train acc | test acc |
+  |---|---|---|---|
+  | ViT | 50 (wd=0.05) | 99.7% | 98.7% |
+  | CNN | 10 | 97.8% | 97.8% |
+  | CNN | 50 | 99.8% | **99.0%** |
+
+  The conv bias does what the analysis predicted: at equal budget the CNN clears
+  the ViT's ~98.7% plateau and reaches ~99.0% (CNN-MNIST territory). But it needs
+  the full 50 epochs — at 10 epochs it's undertrained (loss still falling
+  0.076 -> 0.016), so the ViT looks better only because it converges faster.
+
+  **Retrieval / similarity, frozen pretrained encoder (item 1.6):** the
+  *opposite* — the ViT is clearly better off-the-shelf. Top-1 cosine NN over a
+  5-per-class gallery (seeds 0-3): ViT gets the right class nearly every time
+  with well-separated cosines (~0.65-0.95 top vs ~0.34-0.37 runners-up); the CNN
+  often misses (e.g. query 4 -> 9) and its cosines are *saturated* at ~0.94-0.99
+  with almost no spread — close to the random-encoder collapse.
+
+  Why the dissociation: retrieval reads the *self-supervised representation
+  as-is*, where the ViT's global attention + token mean-pool yields a
+  discriminative pooled vector, while the conv MAE's local inpainting pretext +
+  global-avg-pool produces features tuned to fill zeroed holes (low-level,
+  saturated), poor for instance similarity. Once labels + fine-tuning are
+  available, the conv inductive bias wins on classification. Lesson: conv MAE !=
+  better embeddings; it's better *trainable* features. A contrastive/JEPA-style
+  pretext (item 1.8-1.9) is the natural next thing to try for similarity.
 

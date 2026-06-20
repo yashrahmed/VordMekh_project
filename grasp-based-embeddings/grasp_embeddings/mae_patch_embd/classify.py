@@ -14,10 +14,11 @@ Two modes:
   supervised model.
 
     python -m grasp_embeddings.mae_patch_embd.classify
-    python -m grasp_embeddings.mae_patch_embd.classify --unfreeze --epochs 10
+    python -m grasp_embeddings.mae_patch_embd.classify --arch cnn --unfreeze
     python -m grasp_embeddings.mae_patch_embd.classify --no-model-init  # baseline
 
-This model is evaluation-only and is never saved.
+``--arch {vit,cnn}`` selects which pretrained encoder to load (and must match an
+architecture trained by ``mae.py``). This model is evaluation-only, never saved.
 """
 
 from __future__ import annotations
@@ -30,38 +31,36 @@ from torch.utils.data import DataLoader, TensorDataset
 from torchvision import datasets, transforms
 
 from grasp_embeddings.mae_patch_embd.mae import (
+    ARCHES,
     DATASET_DIR,
-    MAE,
-    MODELS_DIR,
-    patchify,
+    build_model,
+    model_path,
     pick_device,
 )
 
 N_CLASSES = 10
 
 
-def load_encoder(device: torch.device, random_init: bool) -> MAE:
-    model = MAE().to(device)
+def load_encoder(device: torch.device, arch: str, random_init: bool) -> nn.Module:
+    model = build_model(arch).to(device)
     if not random_init:
-        ckpt_path = MODELS_DIR / "mae_mnist.pt"
+        ckpt_path = model_path(arch)
         if not ckpt_path.exists():
             raise FileNotFoundError(
                 f"No checkpoint at {ckpt_path}. Train one first with "
-                "`python -m grasp_embeddings.mae_patch_embd.mae`."
+                f"`python -m grasp_embeddings.mae_patch_embd.mae --arch {arch}`."
             )
         ckpt = torch.load(ckpt_path, map_location=device)
         model.load_state_dict(ckpt["state_dict"])
     return model
 
 
-def encode(model: MAE, imgs: torch.Tensor) -> torch.Tensor:
-    """(B, 1, 28, 28) -> (B, enc_dim): encode all patches, mean-pool tokens.
+def encode(model: nn.Module, imgs: torch.Tensor) -> torch.Tensor:
+    """(B, 1, 28, 28) -> (B, embed_dim) image embeddings.
 
     Differentiable -- gradients flow into the encoder when it is unfrozen.
     """
-    tokens = model.patch_embed(patchify(imgs)) + model.enc_pos
-    feats = model.encoder(tokens)  # (B, N, enc_dim)
-    return feats.mean(dim=1)
+    return model.encode(imgs)
 
 
 def mnist_loader(train: bool, batch_size: int, shuffle: bool) -> DataLoader:
@@ -76,7 +75,7 @@ def mnist_loader(train: bool, batch_size: int, shuffle: bool) -> DataLoader:
 
 
 @torch.no_grad()
-def extract_features(model: MAE, train: bool, device: torch.device):
+def extract_features(model: nn.Module, train: bool, device: torch.device):
     """Run the frozen encoder over a split once, return (features, labels)."""
     model.eval()
     feats, labels = [], []
@@ -98,7 +97,7 @@ def error_features(head: nn.Module, X, y, device) -> float:
 
 
 @torch.no_grad()
-def error_images(model: MAE, head: nn.Module, train: bool, device) -> float:
+def error_images(model: nn.Module, head: nn.Module, train: bool, device) -> float:
     """Misclassification rate, encoding images on the fly."""
     model.eval()
     head.eval()
@@ -110,7 +109,7 @@ def error_images(model: MAE, head: nn.Module, train: bool, device) -> float:
     return 1.0 - correct / total
 
 
-def run_frozen(model: MAE, enc_dim: int, args, device):
+def run_frozen(model: nn.Module, enc_dim: int, args, device):
     """Linear probe: freeze the encoder, train only the head on cached feats."""
     for p in model.parameters():
         p.requires_grad_(False)
@@ -149,7 +148,7 @@ def run_frozen(model: MAE, enc_dim: int, args, device):
     )
 
 
-def run_unfrozen(model: MAE, enc_dim: int, args, device):
+def run_unfrozen(model: nn.Module, enc_dim: int, args, device):
     """Fine-tune the encoder + head end-to-end on the labels."""
     head = nn.Linear(enc_dim, N_CLASSES).to(device)
     opt = torch.optim.AdamW(
@@ -182,6 +181,7 @@ def run_unfrozen(model: MAE, enc_dim: int, args, device):
 
 def main() -> None:
     parser = argparse.ArgumentParser(description=__doc__)
+    parser.add_argument("--arch", choices=ARCHES, default="vit")
     parser.add_argument("--epochs", type=int, default=50)
     parser.add_argument("--batch-size", type=int, default=256)
     parser.add_argument("--lr", type=float, default=1e-3)
@@ -199,12 +199,12 @@ def main() -> None:
     args = parser.parse_args()
 
     device = pick_device()
-    print(f"Device: {device}")
+    print(f"Device: {device}  arch: {args.arch}")
     if args.no_model_init:
         print("Starting from an UNINITIALIZED (untrained) encoder.")
 
-    model = load_encoder(device, random_init=args.no_model_init)
-    enc_dim = model.enc_pos.shape[-1]
+    model = load_encoder(device, args.arch, random_init=args.no_model_init)
+    enc_dim = model.embed_dim
 
     if args.unfreeze:
         print("Fine-tuning: encoder UNFROZEN, training encoder + head.")

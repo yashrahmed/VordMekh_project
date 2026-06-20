@@ -16,14 +16,16 @@ draw. Passing ``--save`` instead writes a single static figure (no button).
 Usage:
 
     python -m grasp_embeddings.mae_patch_embd.retrieve              # show figure
-    python -m grasp_embeddings.mae_patch_embd.retrieve --save out.png --seed 0
+    python -m grasp_embeddings.mae_patch_embd.retrieve --arch cnn --seed 0
     python -m grasp_embeddings.mae_patch_embd.retrieve --no-model-init  # baseline
 
+``--arch {vit,cnn}`` selects which pretrained encoder to load.
 ``--no-model-init`` skips the checkpoint and embeds with a random, untrained
 encoder -- a baseline showing how much the training actually buys you.
 
-The embedding for an image is the mean over the encoder's patch tokens with no
-masking applied (the full image is seen).
+The embedding for an image is the encoder's pooled representation with no
+masking applied (the full image is seen): mean-pooled tokens for the ViT,
+global-avg-pooled feature map for the CNN.
 """
 
 from __future__ import annotations
@@ -31,42 +33,40 @@ from __future__ import annotations
 import argparse
 
 import torch
+import torch.nn as nn
 import torch.nn.functional as F
 from torchvision import datasets, transforms
 
 from grasp_embeddings.mae_patch_embd.mae import (
+    ARCHES,
     DATASET_DIR,
-    MODELS_DIR,
-    MAE,
-    patchify,
+    build_model,
+    model_path,
     pick_device,
 )
 
 
-def load_model(device: torch.device) -> MAE:
-    ckpt_path = MODELS_DIR / "mae_mnist.pt"
+def load_model(device: torch.device, arch: str) -> nn.Module:
+    ckpt_path = model_path(arch)
     if not ckpt_path.exists():
         raise FileNotFoundError(
             f"No checkpoint at {ckpt_path}. Train one first with "
-            "`python -m mae_patch_embd.mae`."
+            f"`python -m grasp_embeddings.mae_patch_embd.mae --arch {arch}`."
         )
     ckpt = torch.load(ckpt_path, map_location=device)
-    model = MAE().to(device)
+    model = build_model(arch).to(device)
     model.load_state_dict(ckpt["state_dict"])
     model.eval()
     return model
 
 
 @torch.no_grad()
-def embed(model: MAE, imgs: torch.Tensor) -> torch.Tensor:
-    """(B, 1, 28, 28) -> (B, enc_dim) L2-normalised embeddings.
+def embed(model: nn.Module, imgs: torch.Tensor) -> torch.Tensor:
+    """(B, 1, 28, 28) -> (B, embed_dim) L2-normalised embeddings.
 
-    Runs the encoder on every patch (no masking) and mean-pools the tokens.
+    Pools the encoder's representation over the full image (no masking).
     """
-    tokens = model.patch_embed(patchify(imgs)) + model.enc_pos
-    feats = model.encoder(tokens)  # (B, N, enc_dim)
-    emb = feats.mean(dim=1)  # (B, enc_dim)
-    return F.normalize(emb, dim=-1)
+    return F.normalize(model.encode(imgs), dim=-1)
 
 
 def build_gallery(per_class: int, generator: torch.Generator):
@@ -127,6 +127,7 @@ def run_round(model, device, per_class, topk, generator):
 
 def main() -> None:
     parser = argparse.ArgumentParser(description=__doc__)
+    parser.add_argument("--arch", choices=ARCHES, default="vit")
     parser.add_argument("--per-class", type=int, default=5)
     parser.add_argument("--topk", type=int, default=3)
     parser.add_argument("--seed", type=int, default=None)
@@ -141,7 +142,7 @@ def main() -> None:
     args = parser.parse_args()
 
     device = pick_device()
-    print(f"Device: {device}")
+    print(f"Device: {device}  arch: {args.arch}")
 
     generator = torch.Generator()
     if args.seed is not None:
@@ -149,10 +150,10 @@ def main() -> None:
 
     if args.no_model_init:
         print("Using an UNINITIALIZED (untrained) encoder.")
-        model = MAE().to(device)
+        model = build_model(args.arch).to(device)
         model.eval()
     else:
-        model = load_model(device)
+        model = load_model(device, args.arch)
     result = run_round(model, device, args.per_class, args.topk, generator)
 
     if args.save:
