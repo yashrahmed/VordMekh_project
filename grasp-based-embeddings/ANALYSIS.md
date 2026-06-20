@@ -24,7 +24,8 @@ ray-based cousins). DeepSDF : SDF :: the planned net : a directed distance field
 1. Patch embeddings via auto encoders.
    1. Train an auto encoder with handcrafted BRIEF.
    2. Train a classifier with brief.
-   3. Test shape descriptors on patches and measure similarity.
+   3. Test shape descriptors on MNIST and measure similarity.
+   4. Train a regular VAE on MNIST. 
 2. BRIEF like features.
    1. A brief feature that moves. Similar to a hand but with a single finger.
    2. Imagine that this moves from one point to another sampling values. And there are two of these. Then shape descriptors could be used to find correspondence and similarity perhaps.
