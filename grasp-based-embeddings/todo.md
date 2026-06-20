@@ -40,8 +40,9 @@ ray-based cousins). DeepSDF : SDF :: the planned net : a directed distance field
    5. [x] Train a VIT/MAE on MNIST and measure classification accuracy after finetuning.
    6. [x] Train a Conv-net MAE on MNIST and measure similarity. 
    7. [x] Train a Conv-net MAE on MNIST and measure classification accuracy after finetuning.
-   8. [ ] Train an I-JEPA on MNIST and measure similarity. 
-   9. [ ] Train an I-JEPA on MNIST and measure classification accuracy (maybe after finetuning?).
+   8. [x] Test KNN with ConvNet and VIT.
+   9. [ ] Train an I-JEPA on MNIST and measure similarity. 
+   10. [ ] Train an I-JEPA on MNIST and measure classification accuracy (maybe after finetuning?).
 2. BRIEF like features.
    1. A brief feature that moves. Similar to a hand but with a single finger.
    2. Imagine that this moves from one point to another sampling values. And there are two of these. Then shape descriptors could be used to find correspondence and similarity perhaps.
@@ -118,5 +119,38 @@ ray-based cousins). DeepSDF : SDF :: the planned net : a directed distance field
   saturated), poor for instance similarity. Once labels + fine-tuning are
   available, the conv inductive bias wins on classification. Lesson: conv MAE !=
   better embeddings; it's better *trainable* features. A contrastive/JEPA-style
-  pretext (item 1.8-1.9) is the natural next thing to try for similarity.
+  pretext (item 1.9-1.10) is the natural next thing to try for similarity.
+
+- Added **k-NN** eval (`mae_patch_embd/knn.py`, item 1.8): embeds the *full*
+  train (60k) and test (10k) splits with the frozen encoder, L2-normalises, and
+  classifies each test image by majority vote over its `k`=5 nearest training
+  neighbours (chunked cosine top-k; no head trained). `--arch {vit,cnn}` picks
+  the encoder; `--arch no-enc` skips the encoder entirely and runs k-NN on the
+  raw flattened pixels (Euclidean distance) -- the floor any learned embedding
+  should beat. The raw-pixel floor turns the dissociation into a *signed*
+  result: the ViT only just clears it, while the CNN embedding falls *below* it
+  (worse than doing nothing) -- its global-avg-pooled inpainting features
+  actively destroy similarity information bare pixels retain.
+
+  **Consolidated results (MNIST test set).** Three evals over the same two
+  pretrained encoders: 5-NN on the frozen embedding (item 1.6/1.8, similarity),
+  the linear probe (frozen encoder, head only), and end-to-end fine-tune
+  (item 1.5/1.7, classification). Recon MSE during MAE pretraining: ViT 0.0363,
+  CNN 0.0410.
+
+  | eval | setup | ViT | CNN |
+  |---|---|---|---|
+  | 5-NN (frozen embed) | k=5, cosine | **97.16%** | 91.29% |
+  | 5-NN raw-pixel floor | k=5, Euclidean, `no-enc` | 96.88% | 96.88% |
+  | linear probe | frozen encoder, 50 ep | 97.4% | -- |
+  | linear probe | random encoder (`--no-model-init`) | 59.1% | -- |
+  | fine-tune | unfrozen, 10 ep | 98.8% | 97.8% |
+  | fine-tune | unfrozen, 50 ep | 98.7% | **99.0%** |
+
+  The two columns cross over: **frozen/similarity favours the ViT (+5.9 pts at
+  k-NN), fine-tuning favours the CNN (+0.3 pts).** The raw-pixel floor (96.88%,
+  identical for both since no encoder is used) sits above the CNN's learned
+  embedding and just below the ViT's -- the cleanest one-number summary of why
+  the conv MAE is a better *trainable* feature extractor but a worse
+  *off-the-shelf* embedding.
 

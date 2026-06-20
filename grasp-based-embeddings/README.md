@@ -80,6 +80,10 @@ uv run python -m grasp_embeddings.mae_patch_embd.retrieve --arch vit --seed 0 --
 
 # Classification: linear probe (frozen) or end-to-end fine-tune (--unfreeze)
 uv run python -m grasp_embeddings.mae_patch_embd.classify --arch cnn --unfreeze --epochs 50
+
+# k-NN over the frozen embeddings (full test set); --arch no-enc = raw-pixel floor
+uv run python -m grasp_embeddings.mae_patch_embd.knn --arch vit --k 5
+uv run python -m grasp_embeddings.mae_patch_embd.knn --arch no-enc
 ```
 
 `dataset/`, `models/`, and `*.png` are gitignored.
