@@ -16,21 +16,30 @@ Two modes:
     python -m grasp_embeddings.mae_patch_embd.classify
     python -m grasp_embeddings.mae_patch_embd.classify --arch cnn --unfreeze
     python -m grasp_embeddings.mae_patch_embd.classify --no-model-init  # baseline
+    python -m grasp_embeddings.mae_patch_embd.classify --brief          # random BRIEF
+    python -m grasp_embeddings.mae_patch_embd.classify --brief-mod --grid 8
 
 ``--arch {vit,cnn,jepa}`` selects which pretrained encoder to load (and must
 match an architecture trained by ``mae.py``). For ``jepa`` the encoder is the
 I-JEPA target encoder. This model is evaluation-only, never saved.
+
+``--brief`` / ``--brief-mod`` skip the encoder entirely and probe a fixed,
+zero-learning handcrafted descriptor instead (random pairs / structured lattice;
+see :mod:`brief`): the BRIEF bit vector is the "embedding" and only the linear
+head trains. Always frozen -- ``--unfreeze`` does not apply.
 """
 
 from __future__ import annotations
 
 import argparse
 
+import numpy as np
 import torch
 import torch.nn as nn
 from torch.utils.data import DataLoader, TensorDataset
 from torchvision import datasets, transforms
 
+from grasp_embeddings.mae_patch_embd import brief
 from grasp_embeddings.mae_patch_embd.mae import (
     ARCHES,
     DATASET_DIR,
@@ -110,18 +119,9 @@ def error_images(model: nn.Module, head: nn.Module, train: bool, device) -> floa
     return 1.0 - correct / total
 
 
-def run_frozen(model: nn.Module, enc_dim: int, args, device):
-    """Linear probe: freeze the encoder, train only the head on cached feats."""
-    for p in model.parameters():
-        p.requires_grad_(False)
-    model.eval()
-
-    print("Extracting embeddings from the frozen encoder...")
-    Xtr, ytr = extract_features(model, train=True, device=device)
-    Xte, yte = extract_features(model, train=False, device=device)
-    print(f"  train: {tuple(Xtr.shape)}   test: {tuple(Xte.shape)}")
-
-    head = nn.Linear(enc_dim, N_CLASSES).to(device)
+def train_linear_probe(Xtr, ytr, Xte, yte, in_dim: int, args, device):
+    """Train a linear head on cached features and return (train_err, test_err)."""
+    head = nn.Linear(in_dim, N_CLASSES).to(device)
     opt = torch.optim.AdamW(
         head.parameters(), lr=args.lr, weight_decay=args.weight_decay
     )
@@ -147,6 +147,40 @@ def run_frozen(model: nn.Module, enc_dim: int, args, device):
     return error_features(head, Xtr, ytr, device), error_features(
         head, Xte, yte, device
     )
+
+
+def run_frozen(model: nn.Module, enc_dim: int, args, device):
+    """Linear probe: freeze the encoder, train only the head on cached feats."""
+    for p in model.parameters():
+        p.requires_grad_(False)
+    model.eval()
+
+    print("Extracting embeddings from the frozen encoder...")
+    Xtr, ytr = extract_features(model, train=True, device=device)
+    Xte, yte = extract_features(model, train=False, device=device)
+    print(f"  train: {tuple(Xtr.shape)}   test: {tuple(Xte.shape)}")
+
+    return train_linear_probe(Xtr, ytr, Xte, yte, enc_dim, args, device)
+
+
+def extract_brief(kind: str, args, device):
+    """BRIEF-describe MNIST as cached descriptor features for the linear probe.
+
+    Returns ``(Xtr, ytr, Xte, yte, n_bits)`` with the bit vectors as float
+    tensors -- a fixed, zero-learning "encoder" the linear head probes, exactly
+    like the frozen-encoder path.
+    """
+    features, extent, label = brief.make_features(
+        kind, patch=args.patch, n=args.n, seed=args.brief_seed, grid=args.grid
+    )
+    print(f"Describing MNIST with {label}...")
+    tr_desc, tr_lab = brief.describe_split(features, extent, train=True)
+    te_desc, te_lab = brief.describe_split(features, extent, train=False)
+    Xtr = torch.from_numpy(tr_desc.astype(np.float32))
+    Xte = torch.from_numpy(te_desc.astype(np.float32))
+    ytr = torch.from_numpy(tr_lab.astype(np.int64))
+    yte = torch.from_numpy(te_lab.astype(np.int64))
+    return Xtr, ytr, Xte, yte, features.shape[0]
 
 
 def run_unfrozen(model: nn.Module, enc_dim: int, args, device):
@@ -186,6 +220,12 @@ def run_unfrozen(model: nn.Module, enc_dim: int, args, device):
     )
 
 
+def _report(mode: str, train_err: float, test_err: float) -> None:
+    print(f"\n--- {mode} ---")
+    print(f"Train error: {train_err:.2%}  (acc {1 - train_err:.2%})")
+    print(f"Test  error: {test_err:.2%}  (acc {1 - test_err:.2%})")
+
+
 def main() -> None:
     parser = argparse.ArgumentParser(description=__doc__)
     parser.add_argument("--arch", choices=ARCHES, default="vit")
@@ -203,9 +243,40 @@ def main() -> None:
         action="store_true",
         help="Start from a random, untrained encoder as a baseline.",
     )
+    brief_group = parser.add_mutually_exclusive_group()
+    brief_group.add_argument(
+        "--brief",
+        action="store_true",
+        help="Probe random handcrafted BRIEF descriptors instead of an encoder.",
+    )
+    brief_group.add_argument(
+        "--brief-mod",
+        action="store_true",
+        help="Probe structured BRIEF descriptors instead of an encoder.",
+    )
+    parser.add_argument("--patch", type=int, default=4, help="[--brief] frame side.")
+    parser.add_argument("--n", type=int, default=64, help="[--brief] feature count.")
+    parser.add_argument("--brief-seed", type=int, default=0, help="[--brief] seed.")
+    parser.add_argument("--grid", type=int, default=8, help="[--brief-mod] GxG lattice.")
     args = parser.parse_args()
 
     device = pick_device()
+    brief_kind = "brief-mod" if args.brief_mod else "brief" if args.brief else None
+
+    if brief_kind is not None:
+        if args.unfreeze:
+            parser.error("--unfreeze has no effect with --brief/--brief-mod "
+                         "(there is no encoder to fine-tune).")
+        print(f"Device: {device}  features: {brief_kind} (no encoder)")
+        Xtr, ytr, Xte, yte, in_dim = extract_brief(brief_kind, args, device)
+        print(f"  train: {tuple(Xtr.shape)}   test: {tuple(Xte.shape)}")
+        train_err, test_err = train_linear_probe(
+            Xtr, ytr, Xte, yte, in_dim, args, device
+        )
+        mode = f"{brief_kind} linear probe"
+        _report(mode, train_err, test_err)
+        return
+
     print(f"Device: {device}  arch: {args.arch}")
     if args.no_model_init:
         print("Starting from an UNINITIALIZED (untrained) encoder.")
@@ -221,9 +292,7 @@ def main() -> None:
         train_err, test_err = run_frozen(model, enc_dim, args, device)
         mode = "frozen-encoder linear probe"
 
-    print(f"\n--- {mode} ---")
-    print(f"Train error: {train_err:.2%}  (acc {1 - train_err:.2%})")
-    print(f"Test  error: {test_err:.2%}  (acc {1 - test_err:.2%})")
+    _report(mode, train_err, test_err)
 
 
 if __name__ == "__main__":

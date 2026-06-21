@@ -18,10 +18,15 @@ Usage:
     python -m grasp_embeddings.mae_patch_embd.retrieve              # show figure
     python -m grasp_embeddings.mae_patch_embd.retrieve --arch cnn --seed 0
     python -m grasp_embeddings.mae_patch_embd.retrieve --no-model-init  # baseline
+    python -m grasp_embeddings.mae_patch_embd.retrieve --brief          # random BRIEF
+    python -m grasp_embeddings.mae_patch_embd.retrieve --brief-mod --grid 8
 
 ``--arch {vit,cnn,jepa}`` selects which pretrained encoder to load.
 ``--no-model-init`` skips the checkpoint and embeds with a random, untrained
 encoder -- a baseline showing how much the training actually buys you.
+``--brief`` / ``--brief-mod`` skip the encoder entirely and retrieve on a
+handcrafted BRIEF descriptor (random pairs / structured lattice; see
+:mod:`brief`) -- cosine NN over the bit vectors, zero learning.
 
 The embedding for an image is the encoder's pooled representation with no
 masking applied (the full image is seen): mean-pooled tokens for the ViT,
@@ -33,11 +38,13 @@ from __future__ import annotations
 
 import argparse
 
+import numpy as np
 import torch
 import torch.nn as nn
 import torch.nn.functional as F
 from torchvision import datasets, transforms
 
+from grasp_embeddings.mae_patch_embd import brief
 from grasp_embeddings.mae_patch_embd.mae import (
     ARCHES,
     DATASET_DIR,
@@ -70,6 +77,26 @@ def embed(model: nn.Module, imgs: torch.Tensor) -> torch.Tensor:
     return F.normalize(model.encode(imgs), dim=-1)
 
 
+def make_brief_embedder(kind: str, args):
+    """Build an ``embed_fn`` that turns images into L2-normalised BRIEF bit vectors.
+
+    A drop-in for the encoder's :func:`embed`: no learning, the descriptor *is*
+    the embedding, and cosine similarity over the (normalised) bit vectors drives
+    the same nearest-neighbour retrieval.
+    """
+    features, extent, label = brief.make_features(
+        kind, patch=args.patch, n=args.n, seed=args.brief_seed, grid=args.grid
+    )
+    print(f"Embedding with {label} (no encoder).")
+
+    def _embed(imgs: torch.Tensor) -> torch.Tensor:
+        arr = imgs.detach().squeeze(1).cpu().numpy().astype(np.float64)  # (B, 28, 28)
+        bits = brief.evaluate_batch(arr, features, extent).astype(np.float32)
+        return F.normalize(torch.from_numpy(bits), dim=-1)
+
+    return _embed
+
+
 def build_gallery(per_class: int, generator: torch.Generator):
     """Sample ``per_class`` images from each MNIST class from the test set."""
     DATASET_DIR.mkdir(parents=True, exist_ok=True)
@@ -92,11 +119,13 @@ def build_gallery(per_class: int, generator: torch.Generator):
     return torch.stack(imgs), torch.tensor(labels)
 
 
-def run_round(model, device, per_class, topk, generator):
+def run_round(embed_fn, device, per_class, topk, generator):
     """Sample a fresh gallery + query, embed, and return the top-k matches.
 
-    Returns ``(query_img, query_label, match_imgs, match_labels, scores)``.
-    Advancing ``generator`` between calls yields a new random draw each time.
+    ``embed_fn`` maps a batch of images on ``device`` to L2-normalised
+    embeddings (a learned encoder or a handcrafted BRIEF descriptor). Returns
+    ``(query_img, query_label, match_imgs, match_labels, scores)``. Advancing
+    ``generator`` between calls yields a new random draw each time.
     """
     gallery_imgs, gallery_labels = build_gallery(per_class, generator)
 
@@ -111,8 +140,8 @@ def run_round(model, device, per_class, topk, generator):
     gallery_imgs = gallery_imgs[keep]
     gallery_labels = gallery_labels[keep]
 
-    query_emb = embed(model, query_img.unsqueeze(0).to(device))  # (1, D)
-    gallery_emb = embed(model, gallery_imgs.to(device))  # (G, D)
+    query_emb = embed_fn(query_img.unsqueeze(0).to(device))  # (1, D)
+    gallery_emb = embed_fn(gallery_imgs.to(device))  # (G, D)
 
     sims = (query_emb @ gallery_emb.T).squeeze(0)  # cosine similarity
     k = min(topk, len(gallery_imgs))
@@ -140,22 +169,45 @@ def main() -> None:
         action="store_true",
         help="Skip the checkpoint and use a random, uninitialized encoder.",
     )
+    brief_group = parser.add_mutually_exclusive_group()
+    brief_group.add_argument(
+        "--brief",
+        action="store_true",
+        help="Retrieve with random handcrafted BRIEF descriptors (no encoder).",
+    )
+    brief_group.add_argument(
+        "--brief-mod",
+        action="store_true",
+        help="Retrieve with structured BRIEF descriptors (no encoder).",
+    )
+    parser.add_argument("--patch", type=int, default=4, help="[--brief] frame side.")
+    parser.add_argument("--n", type=int, default=64, help="[--brief] feature count.")
+    parser.add_argument("--brief-seed", type=int, default=0, help="[--brief] seed.")
+    parser.add_argument("--grid", type=int, default=8, help="[--brief-mod] GxG lattice.")
     args = parser.parse_args()
 
     device = pick_device()
-    print(f"Device: {device}  arch: {args.arch}")
+    brief_kind = "brief-mod" if args.brief_mod else "brief" if args.brief else None
 
     generator = torch.Generator()
     if args.seed is not None:
         generator.manual_seed(args.seed)
 
-    if args.no_model_init:
+    if brief_kind is not None:
+        print(f"Device: {device}  features: {brief_kind} (no encoder)")
+        embed_fn = make_brief_embedder(brief_kind, args)
+    elif args.no_model_init:
+        print(f"Device: {device}  arch: {args.arch}")
         print("Using an UNINITIALIZED (untrained) encoder.")
         model = build_model(args.arch).to(device)
         model.eval()
+        embed_fn = lambda imgs: embed(model, imgs)  # noqa: E731
     else:
+        print(f"Device: {device}  arch: {args.arch}")
         model = load_model(device, args.arch)
-    result = run_round(model, device, args.per_class, args.topk, generator)
+        embed_fn = lambda imgs: embed(model, imgs)  # noqa: E731
+
+    result = run_round(embed_fn, device, args.per_class, args.topk, generator)
 
     if args.save:
         _save(result, args.save)
@@ -163,7 +215,7 @@ def main() -> None:
         _show_interactive(
             result,
             redraw=lambda: run_round(
-                model, device, args.per_class, args.topk, generator
+                embed_fn, device, args.per_class, args.topk, generator
             ),
         )
 

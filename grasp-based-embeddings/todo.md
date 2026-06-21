@@ -45,6 +45,7 @@ ray-based cousins). DeepSDF : SDF :: the planned net : a directed distance field
    10. [x] Train an I-JEPA on MNIST and measure classification accuracy (maybe after finetuning?).
    11. [x] Test KNN with I-JEPA.
    12. [x] Test KNN with handcrafted BRIEF (random sampling).
+   13. [x] Test KNN with *structured* (designed) BRIEF sampling.
 2. BRIEF like features.
    1. A brief feature that moves. Similar to a hand but with a single finger.
    2. Imagine that this moves from one point to another sampling values. And there are two of these. Then shape descriptors could be used to find correspondence and similarity perhaps.
@@ -53,6 +54,33 @@ ray-based cousins). DeepSDF : SDF :: the planned net : a directed distance field
 
 
 ## Work log
+### 2026-06-21 — Structured BRIEF + `brief.py` refactor (item 1.13)
+Added a *designed* sampling variant (`knn-brief-mod.py`): a `grid x grid` lattice
+where each location compares a centre box against its 4 neighbours (up/down/left/
+right, census-/LBP-style), 4 bits/location. Boxes tile the frame (box = offset =
+half a cell); border locations whose outward neighbour would leave the frame drop
+that feature, so the count is `4*grid*(grid-1)`. Factored the shared descriptor /
+k-NN machinery and both generators into a common `brief.py`; the two `knn-*.py`
+are now thin CLIs over it (random 64-bit still 79.42%, so the refactor is
+behaviour-preserving). Also wired `--brief` / `--brief-mod` into `retrieve.py`
+(cosine NN over bit vectors) and `classify.py` (linear probe on bit vectors).
+
+| sampling | bits | 5-NN acc |
+|---|---|---|
+| random      |  64 | 79.42% |
+| structured  |  48 | **84.21%** |
+| random      | 256 | 92.57% |
+| structured  | 224 | **93.42%** |
+| raw pixels (floor) | — | 96.88% |
+
+**What we learned:** structure beats random *at a smaller bit budget* — +4.8 pts
+with 16 fewer bits at the low end, still ahead with 32 fewer bits at the high
+end. Anchoring every bit to a fixed local gradient spends the budget far better
+than random, possibly long-range pairs; the edge-clipped border probes that
+reached into the constant black margin carried no signal, so dropping them cost
+nothing. Both still press toward the same ~94% ceiling below the raw-pixel floor,
+so the binary-comparison representation, not the sampling, is the real limit.
+
 ### 2026-06-21 — I-JEPA target LayerNorm fix
 Compared `mae.py`'s I-JEPA against Meta's official repo (facebookresearch/ijepa).
 The skeleton was faithful (EMA target + stop-gradient + latent prediction +
