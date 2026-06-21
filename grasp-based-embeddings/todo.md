@@ -53,6 +53,38 @@ ray-based cousins). DeepSDF : SDF :: the planned net : a directed distance field
 
 
 ## Work log
+### 2026-06-21 — I-JEPA target LayerNorm fix
+Compared `mae.py`'s I-JEPA against Meta's official repo (facebookresearch/ijepa).
+The skeleton was faithful (EMA target + stop-gradient + latent prediction +
+predictor with mask tokens), but `forward()` was missing the **LayerNorm on the
+target tokens** that Meta applies in `loss_fn` before the MSE. Added a one-liner:
+`target_tokens = F.layer_norm(target_tokens, (target_tokens.size(-1),))` under
+the `no_grad` target branch. Keeps the prediction target on a stable scale as the
+EMA encoder drifts. Re-ran the full pretraining sweep (50/200/300 ep) + frozen
+5-NN and linear probe.
+
+| eval | no LN | +LN | Δ |
+|---|---|---|---|
+| 5-NN, 50 ep  | 93.30% | 94.12% | +0.82 |
+| 5-NN, 200 ep | 97.59% | 97.89% | +0.30 |
+| 5-NN, 300 ep | 97.91% | **98.18%** | +0.27 |
+| probe, 300 ep | 98.24% | **98.40%** | +0.16 |
+
+**What we learned:**
+1. **The fix is a clean win** — every point improved, nothing regressed. Gains
+   are largest when undertrained (+0.82 at 50 ep, where the EMA target drifts
+   fastest and an unnormalized target is least stable) and shrink as training
+   settles (+0.30 → +0.27). Judge by downstream metrics, not pretext MSE: LN
+   rescales the target so the loss number jumps (~0.04 → ~0.42) even as the
+   representation improves.
+2. **Frozen 5-NN has nearly caught the linear probe.** At 300 ep, 5-NN 98.18% vs
+   probe 98.40% — only **0.22 pts** apart (was 0.33 pre-fix). A non-parametric
+   majority vote over raw embeddings nearly matches a *trained* linear head,
+   which says the frozen representation is now so linearly/cleanly organised by
+   class that fitting a separating hyperplane buys almost nothing over "look at
+   your neighbours." The probe is also within 0.29 pts of full fine-tuning, so
+   the frozen encoder does almost all the work end-to-end.
+
 ### 2026-06-20
 Built three self-supervised encoders on MNIST in `mae_patch_embd/`, plus evals
 over their frozen and fine-tuned embeddings (items 1.4-1.11):
@@ -75,12 +107,15 @@ by pretraining length (see below).
 
 | eval | ViT | CNN | I-JEPA | raw pixels |
 |---|---|---|---|---|
-| 5-NN, frozen embedding | 97.16% | 91.29% | **97.91%** (300 ep) | 96.88% |
-| linear probe (frozen head) | 97.4% | -- | 98.24% (300 ep) | -- |
+| 5-NN, frozen embedding | 97.16% | 91.29% | **98.18%** (300 ep) | 96.88% |
+| linear probe (frozen head) | 97.4% | -- | 98.40% (300 ep) | -- |
 | fine-tune (unfrozen, 50 ep) | 98.7% | **99.0%** | 98.69% | -- |
 
-I-JEPA frozen-5-NN vs pretraining length: 50 ep **93.30%** → 200 ep **97.59%** →
-300 ep **97.91%** (pretext MSE 0.140 → 0.047 → 0.039; diminishing returns).
+I-JEPA numbers are with the **target-LayerNorm** fix (see 2026-06-21 entry);
+pre-fix they were 5-NN 97.91% / probe 98.24%.
+
+I-JEPA frozen-5-NN vs pretraining length: 50 ep **94.12%** → 200 ep **97.89%** →
+300 ep **98.18%** (with target LayerNorm; pre-fix 93.30 → 97.59 → 97.91).
 
 **What we learned:**
 1. **Reconstruction ≠ good embeddings.** The conv MAE's frozen 5-NN (91.29%) is
@@ -89,9 +124,9 @@ I-JEPA frozen-5-NN vs pretraining length: 50 ep **93.30%** → 200 ep **97.59%**
    (fine-tune 99.0%). Better trainable features, worse off-the-shelf embedding.
 2. **Latent prediction (I-JEPA) gives the best frozen embedding — once trained
    long enough.** At 50 ep it was undertrained (93.30%, below the pixel floor);
-   at 300 ep it's the best off-the-shelf embedding (97.91%), clearing the floor
-   and beating the ViT MAE. A linear probe on the *frozen* encoder hits 98.24% —
-   within ~0.45 pts of full fine-tuning (98.69%), i.e. the frozen representation
+   at 300 ep it's the best off-the-shelf embedding (98.18%), clearing the floor
+   and beating the ViT MAE. A linear probe on the *frozen* encoder hits 98.40% —
+   within ~0.29 pts of full fine-tuning (98.69%), i.e. the frozen representation
    already does almost all the work. Its EMA target evolves slowly, so it needs a
    longer schedule than the MAEs (OneCycle: more epochs = higher sustained LR,
    not a resumable add-on).

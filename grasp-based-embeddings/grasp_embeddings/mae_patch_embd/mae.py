@@ -379,8 +379,12 @@ class JEPA(nn.Module):
         n, d = self.n_patches, self.embed_dim
 
         # --- targets: full-image target encoder, stop-gradient ---
+        # LayerNorm the targets over the feature dim before the loss, matching
+        # I-JEPA's loss_fn (Assran 2023): keeps the prediction target on a
+        # stable scale as the EMA encoder drifts.
         with torch.no_grad():
             target_tokens = self.target.tokens(imgs)  # (B, N, enc_dim)
+            target_tokens = F.layer_norm(target_tokens, (target_tokens.size(-1),))
 
         # --- split patches into context (visible) and predicted (masked) ---
         keep = max(1, int(round(n * (1 - mask_ratio))))
