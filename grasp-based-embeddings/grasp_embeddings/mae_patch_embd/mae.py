@@ -24,7 +24,7 @@ in representation space, not pixel space.
     python -m grasp_embeddings.mae_patch_embd.mae --arch jepa --epochs 50
 
 Downloads MNIST into <project>/dataset and writes the trained weights to
-<project>/models/mae_mnist_<arch>.pt (both are gitignored). Here <project> is
+<project>/models/mae_mnist_<arch>_<epochs>ep.pt (both are gitignored). Here <project> is
 the grasp-based-embeddings root.
 """
 
@@ -436,9 +436,43 @@ def build_model(arch: str) -> nn.Module:
     raise ValueError(f"Unknown arch {arch!r}; choose from {ARCHES}.")
 
 
-def model_path(arch: str) -> Path:
-    """Checkpoint path for the given architecture."""
-    return MODELS_DIR / f"mae_mnist_{arch}.pt"
+def model_path(arch: str, epochs: int) -> Path:
+    """Checkpoint path for an architecture trained for ``epochs`` epochs.
+
+    The epoch count is in the filename so runs of different length don't clobber
+    each other (e.g. ``mae_mnist_vit_50ep.pt`` vs ``mae_mnist_vit_300ep.pt``).
+    """
+    return MODELS_DIR / f"mae_mnist_{arch}_{epochs}ep.pt"
+
+
+def find_checkpoint(arch: str, epochs: int | None = None) -> Path:
+    """Resolve a trained checkpoint for ``arch``.
+
+    With ``epochs`` given, returns that exact path. Otherwise returns the
+    most-trained checkpoint on disk (largest epoch count), so evals pick up the
+    longest run by default. Raises ``FileNotFoundError`` if none exists.
+    """
+    if epochs is not None:
+        path = model_path(arch, epochs)
+        if not path.exists():
+            raise FileNotFoundError(
+                f"No checkpoint at {path}. Train one with "
+                f"`python -m grasp_embeddings.mae_patch_embd.mae --arch {arch} "
+                f"--epochs {epochs}`."
+            )
+        return path
+
+    candidates = sorted(
+        MODELS_DIR.glob(f"mae_mnist_{arch}_*ep.pt"),
+        key=lambda p: int(p.stem.rsplit("_", 1)[1].removesuffix("ep")),
+    )
+    if not candidates:
+        raise FileNotFoundError(
+            f"No checkpoint for arch {arch!r} in {MODELS_DIR} "
+            f"(looked for mae_mnist_{arch}_*ep.pt). Train one with "
+            f"`python -m grasp_embeddings.mae_patch_embd.mae --arch {arch}`."
+        )
+    return candidates[-1]
 
 
 # --------------------------------------------------------------------------- #
@@ -490,7 +524,7 @@ def train(
         print(f"epoch {epoch:3d}/{epochs}  recon_mse {running / seen:.5f}")
 
     MODELS_DIR.mkdir(parents=True, exist_ok=True)
-    out = model_path(arch)
+    out = model_path(arch, epochs)
     torch.save(
         {
             "state_dict": model.state_dict(),

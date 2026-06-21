@@ -49,22 +49,18 @@ from grasp_embeddings.mae_patch_embd.mae import (
     ARCHES,
     DATASET_DIR,
     build_model,
-    model_path,
+    find_checkpoint,
     pick_device,
 )
 
 
-def load_model(device: torch.device, arch: str) -> nn.Module:
-    ckpt_path = model_path(arch)
-    if not ckpt_path.exists():
-        raise FileNotFoundError(
-            f"No checkpoint at {ckpt_path}. Train one first with "
-            f"`python -m grasp_embeddings.mae_patch_embd.mae --arch {arch}`."
-        )
+def load_model(device: torch.device, arch: str, epochs: int | None = None) -> nn.Module:
+    ckpt_path = find_checkpoint(arch, epochs)
     ckpt = torch.load(ckpt_path, map_location=device)
     model = build_model(arch).to(device)
     model.load_state_dict(ckpt["state_dict"])
     model.eval()
+    print(f"Loaded checkpoint: {ckpt_path.name}")
     return model
 
 
@@ -169,6 +165,13 @@ def main() -> None:
         action="store_true",
         help="Skip the checkpoint and use a random, uninitialized encoder.",
     )
+    parser.add_argument(
+        "--ckpt-epochs",
+        type=int,
+        default=None,
+        help="Pretraining length of the checkpoint to load "
+        "(default: the most-trained one on disk).",
+    )
     brief_group = parser.add_mutually_exclusive_group()
     brief_group.add_argument(
         "--brief",
@@ -204,7 +207,7 @@ def main() -> None:
         embed_fn = lambda imgs: embed(model, imgs)  # noqa: E731
     else:
         print(f"Device: {device}  arch: {args.arch}")
-        model = load_model(device, args.arch)
+        model = load_model(device, args.arch, epochs=args.ckpt_epochs)
         embed_fn = lambda imgs: embed(model, imgs)  # noqa: E731
 
     result = run_round(embed_fn, device, args.per_class, args.topk, generator)

@@ -44,24 +44,22 @@ from grasp_embeddings.mae_patch_embd.mae import (
     ARCHES,
     DATASET_DIR,
     build_model,
-    model_path,
+    find_checkpoint,
     pick_device,
 )
 
 N_CLASSES = 10
 
 
-def load_encoder(device: torch.device, arch: str, random_init: bool) -> nn.Module:
+def load_encoder(
+    device: torch.device, arch: str, random_init: bool, epochs: int | None = None
+) -> nn.Module:
     model = build_model(arch).to(device)
     if not random_init:
-        ckpt_path = model_path(arch)
-        if not ckpt_path.exists():
-            raise FileNotFoundError(
-                f"No checkpoint at {ckpt_path}. Train one first with "
-                f"`python -m grasp_embeddings.mae_patch_embd.mae --arch {arch}`."
-            )
+        ckpt_path = find_checkpoint(arch, epochs)
         ckpt = torch.load(ckpt_path, map_location=device)
         model.load_state_dict(ckpt["state_dict"])
+        print(f"Loaded checkpoint: {ckpt_path.name}")
     return model
 
 
@@ -243,6 +241,13 @@ def main() -> None:
         action="store_true",
         help="Start from a random, untrained encoder as a baseline.",
     )
+    parser.add_argument(
+        "--ckpt-epochs",
+        type=int,
+        default=None,
+        help="Pretraining length of the encoder checkpoint to load "
+        "(default: the most-trained one on disk).",
+    )
     brief_group = parser.add_mutually_exclusive_group()
     brief_group.add_argument(
         "--brief",
@@ -281,7 +286,9 @@ def main() -> None:
     if args.no_model_init:
         print("Starting from an UNINITIALIZED (untrained) encoder.")
 
-    model = load_encoder(device, args.arch, random_init=args.no_model_init)
+    model = load_encoder(
+        device, args.arch, random_init=args.no_model_init, epochs=args.ckpt_epochs
+    )
     enc_dim = model.embed_dim
 
     if args.unfreeze:

@@ -156,12 +156,13 @@ All evals on the MNIST test set (10k), full 60k train split. Code lives in
    land 98.7–99.0%. On a task this easy (pixel floor ~97%) the pretext barely
    matters once labels are added.
 
-6. **Epoch-matched, the ViT MAE catches I-JEPA — the "win" was the budget.**
-   I-JEPA's apparent frozen-embedding lead was at 300 ep vs the MAEs at 50 ep.
-   Re-training the ViT MAE at 300 ep closes the gap: frozen 5-NN 97.16% → 98.17%
-   (≈ I-JEPA's 98.18%), probe 97.4% → 98.13%. So on MNIST latent prediction and
-   pixel reconstruction are essentially equivalent for frozen embeddings — the
-   differentiator was training length, not the pretext.
+6. **Epoch-matched, the ViT MAE is almost as good as I-JEPA — the "win" was the
+   budget.** I-JEPA's apparent frozen-embedding lead was at 300 ep vs the MAEs at
+   50 ep. Re-training the ViT MAE at 300 ep all but closes it: frozen 5-NN
+   97.16% → 98.17%, a **tie** with I-JEPA's 98.18%; on the linear probe
+   97.4% → 98.13%, where I-JEPA keeps a marginal **~0.27 pt** edge (98.40%).
+   So on MNIST latent prediction and pixel reconstruction are essentially
+   equivalent — the differentiator was training length, not the pretext.
 
    | ViT MAE frozen | 50 ep | 300 ep |
    |---|---|---|
