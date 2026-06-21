@@ -54,145 +54,103 @@ ray-based cousins). DeepSDF : SDF :: the planned net : a directed distance field
 
 
 ## Work log
-### 2026-06-21 — Structured BRIEF + `brief.py` refactor (item 1.13)
-Added a *designed* sampling variant (`knn-brief-mod.py`): a `grid x grid` lattice
-where each location compares a centre box against its 4 neighbours (up/down/left/
-right, census-/LBP-style), 4 bits/location. Boxes tile the frame (box = offset =
-half a cell); border locations whose outward neighbour would leave the frame drop
-that feature, so the count is `4*grid*(grid-1)`. Factored the shared descriptor /
-k-NN machinery and both generators into a common `brief.py`; the two `knn-*.py`
-are now thin CLIs over it (random 64-bit still 79.42%, so the refactor is
-behaviour-preserving). Also wired `--brief` / `--brief-mod` into `retrieve.py`
-(cosine NN over bit vectors) and `classify.py` (linear probe on bit vectors).
 
-| sampling | bits | 5-NN acc |
+All evals on the MNIST test set (10k), full 60k train split. Code lives in
+`grasp_embeddings/mae_patch_embd/`:
+
+- **`mae.py`** (`--arch {vit,cnn,jepa}`) — three self-supervised encoders:
+  `vit` = ViT MAE (He 2021; drop 75% of patches, decode the missing pixels),
+  `cnn` = conv MAE (Pathak 2016; zero the masked patches, conv reconstruct),
+  `jepa` = I-JEPA (Assran 2023; EMA target encoder + predictor in latent space).
+- **`brief.py`** + **`knn-brief.py`** / **`knn-brief-mod.py`** — handcrafted BRIEF
+  (Calonder 2010), zero learning: random pairs vs a structured (census/LBP-style)
+  lattice. Bit = `mean(box_a) < mean(box_b)`, box means via an integral image.
+- **`knn.py`** — 5-NN over frozen embeddings (`--arch no-enc` = raw-pixel floor).
+- **`classify.py`** — linear probe (frozen) or `--unfreeze` fine-tune; also
+  `--brief` / `--brief-mod` (probe directly on the bit vector).
+- **`retrieve.py`** — cosine-NN retrieval demo; also `--brief` / `--brief-mod`.
+
+### Results — frozen embedding (5-NN, no labels reach the encoder)
+
+| method | 5-NN acc | |
 |---|---|---|
-| random      |  64 | 79.42% |
-| structured  |  48 | **84.21%** |
-| random      | 256 | 92.57% |
-| structured  | 224 | **93.42%** |
-| raw pixels (floor) | — | 96.88% |
+| I-JEPA (300 ep) | **98.18%** | best frozen embedding |
+| ViT MAE (50 ep) | 97.16% | |
+| **raw pixels** | **96.88%** | floor — any learned embedding should beat this |
+| BRIEF, random (512 bits) | 93.77% | best random budget |
+| BRIEF, structured (224 bits) | 93.42% | |
+| conv MAE (50 ep) | 91.29% | below the floor |
 
-**What we learned:** structure beats random *at a smaller bit budget* — +4.8 pts
-with 16 fewer bits at the low end, still ahead with 32 fewer bits at the high
-end. Anchoring every bit to a fixed local gradient spends the budget far better
-than random, possibly long-range pairs; the edge-clipped border probes that
-reached into the constant black margin carried no signal, so dropping them cost
-nothing. Both still press toward the same ~94% ceiling below the raw-pixel floor,
-so the binary-comparison representation, not the sampling, is the real limit.
+### Results — with labels (linear probe = frozen encoder; fine-tune = unfrozen, 50 ep)
 
-### 2026-06-21 — I-JEPA target LayerNorm fix
-Compared `mae.py`'s I-JEPA against Meta's official repo (facebookresearch/ijepa).
-The skeleton was faithful (EMA target + stop-gradient + latent prediction +
-predictor with mask tokens), but `forward()` was missing the **LayerNorm on the
-target tokens** that Meta applies in `loss_fn` before the MSE. Added a one-liner:
-`target_tokens = F.layer_norm(target_tokens, (target_tokens.size(-1),))` under
-the `no_grad` target branch. Keeps the prediction target on a stable scale as the
-EMA encoder drifts. Re-ran the full pretraining sweep (50/200/300 ep) + frozen
-5-NN and linear probe.
-
-| eval | no LN | +LN | Δ |
-|---|---|---|---|
-| 5-NN, 50 ep  | 93.30% | 94.12% | +0.82 |
-| 5-NN, 200 ep | 97.59% | 97.89% | +0.30 |
-| 5-NN, 300 ep | 97.91% | **98.18%** | +0.27 |
-| probe, 300 ep | 98.24% | **98.40%** | +0.16 |
-
-**What we learned:**
-1. **The fix is a clean win** — every point improved, nothing regressed. Gains
-   are largest when undertrained (+0.82 at 50 ep, where the EMA target drifts
-   fastest and an unnormalized target is least stable) and shrink as training
-   settles (+0.30 → +0.27). Judge by downstream metrics, not pretext MSE: LN
-   rescales the target so the loss number jumps (~0.04 → ~0.42) even as the
-   representation improves.
-2. **Frozen 5-NN has nearly caught the linear probe.** At 300 ep, 5-NN 98.18% vs
-   probe 98.40% — only **0.22 pts** apart (was 0.33 pre-fix). A non-parametric
-   majority vote over raw embeddings nearly matches a *trained* linear head,
-   which says the frozen representation is now so linearly/cleanly organised by
-   class that fitting a separating hyperplane buys almost nothing over "look at
-   your neighbours." The probe is also within 0.29 pts of full fine-tuning, so
-   the frozen encoder does almost all the work end-to-end.
-
-### 2026-06-20
-Built three self-supervised encoders on MNIST in `mae_patch_embd/`, plus evals
-over their frozen and fine-tuned embeddings (items 1.4-1.11):
-
-- **`mae.py`** (`--arch {vit,cnn,jepa}`, checkpoints `models/mae_mnist_<arch>.pt`):
-  - `vit` — ViT MAE (He 2021): drop 75% of patches, encode the visible ones,
-    decode the missing pixels (MSE on masked patches).
-  - `cnn` — conv MAE (Context-Encoder, Pathak 2016): masked patches *zeroed*,
-    conv enc/dec reconstructs (MSE on masked pixels).
-  - `jepa` — I-JEPA (Assran 2023): context encoder + EMA target encoder +
-    predictor; predicts the target's *latent* representations at masked
-    positions (MSE in representation space, no pixel decoder).
-- **`retrieve.py`** — cosine nearest-neighbour retrieval demo (item 1.4).
-- **`classify.py`** — linear probe (frozen) or `--unfreeze` end-to-end fine-tune.
-- **`knn.py`** — 5-NN over the full 60k/10k splits; `--arch no-enc` = a raw-pixel
-  Euclidean floor any learned embedding should beat.
-
-**Headline results (MNIST test set).** ViT/CNN trained 50 epochs; I-JEPA swept
-by pretraining length (see below).
-
-| eval | ViT | CNN | I-JEPA | raw pixels |
-|---|---|---|---|---|
-| 5-NN, frozen embedding | 97.16% | 91.29% | **98.18%** (300 ep) | 96.88% |
-| linear probe (frozen head) | 97.4% | -- | 98.40% (300 ep) | -- |
-| fine-tune (unfrozen, 50 ep) | 98.7% | **99.0%** | 98.69% | -- |
-
-I-JEPA numbers are with the **target-LayerNorm** fix (see 2026-06-21 entry);
-pre-fix they were 5-NN 97.91% / probe 98.24%.
-
-I-JEPA frozen-5-NN vs pretraining length: 50 ep **94.12%** → 200 ep **97.89%** →
-300 ep **98.18%** (with target LayerNorm; pre-fix 93.30 → 97.59 → 97.91).
-
-**What we learned:**
-1. **Reconstruction ≠ good embeddings.** The conv MAE's frozen 5-NN (91.29%) is
-   *below* the raw-pixel floor (96.88%) — its inpainting features destroy
-   similarity info bare pixels keep — yet it's the best *trainable* extractor
-   (fine-tune 99.0%). Better trainable features, worse off-the-shelf embedding.
-2. **Latent prediction (I-JEPA) gives the best frozen embedding — once trained
-   long enough.** At 50 ep it was undertrained (93.30%, below the pixel floor);
-   at 300 ep it's the best off-the-shelf embedding (98.18%), clearing the floor
-   and beating the ViT MAE. A linear probe on the *frozen* encoder hits 98.40% —
-   within ~0.29 pts of full fine-tuning (98.69%), i.e. the frozen representation
-   already does almost all the work. Its EMA target evolves slowly, so it needs a
-   longer schedule than the MAEs (OneCycle: more epochs = higher sustained LR,
-   not a resumable add-on).
-3. **Fine-tuning erases the differences** — all three land 98.7-99.0%. On a task
-   this easy (pixel floor ~97%) the pretext barely matters once labels are added.
-
-**Open caveat — not yet epoch-matched:** I-JEPA's frozen-embedding win is at
-300 ep vs the ViT/CNN MAEs at 50 ep. Re-train the ViT MAE at 300 ep before
-treating "JEPA > MAE for embeddings" as settled. To give any pretext real
-headroom, move off MNIST (CIFAR-10) or into the scarce-label regime.
-
-### 2026-06-20 — Handcrafted BRIEF k-NN (`knn-brief.py`, item 1.12)
-A zero-learning baseline: BRIEF (Calonder 2010) descriptors + Hamming k-NN, the
-handcrafted counterpart to the learned-encoder k-NN. Each feature is an ordered
-pair of points; the bit is `mean(start) < mean(end)`, where each point's
-intensity is the mean over a small box (the drawn square), computed with an
-**integral image** (O(1) per box). The comparison pattern is sampled once
-(seed 0) and reused for every image. **Sampling is uniform-random over the
-frame** (positions inset so the boxes stay inside, and the two boxes of a pair
-kept non-overlapping). 5-NN, full 60k/10k MNIST.
-
-| n bits | 5-NN acc | Δ |
+| method | linear probe | fine-tune |
 |---|---|---|
-| 64  | 79.42% | — |
-| 128 | 89.22% | +9.80 |
-| 256 | 92.57% | +3.35 |
-| 512 | 93.77% | +1.20 |
-| raw pixels (floor) | 96.88% | |
+| I-JEPA | **98.40%** | 98.69% |
+| ViT MAE | 97.4% | 98.7% |
+| conv MAE | — | **99.0%** |
+| BRIEF, structured (224 bits) | 88.65% | n/a — no parameters |
+| BRIEF, random (64 bits) | 77.37% | n/a — no parameters |
 
-**What we learned:** accuracy saturates at ~94% (+9.8 → +3.4 → +1.2, each step
-~⅓ the last), a hard ceiling ~3 pts *below* the raw-pixel floor. So the gap is
-**not** descriptor capacity — 512 random comparisons is plenty — but the
-**sampling distribution**: uniform-over-frame placement wastes bits in the
-constant black border where digits carry no signal, and crude binary intensity
-comparisons discard similarity structure bare pixels keep (cf. the conv MAE's
-frozen 91.29%, also below the floor).
+### Key findings
 
-**Next:** test *designed* sampling instead of random — concentrate points toward
-the center (Gaussian, as real BRIEF does) and/or on the stroke region, at fixed
-256 bits, to check whether it breaks the ~94% ceiling.
+1. **Reconstruction ≠ good embeddings.** The conv MAE has the *worst* frozen
+   embedding (91.29%, below the pixel floor) yet the *best* fine-tuned result
+   (99.0%) — its inpainting features destroy off-the-shelf similarity but make a
+   great trainable starting point.
 
+2. **Latent prediction (I-JEPA) gives the best frozen embedding** once trained
+   long enough, and barely needs the labels: frozen 5-NN 98.18% ≈ linear probe
+   98.40% ≈ fine-tune 98.69% (all within ~0.5 pts), so the frozen representation
+   already does almost all the work. The EMA target evolves slowly, so it needs a
+   longer schedule than the MAEs:
+
+   | I-JEPA frozen 5-NN | 50 ep | 200 ep | 300 ep |
+   |---|---|---|---|
+   | acc | 94.12% | 97.89% | 98.18% |
+
+3. **I-JEPA target-LayerNorm fix.** `forward()` was missing the LayerNorm on the
+   target tokens that Meta applies before the MSE; adding it improved every
+   downstream metric, most when undertrained (the EMA target is least stable
+   early). Judge by downstream acc, not pretext MSE — LN rescales the target so
+   the loss jumps (~0.04 → ~0.42) even as quality rises.
+
+   | eval | no LN | +LN |
+   |---|---|---|
+   | 5-NN, 50 ep | 93.30% | 94.12% |
+   | 5-NN, 300 ep | 97.91% | 98.18% |
+   | probe, 300 ep | 98.24% | 98.40% |
+
+4. **Handcrafted BRIEF is a zero-learning control, and behaves like one.**
+   - Both variants sit ~3 pts *below* the raw-pixel floor — crude binary
+     intensity comparisons discard similarity structure the bare pixels keep
+     (same failure mode as the conv MAE). It clears only the conv MAE, nothing
+     else.
+   - **Structured > random at a smaller bit budget** — anchoring each bit to a
+     fixed local gradient spends bits better than random, possibly long-range
+     pairs:
+
+     | sampling | bits | 5-NN |
+     |---|---|---|
+     | random | 64 | 79.42% |
+     | structured | 48 | **84.21%** |
+     | random | 256 | 92.57% |
+     | structured | 224 | **93.42%** |
+
+     Random saturates at ~94% by 512 bits (each doubling buys ~⅓ the last), so the
+     ceiling is the representation, not the budget.
+   - **The linear probe is *below* BRIEF's own 5-NN** (77.4% / 88.7% vs 79.4% /
+     93.4%): a single hyperplane underfits the 0/1 bit space where Hamming k-NN
+     can carve non-linear, per-digit neighbourhoods. Unlike the learned encoders
+     (probe ≥ 5-NN), BRIEF is the one place non-parametric matching wins.
+   - **No fine-tuning path** — the descriptor has no parameters and a
+     non-differentiable threshold, so it structurally cannot join the 98.7–99.0%
+     fine-tune cluster. Its value is as the floor that shows what learning buys.
+
+5. **Fine-tuning erases the encoder differences** — all three learned encoders
+   land 98.7–99.0%. On a task this easy (pixel floor ~97%) the pretext barely
+   matters once labels are added.
+
+**Open caveat — not epoch-matched.** I-JEPA's frozen win is at 300 ep vs the
+ViT/CNN MAEs at 50 ep; re-train the ViT MAE at 300 ep before treating
+"JEPA > MAE for embeddings" as settled. For real pretext headroom, move off MNIST
+(CIFAR-10) or into the scarce-label regime.
