@@ -1,7 +1,7 @@
 # Grasp-based embeddings
 
 ## Goal - The only experimental project in the current track.
-
+- Can I beat the MNIST benchmark using representations learned without label supervision (and if possible in a sample efficient way)?
 ## The idea
 
 Generate labeled data describing the **local shape** of 2D objects, where the
@@ -33,19 +33,18 @@ ray-based cousins). DeepSDF : SDF :: the planned net : a directed distance field
 
 ## What I wish to test.
 1. Learning Patch embeddings.
-   1. [ ] Train an auto encoder with handcrafted BRIEF.
-   2. [ ] Train a classifier with brief.
-   3. [ ] Test shape descriptors on MNIST and measure similarity.
-   4. [x] Train a VIT/MAE on MNIST and measure similarity. 
-   5. [x] Train a VIT/MAE on MNIST and measure classification accuracy after finetuning.
-   6. [x] Train a Conv-net MAE on MNIST and measure similarity. 
-   7. [x] Train a Conv-net MAE on MNIST and measure classification accuracy after finetuning.
-   8. [x] Test KNN with ConvNet and VIT.
-   9. [x] Train an I-JEPA on MNIST and measure similarity. 
-   10. [x] Train an I-JEPA on MNIST and measure classification accuracy (maybe after finetuning?).
-   11. [x] Test KNN with I-JEPA.
-   12. [x] Test KNN with handcrafted BRIEF (random sampling).
-   13. [x] Test KNN with *structured* (designed) BRIEF sampling.
+   1. [x] Train a classifier with brief.
+   2. [ ] Test shape descriptors on MNIST and measure similarity.
+   3. [x] Train a VIT/MAE on MNIST and measure similarity. 
+   4. [x] Train a VIT/MAE on MNIST and measure classification accuracy after finetuning.
+   5. [x] Train a Conv-net MAE on MNIST and measure similarity. 
+   6. [x] Train a Conv-net MAE on MNIST and measure classification accuracy after finetuning.
+   7. [x] Test KNN with ConvNet and VIT.
+   8. [x] Train an I-JEPA on MNIST and measure similarity. 
+   9.  [x] Train an I-JEPA on MNIST and measure classification accuracy (maybe after finetuning?).
+   10. [x] Test KNN with I-JEPA.
+   11. [x] Test KNN with handcrafted BRIEF (random sampling).
+   12. [x] Test KNN with *structured* (designed) BRIEF sampling.
 2. BRIEF like features.
    1. A brief feature that moves. Similar to a hand but with a single finger.
    2. Imagine that this moves from one point to another sampling values. And there are two of these. Then shape descriptors could be used to find correspondence and similarity perhaps.
@@ -74,19 +73,26 @@ All evals on the MNIST test set (10k), full 60k train split. Code lives in
 
 | method | 5-NN acc | |
 |---|---|---|
-| I-JEPA (300 ep) | **98.18%** | best frozen embedding |
-| ViT MAE (50 ep) | 97.16% | |
+| I-JEPA (300 ep) | **98.18%** | tied best |
+| ViT MAE (300 ep) | **98.17%** | ties I-JEPA once epoch-matched |
+| ViT MAE (50 ep) | 97.16% | the earlier gap was epochs, not pretext |
 | **raw pixels** | **96.88%** | floor — any learned embedding should beat this |
 | BRIEF, random (512 bits) | 93.77% | best random budget |
 | BRIEF, structured (224 bits) | 93.42% | |
 | conv MAE (50 ep) | 91.29% | below the floor |
+
+> **Note:** I-JEPA's 300-ep frozen **5-NN (98.18%) is basically the same as its
+> frozen linear probe (98.40%)** — a non-parametric neighbour vote over the raw
+> embeddings nearly matches a *trained* linear head, so the unsupervised
+> representation is already as linearly class-separable as labels would make it.
 
 ### Results — with labels (linear probe = frozen encoder; fine-tune = unfrozen, 50 ep)
 
 | method | linear probe | fine-tune |
 |---|---|---|
 | I-JEPA | **98.40%** | 98.69% |
-| ViT MAE | 97.4% | 98.7% |
+| ViT MAE (300 ep) | 98.13% | 98.7% |
+| ViT MAE (50 ep) | 97.4% | — |
 | conv MAE | — | **99.0%** |
 | BRIEF, structured (224 bits) | 88.65% | n/a — no parameters |
 | BRIEF, random (64 bits) | 77.37% | n/a — no parameters |
@@ -98,11 +104,11 @@ All evals on the MNIST test set (10k), full 60k train split. Code lives in
    (99.0%) — its inpainting features destroy off-the-shelf similarity but make a
    great trainable starting point.
 
-2. **Latent prediction (I-JEPA) gives the best frozen embedding** once trained
-   long enough, and barely needs the labels: frozen 5-NN 98.18% ≈ linear probe
-   98.40% ≈ fine-tune 98.69% (all within ~0.5 pts), so the frozen representation
-   already does almost all the work. The EMA target evolves slowly, so it needs a
-   longer schedule than the MAEs:
+2. **The best frozen embeddings barely need the labels.** I-JEPA at 300 ep:
+   frozen 5-NN 98.18% ≈ linear probe 98.40% ≈ fine-tune 98.69% (all within
+   ~0.5 pts) — the unsupervised representation already does almost all the work
+   (the 300-ep ViT MAE is the same story; see finding 6). I-JEPA's EMA target
+   evolves slowly, so it needs a longer schedule than the MAEs to get there:
 
    | I-JEPA frozen 5-NN | 50 ep | 200 ep | 300 ep |
    |---|---|---|---|
@@ -150,7 +156,19 @@ All evals on the MNIST test set (10k), full 60k train split. Code lives in
    land 98.7–99.0%. On a task this easy (pixel floor ~97%) the pretext barely
    matters once labels are added.
 
-**Open caveat — not epoch-matched.** I-JEPA's frozen win is at 300 ep vs the
-ViT/CNN MAEs at 50 ep; re-train the ViT MAE at 300 ep before treating
-"JEPA > MAE for embeddings" as settled. For real pretext headroom, move off MNIST
-(CIFAR-10) or into the scarce-label regime.
+6. **Epoch-matched, the ViT MAE catches I-JEPA — the "win" was the budget.**
+   I-JEPA's apparent frozen-embedding lead was at 300 ep vs the MAEs at 50 ep.
+   Re-training the ViT MAE at 300 ep closes the gap: frozen 5-NN 97.16% → 98.17%
+   (≈ I-JEPA's 98.18%), probe 97.4% → 98.13%. So on MNIST latent prediction and
+   pixel reconstruction are essentially equivalent for frozen embeddings — the
+   differentiator was training length, not the pretext.
+
+   | ViT MAE frozen | 50 ep | 300 ep |
+   |---|---|---|
+   | 5-NN | 97.16% | 98.17% |
+   | probe | 97.4% | 98.13% |
+
+**Caveat now flips to the task.** With the epoch confound removed, MNIST's ~97%
+pixel floor is simply too high to separate these pretexts. For real headroom,
+move to CIFAR-10 or a scarce-label regime where a better representation can
+actually show.
