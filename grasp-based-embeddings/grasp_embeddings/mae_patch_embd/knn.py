@@ -11,6 +11,7 @@ trained, so it complements the linear probe in ``train_classifier.py``.
     python -m grasp_embeddings.mae_patch_embd.knn --arch no-enc  # raw-pixel baseline
     python -m grasp_embeddings.mae_patch_embd.knn --arch brief      # random BRIEF
     python -m grasp_embeddings.mae_patch_embd.knn --arch brief-mod  # structured BRIEF
+    python -m grasp_embeddings.mae_patch_embd.knn --arch geodesic   # geodesic histogram
     python -m grasp_embeddings.mae_patch_embd.knn --no-model-init  # baseline
 
 ``--arch {vit,cnn,jepa}`` selects which pretrained encoder to load. ``--arch
@@ -24,18 +25,34 @@ handcrafted, zero-learning BRIEF descriptor instead -- random comparison pairs
 **Hamming** distance over the bit vectors (see :mod:`brief`). ``brief-mod``'s
 grid is locked to ``brief.BRIEF_MOD_GRID`` so the result matches the linear
 probe. ``--viz-only`` shows/saves the comparison pattern instead of evaluating.
+
+``--arch geodesic`` skips the encoder and runs cosine k-NN on a geodesic
+shape-distribution histogram (see :mod:`geodesic`): each image is 2x
+average-downsampled, an intensity-weighted grid graph is built, and the
+upper-triangle of its all-pairs geodesic distance matrix is histogrammed into
+``--bins`` bins (an Osada-style D2 descriptor). This is the compact, scalable
+stand-in for retrieve.py's flattened distance matrix, which is far too large to
+k-NN over the full 70k splits.
 """
 
 from __future__ import annotations
 
 import argparse
 
+import numpy as np
 import torch
 import torch.nn as nn
 import torch.nn.functional as F
 from torchvision import datasets, transforms
 
 from grasp_embeddings.mae_patch_embd import brief
+from grasp_embeddings.mae_patch_embd.geodesic import (
+    ALPHA,
+    DEFAULT_CONNECTIVITY,
+    GEODESIC_ARCH,
+    downsample_avg,
+    geodesic_matrix,
+)
 from grasp_embeddings.mae_patch_embd.mae import (
     ARCHES,
     DATASET_DIR,
@@ -166,9 +183,59 @@ def run_brief(arch: str, args) -> None:
     print(f"Test accuracy: {acc:.2%}  (error {1 - acc:.2%})")
 
 
+def geodesic_features(train: bool, bins: int):
+    """Per-image geodesic shape-distribution histograms (no encoder).
+
+    For each image: 2x average-downsample, build the intensity-weighted grid graph
+    (edge ``|dI| + ALPHA``, :data:`DEFAULT_CONNECTIVITY`-connected), take its
+    all-pairs geodesic distances, scale by the image's own max distance (so the
+    descriptor is scale-invariant), and histogram the upper triangle into ``bins``
+    bins over [0, 1] -- an Osada-style D2 shape distribution. Returns ``(X, y)``
+    with ``X`` the L2-normalised histograms, compared by cosine.
+
+    retrieve.py flattens the whole distance matrix, but that is a ~38k-dim feature
+    per image; k-NN over 70k images would need a ~9 GB feature matrix, so this
+    compact distribution summary stands in for it here.
+    """
+    feats, labels = [], []
+    for imgs, y in mnist_loader(train):
+        arr = imgs.squeeze(1).numpy().astype(np.float32)  # (B, 28, 28)
+        for img in arr:
+            dist = geodesic_matrix(downsample_avg(img))
+            vals = dist[np.triu_indices(dist.shape[0], k=1)]
+            vmax = vals.max()
+            if vmax > 0:
+                vals = vals / vmax
+            hist, _ = np.histogram(vals, bins=bins, range=(0.0, 1.0), density=True)
+            feats.append(torch.from_numpy(hist.astype(np.float32)))
+        labels.append(y)
+    return F.normalize(torch.stack(feats), dim=-1), torch.cat(labels)
+
+
+def run_geodesic(args, device: torch.device) -> None:
+    """k-NN over geodesic shape-distribution histograms (no encoder, cosine)."""
+    print(
+        f"Device: {device}  features: geodesic histogram "
+        f"({args.bins} bins, {DEFAULT_CONNECTIVITY}-conn, alpha {ALPHA})  k: {args.k}"
+    )
+    print("Describing MNIST train split with geodesic histograms...")
+    Xtr, ytr = geodesic_features(train=True, bins=args.bins)
+    print("Describing MNIST test split with geodesic histograms...")
+    Xte, yte = geodesic_features(train=False, bins=args.bins)
+    print(f"  train: {tuple(Xtr.shape)}   test: {tuple(Xte.shape)}")
+
+    pred = knn_predict(Xte, Xtr, ytr, args.k, device, metric="cosine")
+    acc = (pred == yte).float().mean().item()
+
+    print(f"\n--- {args.k}-NN on {args.bins}-bin geodesic shape-distribution histograms ---")
+    print(f"Test accuracy: {acc:.2%}  (error {1 - acc:.2%})")
+
+
 def main() -> None:
     parser = argparse.ArgumentParser(description=__doc__)
-    parser.add_argument("--arch", choices=(*ARCHES, NO_ENC, *BRIEF_ARCHES), default="vit")
+    parser.add_argument(
+        "--arch", choices=(*ARCHES, NO_ENC, *BRIEF_ARCHES, GEODESIC_ARCH), default="vit"
+    )
     parser.add_argument("--k", type=int, default=5)
     parser.add_argument(
         "--no-model-init",
@@ -198,6 +265,12 @@ def main() -> None:
         "--brief-seed", type=int, default=0, help="[--arch brief] seed."
     )
     parser.add_argument(
+        "--bins",
+        type=int,
+        default=64,
+        help="[--arch geodesic] number of distance-histogram bins.",
+    )
+    parser.add_argument(
         "--viz-only",
         action="store_true",
         help="[--arch brief/brief-mod] show/save the comparison pattern; skip k-NN.",
@@ -219,6 +292,13 @@ def main() -> None:
         parser.error("--viz-only/--save only apply to --arch brief/brief-mod.")
 
     device = pick_device()
+
+    if args.arch == GEODESIC_ARCH:
+        if args.flatten:
+            parser.error("--flatten does not apply to --arch geodesic.")
+        run_geodesic(args, device)
+        return
+
     pool = "flatten" if args.flatten else "mean"
     print(f"Device: {device}  arch: {args.arch}  k: {args.k}  pool: {pool}")
 

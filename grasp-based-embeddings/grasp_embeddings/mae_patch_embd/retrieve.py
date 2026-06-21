@@ -30,6 +30,13 @@ a handcrafted BRIEF descriptor (random pairs / structured lattice; see
 grid is locked to the value benchmarked by ``knn`` and the linear probe
 (``BRIEF_MOD_GRID``) so the retrieval demo matches the recorded results.
 
+``--arch geodesic`` also skips the encoder and retrieves on an intensity-geodesic
+signature (see :mod:`geodesic`): each image is 2x average-downsampled, a grid
+graph is built with edges weighted by ``|dI| + ALPHA``, and the flattened
+all-pairs geodesic distance matrix is the embedding -- cosine NN over those, zero
+learning and fully deterministic (``--factor`` / ``--connectivity`` shape the
+graph; the per-step cost ALPHA is locked).
+
 The embedding for an image is the encoder's pooled representation with no
 masking applied (the full image is seen): mean-pooled tokens for the ViT,
 global-avg-pooled feature map for the CNN, mean-pooled target-encoder tokens
@@ -48,6 +55,12 @@ from torchvision import datasets, transforms
 
 from grasp_embeddings.mae_patch_embd import brief
 from grasp_embeddings.mae_patch_embd.brief import BRIEF_ARCHES, BRIEF_MOD_GRID
+from grasp_embeddings.mae_patch_embd.geodesic import (
+    ALPHA,
+    GEODESIC_ARCH,
+    downsample_avg,
+    geodesic_matrix,
+)
 from grasp_embeddings.mae_patch_embd.mae import (
     ARCHES,
     DATASET_DIR,
@@ -92,6 +105,36 @@ def make_brief_embedder(kind: str, args):
         arr = imgs.detach().squeeze(1).cpu().numpy().astype(np.float64)  # (B, 28, 28)
         bits = brief.evaluate_batch(arr, features, extent).astype(np.float32)
         return F.normalize(torch.from_numpy(bits), dim=-1)
+
+    return _embed
+
+
+def make_geodesic_embedder(args):
+    """Build an ``embed_fn`` that turns images into L2-normalised geodesic signatures.
+
+    Each image is 2x average-downsampled, a grid graph is built with edges
+    weighted by intensity difference, and the flattened all-pairs geodesic
+    distance matrix is the embedding (see :mod:`geodesic`). Cosine similarity over
+    these signatures drives the same nearest-neighbour retrieval. No learning and
+    no randomness -- the signature is fully determined by the image and the graph
+    settings, so there is no seed to set.
+    """
+    print(
+        f"Embedding with geodesic distance matrices "
+        f"(factor {args.factor}, {args.connectivity}-conn, alpha {ALPHA}); no encoder."
+    )
+
+    def _embed(imgs: torch.Tensor) -> torch.Tensor:
+        arr = imgs.detach().squeeze(1).cpu().numpy().astype(np.float32)  # (B, 28, 28)
+        vecs = [
+            geodesic_matrix(
+                downsample_avg(img, args.factor),
+                connectivity=args.connectivity,
+            ).reshape(-1)
+            for img in arr
+        ]
+        feats = torch.from_numpy(np.stack(vecs).astype(np.float32))
+        return F.normalize(feats, dim=-1)
 
     return _embed
 
@@ -158,10 +201,11 @@ def main() -> None:
     parser = argparse.ArgumentParser(description=__doc__)
     parser.add_argument(
         "--arch",
-        choices=(*ARCHES, *BRIEF_ARCHES),
+        choices=(*ARCHES, *BRIEF_ARCHES, GEODESIC_ARCH),
         default="vit",
-        help="Learned encoder (vit/cnn/jepa) or a handcrafted BRIEF descriptor "
-        "(brief = random pairs, brief-mod = structured lattice, no encoder).",
+        help="Learned encoder (vit/cnn/jepa), a handcrafted BRIEF descriptor "
+        "(brief = random pairs, brief-mod = structured lattice), or geodesic "
+        "(intensity-geodesic distance matrix); brief/geodesic use no encoder.",
     )
     parser.add_argument("--per-class", type=int, default=5)
     parser.add_argument("--topk", type=int, default=3)
@@ -190,6 +234,16 @@ def main() -> None:
     parser.add_argument(
         "--brief-seed", type=int, default=0, help="[--arch brief] seed."
     )
+    parser.add_argument(
+        "--factor", type=int, default=2, help="[--arch geodesic] downsample factor."
+    )
+    parser.add_argument(
+        "--connectivity",
+        type=int,
+        choices=(4, 8),
+        default=8,
+        help="[--arch geodesic] grid neighbourhood.",
+    )
     args = parser.parse_args()
 
     device = pick_device()
@@ -202,6 +256,9 @@ def main() -> None:
     if brief_kind is not None:
         print(f"Device: {device}  features: {brief_kind} (no encoder)")
         embed_fn = make_brief_embedder(brief_kind, args)
+    elif args.arch == GEODESIC_ARCH:
+        print(f"Device: {device}  features: geodesic (no encoder)")
+        embed_fn = make_geodesic_embedder(args)
     elif args.no_model_init:
         print(f"Device: {device}  arch: {args.arch}")
         print("Using an UNINITIALIZED (untrained) encoder.")

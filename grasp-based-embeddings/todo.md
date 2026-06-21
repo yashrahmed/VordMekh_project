@@ -43,8 +43,9 @@ ray-based cousins). DeepSDF : SDF :: the planned net : a directed distance field
    8. [x] Train an I-JEPA on MNIST and measure similarity. 
    9.  [x] Train an I-JEPA on MNIST and measure classification accuracy (maybe after finetuning?).
    10. [x] Test KNN with I-JEPA.
-   11. [x] Test KNN with handcrafted BRIEF (random sampling).
-   12. [x] Test KNN with *structured* (designed) BRIEF sampling.
+   11. [ ] Understand I-JEPA better and run experiments on canonical IJEPA.
+   12. [x] Test KNN with handcrafted BRIEF (random sampling).
+   13. [x] Test KNN with *structured* (designed) BRIEF sampling.
 2. BRIEF like features.
    1. A brief feature that moves. Similar to a hand but with a single finger.
    2. Imagine that this moves from one point to another sampling values. And there are two of these. Then shape descriptors could be used to find correspondence and similarity perhaps.
@@ -66,9 +67,15 @@ All evals on the MNIST test set (10k), full 60k train split. Code lives in
   box means via an integral image. Exposed everywhere as `--arch brief` /
   `--arch brief-mod` (`brief-mod`'s grid is locked to `BRIEF_MOD_GRID = 8`).
 - **`knn.py`** — 5-NN over frozen embeddings (`--arch no-enc` = raw-pixel floor,
-  `--arch brief`/`brief-mod` = handcrafted BRIEF by Hamming distance, `--viz-only`
-  to inspect the pattern); `--flatten` concatenates the patch tokens instead of
+  `--arch brief`/`brief-mod` = handcrafted BRIEF by Hamming distance, `--arch
+  geodesic` = cosine over a geodesic D2 histogram, `--viz-only` to inspect the
+  BRIEF pattern); `--flatten` concatenates the patch tokens instead of
   mean-pooling them.
+- **`geodesic.py`** — handcrafted, zero-learning geodesic descriptor. Average-
+  downsamples an image 2x (28x28 -> 14x14), builds a grid graph with edges
+  weighted by `|dI| + ALPHA` (ALPHA = 0.1 locked, 8-connected by default), and
+  computes the all-pairs geodesic distance matrix (Dijkstra). Run directly to
+  visualize one image's matrix; reused by `knn`/`retrieve` as `--arch geodesic`.
 - **`train_classifier.py`** — trains the classifier head and saves it to
   `models/clf_mnist_<arch>_<mode>[_<pool>].pt`: linear probe (frozen) or
   `--unfreeze` fine-tune; `--arch brief`/`brief-mod` probes directly on the bit
@@ -77,7 +84,8 @@ All evals on the MNIST test set (10k), full 60k train split. Code lives in
 - **`eval_classifier.py`** — loads a saved classifier (`--model <path>`) and
   prints train/test accuracy; also holds the shared classifier primitives
   (data/encoder loading, feature extraction, scoring) the trainer imports.
-- **`retrieve.py`** — cosine-NN retrieval demo; `--arch brief`/`brief-mod` too.
+- **`retrieve.py`** — cosine-NN retrieval demo; `--arch brief`/`brief-mod` and
+  `--arch geodesic` (flattened distance matrix) too.
 
 ### Results — frozen embedding (5-NN, no labels reach the encoder)
 
@@ -90,6 +98,7 @@ All evals on the MNIST test set (10k), full 60k train split. Code lives in
 | BRIEF, random (512 bits) | 93.77% | best random budget |
 | BRIEF, structured (224 bits) | 93.42% | |
 | conv MAE (50 ep) | 91.29% | below the floor |
+| geodesic D2 hist (64 bins) | 44.21% | layout-blind shape distribution |
 
 ### Results — with labels (linear probe = frozen encoder; fine-tune = unfrozen, 50 ep)
 
@@ -193,6 +202,18 @@ All evals on the MNIST test set (10k), full 60k train split. Code lives in
    stable **99.11%** (train err 0.05%; the loss plateaus at ~0.0057 and the run
    reproduces exactly — MPS kernel jitter that wobbles the 50-ep number by
    ~0.1 pt washes out once the head converges).
+
+8. **A geodesic shape-distribution descriptor is far below the floor (44.21%).**
+   Downsampling 2x and taking the all-pairs intensity-geodesic distance matrix
+   (`|dI| + 0.1` edges, 8-connected), then summarizing it as a 64-bin histogram
+   of pairwise distances (an Osada-style D2 descriptor), lands at 44.21% 5-NN --
+   far under even the conv MAE. The histogram is **permutation-invariant**, so it
+   throws away *where* structure sits and keeps only the distribution of geodesic
+   gaps; on near-identical digit topologies that signal is too coarse to separate
+   classes. (The full flattened matrix that `retrieve` uses keeps the layout but
+   is ~38k-dim -- impractical to k-NN over 70k images, hence the histogram here.)
+   A spatially-aware reduction (e.g. per-pixel mean geodesic distance) is the
+   obvious next variant if this thread is worth pursuing.
 
 **Caveat now flips to the task.** With the epoch confound removed, MNIST's ~97%
 pixel floor is simply too high to separate these pretexts. For real headroom,
