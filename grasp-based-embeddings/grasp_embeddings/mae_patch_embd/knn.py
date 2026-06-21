@@ -4,7 +4,7 @@ Embeds the full MNIST train and test splits with the (unmasked) encoder, then
 classifies each test image by a majority vote over its ``k`` nearest training
 neighbours in cosine space. This is a non-parametric read of how
 class-discriminative the *self-supervised* representation is -- no head is
-trained, so it complements the linear probe in ``classify.py``.
+trained, so it complements the linear probe in ``train_classifier.py``.
 
     python -m grasp_embeddings.mae_patch_embd.knn --arch vit
     python -m grasp_embeddings.mae_patch_embd.knn --arch cnn --k 5

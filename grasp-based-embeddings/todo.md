@@ -69,9 +69,14 @@ All evals on the MNIST test set (10k), full 60k train split. Code lives in
   `--arch brief`/`brief-mod` = handcrafted BRIEF by Hamming distance, `--viz-only`
   to inspect the pattern); `--flatten` concatenates the patch tokens instead of
   mean-pooling them.
-- **`classify.py`** — linear probe (frozen) or `--unfreeze` fine-tune; `--arch
-  brief`/`brief-mod` probes directly on the bit vector, `--flatten` probes the
-  concatenated patch tokens.
+- **`train_classifier.py`** — trains the classifier head and saves it to
+  `models/clf_mnist_<arch>_<mode>[_<pool>].pt`: linear probe (frozen) or
+  `--unfreeze` fine-tune; `--arch brief`/`brief-mod` probes directly on the bit
+  vector, `--flatten` probes the concatenated patch tokens. The checkpoint is
+  self-contained (head + its encoder weights, or the BRIEF config).
+- **`eval_classifier.py`** — loads a saved classifier (`--model <path>`) and
+  prints train/test accuracy; also holds the shared classifier primitives
+  (data/encoder loading, feature extraction, scoring) the trainer imports.
 - **`retrieve.py`** — cosine-NN retrieval demo; `--arch brief`/`brief-mod` too.
 
 ### Results — frozen embedding (5-NN, no labels reach the encoder)
@@ -174,13 +179,20 @@ All evals on the MNIST test set (10k), full 60k train split. Code lives in
    D = N·embed_dim = 2048) keeps *where* each feature sits. k-NN barely moves
    (cosine averages over patches either way), but the linear probe gains ~0.7 pt
    for both encoders — a hyperplane can exploit the spatial layout mean-pooling
-   discards. Frozen I-JEPA + flattened probe (**99.07%**) edges past the best
-   *fine-tuned* model (conv MAE 99.0%) with no encoder gradients at all.
+   discards. Frozen I-JEPA + flattened probe (**99.05%**, **99.11%** with a
+   300-ep head) edges past the best *fine-tuned* model (conv MAE 99.0%) with no
+   encoder gradients at all.
 
    | 300-ep encoder | 5-NN mean → flatten | probe mean → flatten |
    |---|---|---|
-   | ViT MAE | 98.17% → 98.10% | 98.13% → **98.82%** |
-   | I-JEPA | 98.18% → 98.23% | 98.40% → **99.07%** |
+   | ViT MAE | 98.17% → 98.10% | 98.13% → **98.87%** |
+   | I-JEPA | 98.18% → 98.23% | 98.40% → **99.05%** |
+
+   Flatten-probe numbers are seed-locked (`train_classifier --seed 0`, 50-ep
+   head) and reproducible. Extending only the I-JEPA head to 300 ep lifts it to a
+   stable **99.11%** (train err 0.05%; the loss plateaus at ~0.0057 and the run
+   reproduces exactly — MPS kernel jitter that wobbles the 50-ep number by
+   ~0.1 pt washes out once the head converges).
 
 **Caveat now flips to the task.** With the epoch confound removed, MNIST's ~97%
 pixel floor is simply too high to separate these pretexts. For real headroom,

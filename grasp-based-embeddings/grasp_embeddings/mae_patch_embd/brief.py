@@ -19,8 +19,8 @@ k-NN machinery they share:
 Both produce a ``(n_features, 2, 2)`` float array in a normalised coordinate
 space of side ``extent`` (last axis ``(row, col)``; ``[i, 0]`` first point,
 ``[i, 1]`` second point), consumed by the same :func:`evaluate_batch`,
-:func:`describe_split` and :func:`knn_predict`. The ``knn`` / ``classify`` /
-``retrieve`` scripts expose these as ``--arch brief`` / ``--arch brief-mod`` and
+:func:`describe_split` and :func:`knn_predict`. The ``knn`` / ``train_classifier``
+/ ``retrieve`` scripts expose these as ``--arch brief`` / ``--arch brief-mod`` and
 use :func:`make_features` + :func:`evaluate_batch` to turn images into
 descriptors without a learned encoder.
 """
@@ -38,7 +38,7 @@ SQUARE = 0.5
 
 N_CLASSES = 10
 
-# Handcrafted-BRIEF ``--arch`` values shared by knn/classify/retrieve (no encoder).
+# Handcrafted-BRIEF ``--arch`` values shared by knn/train_classifier/retrieve (no encoder).
 BRIEF_ARCHES = ("brief", "brief-mod")
 
 # Structured-BRIEF lattice size locked across the k-NN, linear-probe and retrieval
