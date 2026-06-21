@@ -64,9 +64,11 @@ All evals on the MNIST test set (10k), full 60k train split. Code lives in
 - **`brief.py`** + **`knn-brief.py`** / **`knn-brief-mod.py`** — handcrafted BRIEF
   (Calonder 2010), zero learning: random pairs vs a structured (census/LBP-style)
   lattice. Bit = `mean(box_a) < mean(box_b)`, box means via an integral image.
-- **`knn.py`** — 5-NN over frozen embeddings (`--arch no-enc` = raw-pixel floor).
+- **`knn.py`** — 5-NN over frozen embeddings (`--arch no-enc` = raw-pixel floor);
+  `--flatten` concatenates the patch tokens instead of mean-pooling them.
 - **`classify.py`** — linear probe (frozen) or `--unfreeze` fine-tune; also
-  `--brief` / `--brief-mod` (probe directly on the bit vector).
+  `--brief` / `--brief-mod` (probe directly on the bit vector) and `--flatten`
+  (frozen probe on the concatenated patch tokens).
 - **`retrieve.py`** — cosine-NN retrieval demo; also `--brief` / `--brief-mod`.
 
 ### Results — frozen embedding (5-NN, no labels reach the encoder)
@@ -80,11 +82,6 @@ All evals on the MNIST test set (10k), full 60k train split. Code lives in
 | BRIEF, random (512 bits) | 93.77% | best random budget |
 | BRIEF, structured (224 bits) | 93.42% | |
 | conv MAE (50 ep) | 91.29% | below the floor |
-
-> **Note:** I-JEPA's 300-ep frozen **5-NN (98.18%) is basically the same as its
-> frozen linear probe (98.40%)** — a non-parametric neighbour vote over the raw
-> embeddings nearly matches a *trained* linear head, so the unsupervised
-> representation is already as linearly class-separable as labels would make it.
 
 ### Results — with labels (linear probe = frozen encoder; fine-tune = unfrozen, 50 ep)
 
@@ -168,6 +165,19 @@ All evals on the MNIST test set (10k), full 60k train split. Code lives in
    |---|---|---|
    | 5-NN | 97.16% | 98.17% |
    | probe | 97.4% | 98.13% |
+
+7. **Flattening the patch grid helps the linear probe, not k-NN.** Default pooling
+   mean-pools the patch tokens; concatenating them instead (`--flatten`,
+   D = N·embed_dim = 2048) keeps *where* each feature sits. k-NN barely moves
+   (cosine averages over patches either way), but the linear probe gains ~0.7 pt
+   for both encoders — a hyperplane can exploit the spatial layout mean-pooling
+   discards. Frozen I-JEPA + flattened probe (**99.07%**) edges past the best
+   *fine-tuned* model (conv MAE 99.0%) with no encoder gradients at all.
+
+   | 300-ep encoder | 5-NN mean → flatten | probe mean → flatten |
+   |---|---|---|
+   | ViT MAE | 98.17% → 98.10% | 98.13% → **98.82%** |
+   | I-JEPA | 98.18% → 98.23% | 98.40% → **99.07%** |
 
 **Caveat now flips to the task.** With the epoch confound removed, MNIST's ~97%
 pixel floor is simply too high to separate these pretexts. For real headroom,

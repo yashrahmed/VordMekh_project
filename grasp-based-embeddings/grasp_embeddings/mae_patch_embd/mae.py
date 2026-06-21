@@ -152,15 +152,17 @@ class MAE(nn.Module):
         mask = torch.gather(mask, 1, ids_restore)
         return x_kept, mask, ids_restore
 
-    def encode(self, imgs: torch.Tensor) -> torch.Tensor:
-        """(B, 1, 28, 28) -> (B, embed_dim): encode every patch, mean-pool.
+    def encode(self, imgs: torch.Tensor, pool: str = "mean") -> torch.Tensor:
+        """(B, 1, 28, 28) -> (B, D): encode every patch, then pool the grid.
 
-        No masking is applied (the full image is seen). Differentiable, so
-        gradients flow into the encoder when it is unfrozen downstream.
+        ``pool="mean"`` averages the N patch tokens (D = embed_dim);
+        ``pool="flatten"`` concatenates them (D = N * embed_dim), keeping the
+        per-patch layout. No masking is applied (the full image is seen).
+        Differentiable, so gradients flow into the encoder when it is unfrozen.
         """
         tokens = self.patch_embed(patchify(imgs)) + self.enc_pos
         feats = self.encoder(tokens)  # (B, N, embed_dim)
-        return feats.mean(dim=1)
+        return feats.flatten(1) if pool == "flatten" else feats.mean(dim=1)
 
     def forward(self, imgs: torch.Tensor, mask_ratio: float = 0.75):
         target = patchify(imgs)  # (B, N, patch_dim)
@@ -222,13 +224,15 @@ class ConvMAE(nn.Module):
             nn.Conv2d(32, 1, 3, padding=1),  # 28 -> 28
         )
 
-    def encode(self, imgs: torch.Tensor) -> torch.Tensor:
-        """(B, 1, 28, 28) -> (B, embed_dim): conv-encode, global-avg-pool.
+    def encode(self, imgs: torch.Tensor, pool: str = "mean") -> torch.Tensor:
+        """(B, 1, 28, 28) -> (B, D): conv-encode, then pool the feature map.
 
-        No masking (the full image is seen). Differentiable for fine-tuning.
+        ``pool="mean"`` global-avg-pools (D = embed_dim); ``pool="flatten"``
+        concatenates the spatial cells (D = embed_dim * 7 * 7). No masking (the
+        full image is seen). Differentiable for fine-tuning.
         """
         feat = self.encoder(imgs)  # (B, embed_dim, 7, 7)
-        return feat.mean(dim=(2, 3))
+        return feat.flatten(1) if pool == "flatten" else feat.mean(dim=(2, 3))
 
     def _patch_mask(self, b: int, device, mask_ratio: float) -> torch.Tensor:
         """Per-sample 0/1 patch mask (1 = masked) of shape (B, n_patches)."""
@@ -365,13 +369,15 @@ class JEPA(nn.Module):
         for tp, cp in zip(self.target.parameters(), self.context.parameters()):
             tp.mul_(m).add_(cp.detach(), alpha=1.0 - m)
 
-    def encode(self, imgs: torch.Tensor) -> torch.Tensor:
-        """(B, 1, 28, 28) -> (B, embed_dim): target encoder, mean-pooled tokens.
+    def encode(self, imgs: torch.Tensor, pool: str = "mean") -> torch.Tensor:
+        """(B, 1, 28, 28) -> (B, D): target-encoder tokens, then pool the grid.
 
-        Differentiable, so gradients flow into the target encoder when it is
-        unfrozen for fine-tuning downstream.
+        ``pool="mean"`` averages the N tokens (D = embed_dim);
+        ``pool="flatten"`` concatenates them (D = N * embed_dim). Differentiable,
+        so gradients flow into the target encoder when it is unfrozen downstream.
         """
-        return self.target.tokens(imgs).mean(dim=1)
+        feats = self.target.tokens(imgs)  # (B, N, embed_dim)
+        return feats.flatten(1) if pool == "flatten" else feats.mean(dim=1)
 
     def forward(self, imgs: torch.Tensor, mask_ratio: float = 0.75):
         b = imgs.size(0)

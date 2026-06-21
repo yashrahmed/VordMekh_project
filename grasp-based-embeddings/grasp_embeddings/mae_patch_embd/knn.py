@@ -65,20 +65,23 @@ def mnist_loader(train: bool, batch_size: int = 512):
 
 
 @torch.no_grad()
-def embed_split(model: nn.Module | None, train: bool, device: torch.device):
+def embed_split(
+    model: nn.Module | None, train: bool, device: torch.device, pool: str = "mean"
+):
     """Return (N, D) features and (N,) labels.
 
-    With ``model`` set, D = embed_dim and features are L2-normalised encoder
-    embeddings (compared by cosine). With ``model is None`` (the ``no-enc``
-    baseline), D = 784 raw flattened pixels, compared by direct Euclidean
-    distance.
+    With ``model`` set, features are L2-normalised encoder embeddings (compared
+    by cosine); ``pool`` selects how the patch grid is collapsed -- ``"mean"``
+    (D = embed_dim) or ``"flatten"`` (D = N * embed_dim, per-patch layout kept).
+    With ``model is None`` (the ``no-enc`` baseline), D = 784 raw flattened
+    pixels, compared by direct Euclidean distance.
     """
     feats, labels = [], []
     for imgs, y in mnist_loader(train):
         if model is None:
             emb = imgs.flatten(1)  # (B, 784) raw pixels
         else:
-            emb = F.normalize(model.encode(imgs.to(device)), dim=-1).cpu()
+            emb = F.normalize(model.encode(imgs.to(device), pool=pool), dim=-1).cpu()
         feats.append(emb)
         labels.append(y)
     return torch.cat(feats), torch.cat(labels)
@@ -131,10 +134,17 @@ def main() -> None:
         help="Pretraining length of the checkpoint to load "
         "(default: the most-trained one on disk).",
     )
+    parser.add_argument(
+        "--flatten",
+        action="store_true",
+        help="Concatenate the patch tokens instead of mean-pooling them "
+        "(keeps per-patch layout; ignored for --arch no-enc).",
+    )
     args = parser.parse_args()
 
     device = pick_device()
-    print(f"Device: {device}  arch: {args.arch}  k: {args.k}")
+    pool = "flatten" if args.flatten else "mean"
+    print(f"Device: {device}  arch: {args.arch}  k: {args.k}  pool: {pool}")
 
     no_enc = args.arch == NO_ENC
     if no_enc:
@@ -150,9 +160,9 @@ def main() -> None:
         metric = "cosine"
 
     print("Embedding train split...")
-    train_emb, train_labels = embed_split(model, train=True, device=device)
+    train_emb, train_labels = embed_split(model, train=True, device=device, pool=pool)
     print("Embedding test split...")
-    test_emb, test_labels = embed_split(model, train=False, device=device)
+    test_emb, test_labels = embed_split(model, train=False, device=device, pool=pool)
     print(f"  train: {tuple(train_emb.shape)}   test: {tuple(test_emb.shape)}")
 
     pred = knn_predict(

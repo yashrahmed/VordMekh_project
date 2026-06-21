@@ -63,12 +63,14 @@ def load_encoder(
     return model
 
 
-def encode(model: nn.Module, imgs: torch.Tensor) -> torch.Tensor:
-    """(B, 1, 28, 28) -> (B, embed_dim) image embeddings.
+def encode(model: nn.Module, imgs: torch.Tensor, pool: str = "mean") -> torch.Tensor:
+    """(B, 1, 28, 28) -> (B, D) image embeddings.
 
+    ``pool`` selects how the patch grid is collapsed: ``"mean"`` (D = embed_dim)
+    or ``"flatten"`` (concatenate the tokens, keeping the per-patch layout).
     Differentiable -- gradients flow into the encoder when it is unfrozen.
     """
-    return model.encode(imgs)
+    return model.encode(imgs, pool=pool)
 
 
 def mnist_loader(train: bool, batch_size: int, shuffle: bool) -> DataLoader:
@@ -83,12 +85,14 @@ def mnist_loader(train: bool, batch_size: int, shuffle: bool) -> DataLoader:
 
 
 @torch.no_grad()
-def extract_features(model: nn.Module, train: bool, device: torch.device):
+def extract_features(
+    model: nn.Module, train: bool, device: torch.device, pool: str = "mean"
+):
     """Run the frozen encoder over a split once, return (features, labels)."""
     model.eval()
     feats, labels = [], []
     for imgs, y in mnist_loader(train, batch_size=512, shuffle=False):
-        feats.append(encode(model, imgs.to(device)).cpu())
+        feats.append(encode(model, imgs.to(device), pool=pool).cpu())
         labels.append(y)
     return torch.cat(feats), torch.cat(labels)
 
@@ -147,18 +151,18 @@ def train_linear_probe(Xtr, ytr, Xte, yte, in_dim: int, args, device):
     )
 
 
-def run_frozen(model: nn.Module, enc_dim: int, args, device):
+def run_frozen(model: nn.Module, args, device, pool: str = "mean"):
     """Linear probe: freeze the encoder, train only the head on cached feats."""
     for p in model.parameters():
         p.requires_grad_(False)
     model.eval()
 
     print("Extracting embeddings from the frozen encoder...")
-    Xtr, ytr = extract_features(model, train=True, device=device)
-    Xte, yte = extract_features(model, train=False, device=device)
+    Xtr, ytr = extract_features(model, train=True, device=device, pool=pool)
+    Xte, yte = extract_features(model, train=False, device=device, pool=pool)
     print(f"  train: {tuple(Xtr.shape)}   test: {tuple(Xte.shape)}")
 
-    return train_linear_probe(Xtr, ytr, Xte, yte, enc_dim, args, device)
+    return train_linear_probe(Xtr, ytr, Xte, yte, Xtr.shape[1], args, device)
 
 
 def extract_brief(kind: str, args, device):
@@ -248,6 +252,12 @@ def main() -> None:
         help="Pretraining length of the encoder checkpoint to load "
         "(default: the most-trained one on disk).",
     )
+    parser.add_argument(
+        "--flatten",
+        action="store_true",
+        help="Probe the concatenated patch tokens instead of the mean-pooled "
+        "embedding (frozen only; keeps per-patch layout).",
+    )
     brief_group = parser.add_mutually_exclusive_group()
     brief_group.add_argument(
         "--brief",
@@ -286,6 +296,9 @@ def main() -> None:
     if args.no_model_init:
         print("Starting from an UNINITIALIZED (untrained) encoder.")
 
+    if args.flatten and args.unfreeze:
+        parser.error("--flatten is frozen-probe only (use it without --unfreeze).")
+
     model = load_encoder(
         device, args.arch, random_init=args.no_model_init, epochs=args.ckpt_epochs
     )
@@ -296,8 +309,10 @@ def main() -> None:
         train_err, test_err = run_unfrozen(model, enc_dim, args, device)
         mode = "fine-tuned encoder + linear head"
     else:
-        train_err, test_err = run_frozen(model, enc_dim, args, device)
-        mode = "frozen-encoder linear probe"
+        pool = "flatten" if args.flatten else "mean"
+        print(f"Pooling: {pool}")
+        train_err, test_err = run_frozen(model, args, device, pool=pool)
+        mode = f"frozen-encoder linear probe ({pool}-pooled)"
 
     _report(mode, train_err, test_err)
 
