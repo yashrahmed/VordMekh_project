@@ -44,6 +44,7 @@ ray-based cousins). DeepSDF : SDF :: the planned net : a directed distance field
    9. [x] Train an I-JEPA on MNIST and measure similarity. 
    10. [x] Train an I-JEPA on MNIST and measure classification accuracy (maybe after finetuning?).
    11. [x] Test KNN with I-JEPA.
+   12. [x] Test KNN with handcrafted BRIEF (random sampling).
 2. BRIEF like features.
    1. A brief feature that moves. Similar to a hand but with a single finger.
    2. Imagine that this moves from one point to another sampling values. And there are two of these. Then shape descriptors could be used to find correspondence and similarity perhaps.
@@ -101,4 +102,34 @@ I-JEPA frozen-5-NN vs pretraining length: 50 ep **93.30%** → 200 ep **97.59%**
 300 ep vs the ViT/CNN MAEs at 50 ep. Re-train the ViT MAE at 300 ep before
 treating "JEPA > MAE for embeddings" as settled. To give any pretext real
 headroom, move off MNIST (CIFAR-10) or into the scarce-label regime.
+
+### 2026-06-20 — Handcrafted BRIEF k-NN (`knn-brief.py`, item 1.12)
+A zero-learning baseline: BRIEF (Calonder 2010) descriptors + Hamming k-NN, the
+handcrafted counterpart to the learned-encoder k-NN. Each feature is an ordered
+pair of points; the bit is `mean(start) < mean(end)`, where each point's
+intensity is the mean over a small box (the drawn square), computed with an
+**integral image** (O(1) per box). The comparison pattern is sampled once
+(seed 0) and reused for every image. **Sampling is uniform-random over the
+frame** (positions inset so the boxes stay inside, and the two boxes of a pair
+kept non-overlapping). 5-NN, full 60k/10k MNIST.
+
+| n bits | 5-NN acc | Δ |
+|---|---|---|
+| 64  | 79.42% | — |
+| 128 | 89.22% | +9.80 |
+| 256 | 92.57% | +3.35 |
+| 512 | 93.77% | +1.20 |
+| raw pixels (floor) | 96.88% | |
+
+**What we learned:** accuracy saturates at ~94% (+9.8 → +3.4 → +1.2, each step
+~⅓ the last), a hard ceiling ~3 pts *below* the raw-pixel floor. So the gap is
+**not** descriptor capacity — 512 random comparisons is plenty — but the
+**sampling distribution**: uniform-over-frame placement wastes bits in the
+constant black border where digits carry no signal, and crude binary intensity
+comparisons discard similarity structure bare pixels keep (cf. the conv MAE's
+frozen 91.29%, also below the floor).
+
+**Next:** test *designed* sampling instead of random — concentrate points toward
+the center (Gaussian, as real BRIEF does) and/or on the stroke region, at fixed
+256 bits, to check whether it breaks the ~94% ceiling.
 
