@@ -9,12 +9,21 @@ trained, so it complements the linear probe in ``classify.py``.
     python -m grasp_embeddings.mae_patch_embd.knn --arch vit
     python -m grasp_embeddings.mae_patch_embd.knn --arch cnn --k 5
     python -m grasp_embeddings.mae_patch_embd.knn --arch no-enc  # raw-pixel baseline
+    python -m grasp_embeddings.mae_patch_embd.knn --arch brief      # random BRIEF
+    python -m grasp_embeddings.mae_patch_embd.knn --arch brief-mod  # structured BRIEF
     python -m grasp_embeddings.mae_patch_embd.knn --no-model-init  # baseline
 
 ``--arch {vit,cnn,jepa}`` selects which pretrained encoder to load. ``--arch
 no-enc`` skips the encoder entirely and runs k-NN on the raw flattened pixels
 (Euclidean image difference) -- the floor that any learned embedding should
 beat. ``--no-model-init`` uses a random, untrained encoder as a baseline.
+
+``--arch brief`` / ``--arch brief-mod`` skip the encoder too and run k-NN on a
+handcrafted, zero-learning BRIEF descriptor instead -- random comparison pairs
+(``--patch`` / ``--n`` / ``--brief-seed``) or a structured lattice -- compared by
+**Hamming** distance over the bit vectors (see :mod:`brief`). ``brief-mod``'s
+grid is locked to ``brief.BRIEF_MOD_GRID`` so the result matches the linear
+probe. ``--viz-only`` shows/saves the comparison pattern instead of evaluating.
 """
 
 from __future__ import annotations
@@ -26,6 +35,7 @@ import torch.nn as nn
 import torch.nn.functional as F
 from torchvision import datasets, transforms
 
+from grasp_embeddings.mae_patch_embd import brief
 from grasp_embeddings.mae_patch_embd.mae import (
     ARCHES,
     DATASET_DIR,
@@ -36,6 +46,7 @@ from grasp_embeddings.mae_patch_embd.mae import (
 
 N_CLASSES = 10
 NO_ENC = "no-enc"
+BRIEF_ARCHES = brief.BRIEF_ARCHES
 
 
 def load_encoder(
@@ -118,9 +129,46 @@ def knn_predict(
     return torch.cat(preds)
 
 
+def run_brief(arch: str, args) -> None:
+    """k-NN with a handcrafted BRIEF descriptor (no encoder, Hamming distance).
+
+    ``arch`` is ``"brief"`` (random pairs) or ``"brief-mod"`` (structured
+    lattice). ``brief-mod``'s grid is locked to :data:`brief.BRIEF_MOD_GRID` --
+    the value benchmarked here and by the linear probe -- so results compare.
+    With ``--viz-only`` the comparison pattern is shown/saved instead of evaluated.
+    """
+    features, extent, label = brief.make_features(
+        arch,
+        patch=args.patch,
+        n=args.n,
+        seed=args.brief_seed,
+        grid=brief.BRIEF_MOD_GRID,
+    )
+    print(f"Features: {label} (no encoder).")
+
+    if args.viz_only:
+        if arch == "brief":
+            brief.visualize_random(features, extent, args.save)
+        else:
+            brief.visualize_structured(features, brief.BRIEF_MOD_GRID, args.save)
+        return
+
+    print("Describing MNIST train split with BRIEF...")
+    train_desc, train_labels = brief.describe_split(features, extent, train=True)
+    print("Describing MNIST test split with BRIEF...")
+    test_desc, test_labels = brief.describe_split(features, extent, train=False)
+    print(f"  train: {train_desc.shape}   test: {test_desc.shape}")
+
+    pred = brief.knn_predict(test_desc, train_desc, train_labels, args.k)
+    acc = (pred == test_labels).mean()
+
+    print(f"\n--- {args.k}-NN on {features.shape[0]}-bit {arch} descriptors (Hamming) ---")
+    print(f"Test accuracy: {acc:.2%}  (error {1 - acc:.2%})")
+
+
 def main() -> None:
     parser = argparse.ArgumentParser(description=__doc__)
-    parser.add_argument("--arch", choices=(*ARCHES, NO_ENC), default="vit")
+    parser.add_argument("--arch", choices=(*ARCHES, NO_ENC, *BRIEF_ARCHES), default="vit")
     parser.add_argument("--k", type=int, default=5)
     parser.add_argument(
         "--no-model-init",
@@ -140,7 +188,35 @@ def main() -> None:
         help="Concatenate the patch tokens instead of mean-pooling them "
         "(keeps per-patch layout; ignored for --arch no-enc).",
     )
+    parser.add_argument(
+        "--patch", type=int, default=4, help="[--arch brief] frame side."
+    )
+    parser.add_argument(
+        "--n", type=int, default=64, help="[--arch brief] feature count."
+    )
+    parser.add_argument(
+        "--brief-seed", type=int, default=0, help="[--arch brief] seed."
+    )
+    parser.add_argument(
+        "--viz-only",
+        action="store_true",
+        help="[--arch brief/brief-mod] show/save the comparison pattern; skip k-NN.",
+    )
+    parser.add_argument(
+        "--save", type=str, default=None, help="[--viz-only] path to save the figure."
+    )
     args = parser.parse_args()
+
+    if args.arch in BRIEF_ARCHES:
+        if args.flatten:
+            parser.error("--flatten does not apply to --arch brief/brief-mod "
+                         "(BRIEF has no patch tokens).")
+        print(f"Device: (cpu, numpy)  arch: {args.arch}  k: {args.k}")
+        run_brief(args.arch, args)
+        return
+
+    if args.viz_only or args.save:
+        parser.error("--viz-only/--save only apply to --arch brief/brief-mod.")
 
     device = pick_device()
     pool = "flatten" if args.flatten else "mean"

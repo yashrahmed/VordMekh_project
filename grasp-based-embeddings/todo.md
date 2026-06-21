@@ -61,15 +61,18 @@ All evals on the MNIST test set (10k), full 60k train split. Code lives in
   `vit` = ViT MAE (He 2021; drop 75% of patches, decode the missing pixels),
   `cnn` = conv MAE (Pathak 2016; zero the masked patches, conv reconstruct),
   `jepa` = I-JEPA (Assran 2023; EMA target encoder + predictor in latent space).
-- **`brief.py`** + **`knn-brief.py`** / **`knn-brief-mod.py`** — handcrafted BRIEF
-  (Calonder 2010), zero learning: random pairs vs a structured (census/LBP-style)
-  lattice. Bit = `mean(box_a) < mean(box_b)`, box means via an integral image.
-- **`knn.py`** — 5-NN over frozen embeddings (`--arch no-enc` = raw-pixel floor);
-  `--flatten` concatenates the patch tokens instead of mean-pooling them.
-- **`classify.py`** — linear probe (frozen) or `--unfreeze` fine-tune; also
-  `--brief` / `--brief-mod` (probe directly on the bit vector) and `--flatten`
-  (frozen probe on the concatenated patch tokens).
-- **`retrieve.py`** — cosine-NN retrieval demo; also `--brief` / `--brief-mod`.
+- **`brief.py`** — handcrafted BRIEF (Calonder 2010), zero learning: random pairs
+  vs a structured (census/LBP-style) lattice. Bit = `mean(box_a) < mean(box_b)`,
+  box means via an integral image. Exposed everywhere as `--arch brief` /
+  `--arch brief-mod` (`brief-mod`'s grid is locked to `BRIEF_MOD_GRID = 8`).
+- **`knn.py`** — 5-NN over frozen embeddings (`--arch no-enc` = raw-pixel floor,
+  `--arch brief`/`brief-mod` = handcrafted BRIEF by Hamming distance, `--viz-only`
+  to inspect the pattern); `--flatten` concatenates the patch tokens instead of
+  mean-pooling them.
+- **`classify.py`** — linear probe (frozen) or `--unfreeze` fine-tune; `--arch
+  brief`/`brief-mod` probes directly on the bit vector, `--flatten` probes the
+  concatenated patch tokens.
+- **`retrieve.py`** — cosine-NN retrieval demo; `--arch brief`/`brief-mod` too.
 
 ### Results — frozen embedding (5-NN, no labels reach the encoder)
 

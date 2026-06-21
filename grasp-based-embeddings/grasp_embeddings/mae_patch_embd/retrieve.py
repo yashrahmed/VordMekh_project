@@ -18,15 +18,17 @@ Usage:
     python -m grasp_embeddings.mae_patch_embd.retrieve              # show figure
     python -m grasp_embeddings.mae_patch_embd.retrieve --arch cnn --seed 0
     python -m grasp_embeddings.mae_patch_embd.retrieve --no-model-init  # baseline
-    python -m grasp_embeddings.mae_patch_embd.retrieve --brief          # random BRIEF
-    python -m grasp_embeddings.mae_patch_embd.retrieve --brief-mod --grid 8
+    python -m grasp_embeddings.mae_patch_embd.retrieve --arch brief      # random BRIEF
+    python -m grasp_embeddings.mae_patch_embd.retrieve --arch brief-mod  # structured
 
 ``--arch {vit,cnn,jepa}`` selects which pretrained encoder to load.
 ``--no-model-init`` skips the checkpoint and embeds with a random, untrained
 encoder -- a baseline showing how much the training actually buys you.
-``--brief`` / ``--brief-mod`` skip the encoder entirely and retrieve on a
-handcrafted BRIEF descriptor (random pairs / structured lattice; see
-:mod:`brief`) -- cosine NN over the bit vectors, zero learning.
+``--arch brief`` / ``--arch brief-mod`` skip the encoder entirely and retrieve on
+a handcrafted BRIEF descriptor (random pairs / structured lattice; see
+:mod:`brief`) -- cosine NN over the bit vectors, zero learning. ``brief-mod``'s
+grid is locked to the value benchmarked by ``knn`` and the linear probe
+(``BRIEF_MOD_GRID``) so the retrieval demo matches the recorded results.
 
 The embedding for an image is the encoder's pooled representation with no
 masking applied (the full image is seen): mean-pooled tokens for the ViT,
@@ -45,6 +47,7 @@ import torch.nn.functional as F
 from torchvision import datasets, transforms
 
 from grasp_embeddings.mae_patch_embd import brief
+from grasp_embeddings.mae_patch_embd.brief import BRIEF_ARCHES, BRIEF_MOD_GRID
 from grasp_embeddings.mae_patch_embd.mae import (
     ARCHES,
     DATASET_DIR,
@@ -81,7 +84,7 @@ def make_brief_embedder(kind: str, args):
     the same nearest-neighbour retrieval.
     """
     features, extent, label = brief.make_features(
-        kind, patch=args.patch, n=args.n, seed=args.brief_seed, grid=args.grid
+        kind, patch=args.patch, n=args.n, seed=args.brief_seed, grid=BRIEF_MOD_GRID
     )
     print(f"Embedding with {label} (no encoder).")
 
@@ -153,7 +156,13 @@ def run_round(embed_fn, device, per_class, topk, generator):
 
 def main() -> None:
     parser = argparse.ArgumentParser(description=__doc__)
-    parser.add_argument("--arch", choices=ARCHES, default="vit")
+    parser.add_argument(
+        "--arch",
+        choices=(*ARCHES, *BRIEF_ARCHES),
+        default="vit",
+        help="Learned encoder (vit/cnn/jepa) or a handcrafted BRIEF descriptor "
+        "(brief = random pairs, brief-mod = structured lattice, no encoder).",
+    )
     parser.add_argument("--per-class", type=int, default=5)
     parser.add_argument("--topk", type=int, default=3)
     parser.add_argument("--seed", type=int, default=None)
@@ -172,25 +181,19 @@ def main() -> None:
         help="Pretraining length of the checkpoint to load "
         "(default: the most-trained one on disk).",
     )
-    brief_group = parser.add_mutually_exclusive_group()
-    brief_group.add_argument(
-        "--brief",
-        action="store_true",
-        help="Retrieve with random handcrafted BRIEF descriptors (no encoder).",
+    parser.add_argument(
+        "--patch", type=int, default=4, help="[--arch brief] frame side."
     )
-    brief_group.add_argument(
-        "--brief-mod",
-        action="store_true",
-        help="Retrieve with structured BRIEF descriptors (no encoder).",
+    parser.add_argument(
+        "--n", type=int, default=64, help="[--arch brief] feature count."
     )
-    parser.add_argument("--patch", type=int, default=4, help="[--brief] frame side.")
-    parser.add_argument("--n", type=int, default=64, help="[--brief] feature count.")
-    parser.add_argument("--brief-seed", type=int, default=0, help="[--brief] seed.")
-    parser.add_argument("--grid", type=int, default=8, help="[--brief-mod] GxG lattice.")
+    parser.add_argument(
+        "--brief-seed", type=int, default=0, help="[--arch brief] seed."
+    )
     args = parser.parse_args()
 
     device = pick_device()
-    brief_kind = "brief-mod" if args.brief_mod else "brief" if args.brief else None
+    brief_kind = args.arch if args.arch in BRIEF_ARCHES else None
 
     generator = torch.Generator()
     if args.seed is not None:

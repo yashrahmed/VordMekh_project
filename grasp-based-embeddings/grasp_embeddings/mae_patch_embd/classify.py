@@ -16,17 +16,19 @@ Two modes:
     python -m grasp_embeddings.mae_patch_embd.classify
     python -m grasp_embeddings.mae_patch_embd.classify --arch cnn --unfreeze
     python -m grasp_embeddings.mae_patch_embd.classify --no-model-init  # baseline
-    python -m grasp_embeddings.mae_patch_embd.classify --brief          # random BRIEF
-    python -m grasp_embeddings.mae_patch_embd.classify --brief-mod --grid 8
+    python -m grasp_embeddings.mae_patch_embd.classify --arch brief      # random BRIEF
+    python -m grasp_embeddings.mae_patch_embd.classify --arch brief-mod  # structured
 
 ``--arch {vit,cnn,jepa}`` selects which pretrained encoder to load (and must
 match an architecture trained by ``mae.py``). For ``jepa`` the encoder is the
 I-JEPA target encoder. This model is evaluation-only, never saved.
 
-``--brief`` / ``--brief-mod`` skip the encoder entirely and probe a fixed,
-zero-learning handcrafted descriptor instead (random pairs / structured lattice;
-see :mod:`brief`): the BRIEF bit vector is the "embedding" and only the linear
-head trains. Always frozen -- ``--unfreeze`` does not apply.
+``--arch brief`` / ``--arch brief-mod`` skip the encoder entirely and probe a
+fixed, zero-learning handcrafted descriptor instead (random pairs / structured
+lattice; see :mod:`brief`): the BRIEF bit vector is the "embedding" and only the
+linear head trains. Always frozen -- ``--unfreeze`` does not apply.
+``brief-mod``'s grid is locked to ``brief.BRIEF_MOD_GRID`` so it matches the
+k-NN result.
 """
 
 from __future__ import annotations
@@ -173,7 +175,7 @@ def extract_brief(kind: str, args, device):
     like the frozen-encoder path.
     """
     features, extent, label = brief.make_features(
-        kind, patch=args.patch, n=args.n, seed=args.brief_seed, grid=args.grid
+        kind, patch=args.patch, n=args.n, seed=args.brief_seed, grid=brief.BRIEF_MOD_GRID
     )
     print(f"Describing MNIST with {label}...")
     tr_desc, tr_lab = brief.describe_split(features, extent, train=True)
@@ -230,7 +232,13 @@ def _report(mode: str, train_err: float, test_err: float) -> None:
 
 def main() -> None:
     parser = argparse.ArgumentParser(description=__doc__)
-    parser.add_argument("--arch", choices=ARCHES, default="vit")
+    parser.add_argument(
+        "--arch",
+        choices=(*ARCHES, *brief.BRIEF_ARCHES),
+        default="vit",
+        help="Learned encoder (vit/cnn/jepa) or a handcrafted BRIEF descriptor "
+        "(brief = random pairs, brief-mod = structured lattice, no encoder).",
+    )
     parser.add_argument("--epochs", type=int, default=50)
     parser.add_argument("--batch-size", type=int, default=256)
     parser.add_argument("--lr", type=float, default=1e-3)
@@ -258,30 +266,27 @@ def main() -> None:
         help="Probe the concatenated patch tokens instead of the mean-pooled "
         "embedding (frozen only; keeps per-patch layout).",
     )
-    brief_group = parser.add_mutually_exclusive_group()
-    brief_group.add_argument(
-        "--brief",
-        action="store_true",
-        help="Probe random handcrafted BRIEF descriptors instead of an encoder.",
+    parser.add_argument(
+        "--patch", type=int, default=4, help="[--arch brief] frame side."
     )
-    brief_group.add_argument(
-        "--brief-mod",
-        action="store_true",
-        help="Probe structured BRIEF descriptors instead of an encoder.",
+    parser.add_argument(
+        "--n", type=int, default=64, help="[--arch brief] feature count."
     )
-    parser.add_argument("--patch", type=int, default=4, help="[--brief] frame side.")
-    parser.add_argument("--n", type=int, default=64, help="[--brief] feature count.")
-    parser.add_argument("--brief-seed", type=int, default=0, help="[--brief] seed.")
-    parser.add_argument("--grid", type=int, default=8, help="[--brief-mod] GxG lattice.")
+    parser.add_argument(
+        "--brief-seed", type=int, default=0, help="[--arch brief] seed."
+    )
     args = parser.parse_args()
 
     device = pick_device()
-    brief_kind = "brief-mod" if args.brief_mod else "brief" if args.brief else None
+    brief_kind = args.arch if args.arch in brief.BRIEF_ARCHES else None
 
     if brief_kind is not None:
         if args.unfreeze:
-            parser.error("--unfreeze has no effect with --brief/--brief-mod "
+            parser.error("--unfreeze has no effect with --arch brief/brief-mod "
                          "(there is no encoder to fine-tune).")
+        if args.flatten:
+            parser.error("--flatten does not apply to --arch brief/brief-mod "
+                         "(BRIEF has no patch tokens).")
         print(f"Device: {device}  features: {brief_kind} (no encoder)")
         Xtr, ytr, Xte, yte, in_dim = extract_brief(brief_kind, args, device)
         print(f"  train: {tuple(Xtr.shape)}   test: {tuple(Xte.shape)}")

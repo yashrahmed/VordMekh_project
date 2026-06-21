@@ -10,17 +10,18 @@ This module is the common home for two sampling strategies and the descriptor /
 k-NN machinery they share:
 
 * :func:`generate_random_features` -- the original BRIEF: ``n`` ordered
-  ``(start, end)`` pairs sampled uniformly at random over the frame (used by
-  ``knn-brief.py``).
+  ``(start, end)`` pairs sampled uniformly at random over the frame
+  (``--arch brief``).
 * :func:`generate_structured_features` -- a regular ``grid x grid`` lattice where
   each location compares a centre box against its 4 neighbours (up/down/left/
-  right), the census-/LBP-flavoured variant (used by ``knn-brief-mod.py``).
+  right), the census-/LBP-flavoured variant (``--arch brief-mod``).
 
 Both produce a ``(n_features, 2, 2)`` float array in a normalised coordinate
 space of side ``extent`` (last axis ``(row, col)``; ``[i, 0]`` first point,
 ``[i, 1]`` second point), consumed by the same :func:`evaluate_batch`,
-:func:`describe_split` and :func:`knn_predict`. The ``retrieve``/``classify``
-scripts use :func:`make_features` + :func:`evaluate_batch` to turn images into
+:func:`describe_split` and :func:`knn_predict`. The ``knn`` / ``classify`` /
+``retrieve`` scripts expose these as ``--arch brief`` / ``--arch brief-mod`` and
+use :func:`make_features` + :func:`evaluate_batch` to turn images into
 descriptors without a learned encoder.
 """
 
@@ -36,6 +37,14 @@ import numpy as np
 SQUARE = 0.5
 
 N_CLASSES = 10
+
+# Handcrafted-BRIEF ``--arch`` values shared by knn/classify/retrieve (no encoder).
+BRIEF_ARCHES = ("brief", "brief-mod")
+
+# Structured-BRIEF lattice size locked across the k-NN, linear-probe and retrieval
+# entry points so every BRIEF-mod result is the same 4*8*7 = 224-bit descriptor
+# (the value behind the recorded numbers). Random BRIEF stays tunable via --n.
+BRIEF_MOD_GRID = 8
 
 
 # --------------------------------------------------------------------------- #
