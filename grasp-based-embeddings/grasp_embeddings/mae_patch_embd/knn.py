@@ -39,7 +39,6 @@ from __future__ import annotations
 
 import argparse
 
-import numpy as np
 import torch
 import torch.nn as nn
 import torch.nn.functional as F
@@ -50,8 +49,7 @@ from grasp_embeddings.mae_patch_embd.geodesic import (
     ALPHA,
     DEFAULT_CONNECTIVITY,
     GEODESIC_ARCH,
-    downsample_avg,
-    geodesic_matrix,
+    geodesic_features,
 )
 from grasp_embeddings.mae_patch_embd.mae import (
     ARCHES,
@@ -183,45 +181,20 @@ def run_brief(arch: str, args) -> None:
     print(f"Test accuracy: {acc:.2%}  (error {1 - acc:.2%})")
 
 
-def geodesic_features(train: bool, bins: int):
-    """Per-image geodesic shape-distribution histograms (no encoder).
-
-    For each image: 2x average-downsample, build the intensity-weighted grid graph
-    (edge ``|dI| + ALPHA``, :data:`DEFAULT_CONNECTIVITY`-connected), take its
-    all-pairs geodesic distances, scale by the image's own max distance (so the
-    descriptor is scale-invariant), and histogram the upper triangle into ``bins``
-    bins over [0, 1] -- an Osada-style D2 shape distribution. Returns ``(X, y)``
-    with ``X`` the L2-normalised histograms, compared by cosine.
-
-    retrieve.py flattens the whole distance matrix, but that is a ~38k-dim feature
-    per image; k-NN over 70k images would need a ~9 GB feature matrix, so this
-    compact distribution summary stands in for it here.
-    """
-    feats, labels = [], []
-    for imgs, y in mnist_loader(train):
-        arr = imgs.squeeze(1).numpy().astype(np.float32)  # (B, 28, 28)
-        for img in arr:
-            dist = geodesic_matrix(downsample_avg(img))
-            vals = dist[np.triu_indices(dist.shape[0], k=1)]
-            vmax = vals.max()
-            if vmax > 0:
-                vals = vals / vmax
-            hist, _ = np.histogram(vals, bins=bins, range=(0.0, 1.0), density=True)
-            feats.append(torch.from_numpy(hist.astype(np.float32)))
-        labels.append(y)
-    return F.normalize(torch.stack(feats), dim=-1), torch.cat(labels)
-
-
 def run_geodesic(args, device: torch.device) -> None:
-    """k-NN over geodesic shape-distribution histograms (no encoder, cosine)."""
+    """k-NN over geodesic shape-distribution histograms (no encoder, cosine).
+
+    The descriptor lives in :mod:`geodesic` (shared with eval_classifier); here it
+    is scored by cosine k-NN.
+    """
     print(
         f"Device: {device}  features: geodesic histogram "
         f"({args.bins} bins, {DEFAULT_CONNECTIVITY}-conn, alpha {ALPHA})  k: {args.k}"
     )
     print("Describing MNIST train split with geodesic histograms...")
-    Xtr, ytr = geodesic_features(train=True, bins=args.bins)
+    Xtr, ytr = geodesic_features(mnist_loader(train=True), bins=args.bins)
     print("Describing MNIST test split with geodesic histograms...")
-    Xte, yte = geodesic_features(train=False, bins=args.bins)
+    Xte, yte = geodesic_features(mnist_loader(train=False), bins=args.bins)
     print(f"  train: {tuple(Xtr.shape)}   test: {tuple(Xte.shape)}")
 
     pred = knn_predict(Xte, Xtr, ytr, args.k, device, metric="cosine")

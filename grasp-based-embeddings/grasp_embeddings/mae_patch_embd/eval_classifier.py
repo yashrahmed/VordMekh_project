@@ -1,13 +1,20 @@
-"""Evaluate a saved MNIST classifier and print its train/test accuracy.
+"""Evaluate a saved MNIST classifier and print its test accuracy.
 
 Loads a classifier checkpoint written by
 :mod:`grasp_embeddings.mae_patch_embd.train_classifier`, rebuilds the head
 (plus its encoder or BRIEF descriptor) entirely from the file -- nothing else is
-needed -- and reports the misclassification rate on the MNIST train and test
-splits.
+needed -- and reports the misclassification rate on the held-out MNIST **test**
+split. (Train accuracy is reported by the trainer at the end of training; eval
+only ever touches the test set.)
 
     python -m grasp_embeddings.mae_patch_embd.eval_classifier \
         --model models/clf_mnist_vit_probe_mean.pt
+
+It can also evaluate the training-free geodesic descriptor directly, with no
+checkpoint -- ``--arch geodesic`` builds the geodesic D2 histograms and classifies
+by nearest class-centroid (a closed-form class mean, no head, no training):
+
+    python -m grasp_embeddings.mae_patch_embd.eval_classifier --arch geodesic
 
 This module also holds the shared classifier primitives (data loading, encoder
 loading, feature extraction, error scoring, the checkpoint schema) imported by
@@ -22,10 +29,18 @@ import argparse
 import numpy as np
 import torch
 import torch.nn as nn
+import torch.nn.functional as F
 from torch.utils.data import DataLoader
 from torchvision import datasets, transforms
 
 from grasp_embeddings.mae_patch_embd import brief
+from grasp_embeddings.mae_patch_embd.geodesic import (
+    ALPHA,
+    DEFAULT_CONNECTIVITY,
+    GEODESIC_ARCH,
+    GEODESIC_BINS,
+    geodesic_features,
+)
 from grasp_embeddings.mae_patch_embd.mae import (
     DATASET_DIR,
     build_model,
@@ -146,63 +161,119 @@ def error_images(
     return 1.0 - correct / total
 
 
-def _report(mode: str, train_err: float, test_err: float) -> None:
+def _report(mode: str, test_err: float) -> None:
     print(f"\n--- {mode} ---")
-    print(f"Train error: {train_err:.2%}  (acc {1 - train_err:.2%})")
-    print(f"Test  error: {test_err:.2%}  (acc {1 - test_err:.2%})")
+    print(f"Test error: {test_err:.2%}  (acc {1 - test_err:.2%})")
 
 
 # --------------------------------------------------------------------------- #
 # Load + evaluate a saved classifier
 # --------------------------------------------------------------------------- #
-def evaluate(ckpt: dict, device: torch.device) -> tuple[float, float]:
-    """Rebuild the classifier from ``ckpt`` and return (train_err, test_err)."""
+def evaluate(ckpt: dict, device: torch.device) -> float:
+    """Rebuild the classifier from ``ckpt`` and return the held-out test error.
+
+    Eval scores the **test** split only; train accuracy is reported by
+    ``train_classifier`` at the end of training, where the train set lives.
+    """
     head = nn.Linear(ckpt["in_dim"], ckpt.get("n_classes", N_CLASSES)).to(device)
     head.load_state_dict(ckpt["head_state_dict"])
     head.eval()
 
     if ckpt["family"] == BRIEF_FAMILY:
         cfg = ckpt["brief_cfg"]
-        Xtr, ytr, Xte, yte, _ = brief_features(
+        _, _, Xte, yte, _ = brief_features(
             ckpt["arch"],
             patch=cfg["patch"],
             n=cfg["n"],
             brief_seed=cfg["brief_seed"],
             grid=cfg["grid"],
         )
-        return (
-            error_features(head, Xtr, ytr, device),
-            error_features(head, Xte, yte, device),
-        )
+        return error_features(head, Xte, yte, device)
 
     # Encoder family: rebuild the (probe-frozen or fine-tuned) encoder from the
-    # weights stored alongside the head and score images on the fly.
+    # weights stored alongside the head and score the test images on the fly.
     pool = ckpt.get("pool", "mean")
     model = build_model(ckpt["arch"]).to(device)
     model.load_state_dict(ckpt["encoder_state_dict"])
     model.eval()
-    return (
-        error_images(model, head, True, device, pool=pool),
-        error_images(model, head, False, device, pool=pool),
-    )
+    return error_images(model, head, False, device, pool=pool)
+
+
+def evaluate_geodesic(device: torch.device, bins: int) -> float:
+    """Training-free eval of the geodesic D2 descriptor by nearest class-centroid.
+
+    Builds the geodesic histogram for every image (see
+    :func:`grasp_embeddings.mae_patch_embd.geodesic.geodesic_features`), forms one
+    centroid per class from the L2-normalised 60K train features, and labels each
+    10K test image by its nearest class centroid in cosine space. No head and no
+    gradient training -- the centroids are a closed-form class mean. Returns the
+    held-out **test** error only: there is no meaningful train error for a
+    non-parametric matcher (it would be resubstitution on a zero-capacity
+    classifier), just as ``knn.py`` reports test accuracy alone.
+
+    This is the linear, parameter-free counterpart to ``knn.py``'s cosine k-NN on
+    the same descriptor (knn ~44.2% test); both read the fixed geodesic features
+    without any learning.
+    """
+    print(f"Describing MNIST train split with geodesic histograms ({bins} bins)...")
+    Xtr, ytr = geodesic_features(mnist_loader(train=True, batch_size=512, shuffle=False), bins)
+    print(f"Describing MNIST test split with geodesic histograms ({bins} bins)...")
+    Xte, yte = geodesic_features(mnist_loader(train=False, batch_size=512, shuffle=False), bins)
+    print(f"  train: {tuple(Xtr.shape)}   test: {tuple(Xte.shape)}")
+
+    # Class centroids in cosine space (features are already L2-normalised).
+    centroids = torch.stack([Xtr[ytr == c].mean(0) for c in range(N_CLASSES)])
+    centroids = F.normalize(centroids, dim=-1).to(device)
+
+    pred = (Xte.to(device) @ centroids.T).argmax(dim=1).cpu()
+    return 1.0 - (pred == yte).float().mean().item()
 
 
 def main() -> None:
     parser = argparse.ArgumentParser(description=__doc__)
     parser.add_argument(
         "--model",
-        required=True,
         help="Path to a classifier checkpoint saved by train_classifier.",
+    )
+    parser.add_argument(
+        "--arch",
+        choices=(GEODESIC_ARCH,),
+        default=None,
+        help="Evaluate a training-free descriptor instead of a saved --model. "
+        "Only 'geodesic' (geodesic D2 histogram, nearest class-centroid).",
+    )
+    parser.add_argument(
+        "--bins",
+        type=int,
+        default=GEODESIC_BINS,
+        help="[--arch geodesic] number of distance-histogram bins.",
     )
     args = parser.parse_args()
 
     device = pick_device()
+
+    if args.arch == GEODESIC_ARCH:
+        if args.model:
+            parser.error("--arch geodesic needs no checkpoint; do not also pass --model.")
+        print(
+            f"Device: {device}  geodesic D2 ({args.bins} bins, "
+            f"{DEFAULT_CONNECTIVITY}-conn, alpha {ALPHA})  nearest class-centroid"
+        )
+        test_err = evaluate_geodesic(device, args.bins)
+        _report(
+            f"geodesic D2 histogram, nearest class-centroid ({args.bins} bins)", test_err
+        )
+        return
+
+    if not args.model:
+        parser.error("provide --model (a saved classifier) or --arch geodesic.")
+
     ckpt = torch.load(args.model, map_location=device)
     print(f"Device: {device}  model: {args.model}")
     print(f"  family: {ckpt['family']}  arch: {ckpt['arch']}  mode: {ckpt['mode']}")
 
-    train_err, test_err = evaluate(ckpt, device)
-    _report(ckpt.get("mode_label", ckpt["mode"]), train_err, test_err)
+    test_err = evaluate(ckpt, device)
+    _report(ckpt.get("mode_label", ckpt["mode"]), test_err)
 
 
 if __name__ == "__main__":

@@ -1,8 +1,10 @@
 """Train an MNIST classifier on top of the MAE encoder and save it.
 
-Trains a linear classification head to predict MNIST digits and writes the
-result to ``models/`` so :mod:`grasp_embeddings.mae_patch_embd.eval_classifier`
-can score it. Three training modes:
+Trains a linear classification head to predict MNIST digits, reports its **train
+accuracy** (on the 60K train set) at the end, and writes the result to
+``models/`` so :mod:`grasp_embeddings.mae_patch_embd.eval_classifier` can score
+it on the held-out **test** set. Train accuracy is reported here, where the train
+set lives; the eval reports test accuracy only. Three training modes:
 
 * **Frozen (default)** -- a linear *probe*. The encoder never updates; its
   embeddings are computed once and cached, and only the head trains. Measures how
@@ -47,6 +49,7 @@ from grasp_embeddings.mae_patch_embd.eval_classifier import (
     brief_features,
     encode,
     error_features,
+    error_images,
     extract_features,
     load_encoder,
     mnist_loader,
@@ -255,6 +258,9 @@ def main() -> None:
         print(f"  train: {tuple(Xtr.shape)}")
         head = train_linear_probe(Xtr, ytr, in_dim, args, device)
 
+        train_err = error_features(head, Xtr, ytr, device)
+        print(f"Train accuracy: {1 - train_err:.2%}  (error {train_err:.2%})")
+
         out = Path(args.out) if args.out else default_path(brief_kind, "probe", None)
         save_classifier(
             {
@@ -302,6 +308,9 @@ def main() -> None:
         head, in_dim = run_frozen(model, args, device, pool=pool)
         mode = "probe"
         mode_label = f"frozen-encoder linear probe ({pool}-pooled)"
+
+    train_err = error_images(model, head, train=True, device=device, pool=pool)
+    print(f"Train accuracy: {1 - train_err:.2%}  (error {train_err:.2%})")
 
     out = Path(args.out) if args.out else default_path(args.arch, mode, pool)
     save_classifier(

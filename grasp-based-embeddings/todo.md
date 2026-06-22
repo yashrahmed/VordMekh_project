@@ -2,8 +2,8 @@
 
 ## Goal - The only experimental project in the current track.
 - Can I beat the MNIST benchmark using representations learned without label supervision (and if possible in a sample efficient way)?
-## The idea
 
+## The idea
 Generate labeled data describing the **local shape** of 2D objects, where the
 label is what a "feeling hand" would sense at a given pose.
 
@@ -34,7 +34,7 @@ ray-based cousins). DeepSDF : SDF :: the planned net : a directed distance field
 ## What I wish to test.
 1. Learning Patch embeddings.
    1. [x] Train a classifier with brief.
-   2. [ ] Test shape descriptors on MNIST and measure similarity.
+   2. [x] Test shape descriptors on MNIST and measure similarity / classification accuracy.
    3. [x] Train a VIT/MAE on MNIST and measure similarity. 
    4. [x] Train a VIT/MAE on MNIST and measure classification accuracy after finetuning.
    5. [x] Train a Conv-net MAE on MNIST and measure similarity. 
@@ -43,9 +43,9 @@ ray-based cousins). DeepSDF : SDF :: the planned net : a directed distance field
    8. [x] Train an I-JEPA on MNIST and measure similarity. 
    9.  [x] Train an I-JEPA on MNIST and measure classification accuracy (maybe after finetuning?).
    10. [x] Test KNN with I-JEPA.
-   11. [ ] Understand I-JEPA better and run experiments on canonical IJEPA.
-   12. [x] Test KNN with handcrafted BRIEF (random sampling).
-   13. [x] Test KNN with *structured* (designed) BRIEF sampling.
+   11. [x] Test KNN with handcrafted BRIEF (random sampling).
+   12. [x] Test KNN with *structured* (designed) BRIEF sampling.
+   13. [ ] Understand I-JEPA better and run experiments on canonical IJEPA.
 2. BRIEF like features.
    1. A brief feature that moves. Similar to a hand but with a single finger.
    2. Imagine that this moves from one point to another sampling values. And there are two of these. Then shape descriptors could be used to find correspondence and similarity perhaps.
@@ -76,14 +76,18 @@ All evals on the MNIST test set (10k), full 60k train split. Code lives in
   weighted by `|dI| + ALPHA` (ALPHA = 0.1 locked, 8-connected by default), and
   computes the all-pairs geodesic distance matrix (Dijkstra). Run directly to
   visualize one image's matrix; reused by `knn`/`retrieve` as `--arch geodesic`.
-- **`train_classifier.py`** — trains the classifier head and saves it to
+- **`train_classifier.py`** — trains the classifier head, reports its **train
+  accuracy** (on the 60K train set) at the end, and saves it to
   `models/clf_mnist_<arch>_<mode>[_<pool>].pt`: linear probe (frozen) or
   `--unfreeze` fine-tune; `--arch brief`/`brief-mod` probes directly on the bit
   vector, `--flatten` probes the concatenated patch tokens. The checkpoint is
   self-contained (head + its encoder weights, or the BRIEF config).
 - **`eval_classifier.py`** — loads a saved classifier (`--model <path>`) and
-  prints train/test accuracy; also holds the shared classifier primitives
-  (data/encoder loading, feature extraction, scoring) the trainer imports.
+  prints **test** accuracy only (train accuracy is the trainer's job; eval only
+  touches the held-out test set); `--arch geodesic` evaluates the training-free
+  geodesic descriptor by nearest class-centroid (no checkpoint). Also holds the
+  shared classifier primitives (data/encoder loading, feature extraction,
+  scoring) the trainer imports.
 - **`retrieve.py`** — cosine-NN retrieval demo; `--arch brief`/`brief-mod` and
   `--arch geodesic` (flattened distance matrix) too.
 

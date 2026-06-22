@@ -133,6 +133,52 @@ def geodesic_matrix(
     return shortest_path(graph, method="D", directed=False)
 
 
+# --------------------------------------------------------------------------- #
+# D2 shape-distribution descriptor (shared by knn / eval_classifier)
+# --------------------------------------------------------------------------- #
+GEODESIC_BINS = 64
+
+
+def geodesic_histogram(grid: np.ndarray, bins: int = GEODESIC_BINS) -> np.ndarray:
+    """One image's geodesic D2 shape distribution.
+
+    Builds the all-pairs geodesic matrix for ``grid``, scales the upper-triangle
+    distances by their own max (so the descriptor is scale-invariant), and
+    histograms them into ``bins`` density-normalised bins over [0, 1] -- an
+    Osada-style D2 descriptor. Permutation-invariant: it keeps the distribution
+    of geodesic gaps, not where they sit.
+    """
+    dist = geodesic_matrix(grid)
+    vals = dist[np.triu_indices(dist.shape[0], k=1)]
+    vmax = vals.max()
+    if vmax > 0:
+        vals = vals / vmax
+    hist, _ = np.histogram(vals, bins=bins, range=(0.0, 1.0), density=True)
+    return hist.astype(np.float32)
+
+
+def geodesic_features(loader, bins: int = GEODESIC_BINS):
+    """Describe every image from ``loader`` as a geodesic D2 histogram.
+
+    ``loader`` yields ``(imgs, labels)`` batches of MNIST tensors (B, 1, 28, 28).
+    Each image is 2x average-downsampled, then turned into a
+    :func:`geodesic_histogram`. Returns ``(X, y)`` with ``X`` the L2-normalised
+    histograms (so cosine k-NN / nearest-centroid compare them) -- a fixed,
+    zero-learning descriptor, no training required.
+
+    retrieve.py flattens the whole distance matrix instead, but that is ~38k-dim
+    per image; over tens of thousands of images this compact distribution stands
+    in for it.
+    """
+    feats, labels = [], []
+    for imgs, y in loader:
+        arr = imgs.squeeze(1).numpy().astype(np.float32)  # (B, 28, 28)
+        for img in arr:
+            feats.append(torch.from_numpy(geodesic_histogram(downsample_avg(img), bins)))
+        labels.append(y)
+    return F.normalize(torch.stack(feats), dim=-1), torch.cat(labels)
+
+
 def visualize(grid: np.ndarray, dist: np.ndarray, source: int, out: Path) -> None:
     import matplotlib.pyplot as plt
 
