@@ -219,6 +219,17 @@ All evals on the MNIST test set (10k), full 60k train split. Code lives in
    A spatially-aware reduction (e.g. per-pixel mean geodesic distance) is the
    obvious next variant if this thread is worth pursuing.
 
+   A second, weaker read confirms it: under a training-free **nearest
+   class-centroid** classifier (`eval_classifier --arch geodesic`) the same
+   descriptor scores only **30.87%** test -- below its own 44.21% 5-NN, as
+   expected (a single linear prototype per class can't carve the multimodal
+   neighbourhoods k-NN exploits). Both lenses agree the descriptor, not the
+   classifier, is the bottleneck. A sparsity check explains why: on the 14x14
+   graph ~74% of nodes are background and ~66% of 8-conn edges are ~flat (cost
+   ~ALPHA), so most of the distance matrix encodes an empty grid identical across
+   digits -- masking the background before building the graph is the first
+   correction to try.
+
 **Caveat now flips to the task.** With the epoch confound removed, MNIST's ~97%
 pixel floor is simply too high to separate these pretexts. For real headroom,
 move to CIFAR-10 or a scarce-label regime where a better representation can
