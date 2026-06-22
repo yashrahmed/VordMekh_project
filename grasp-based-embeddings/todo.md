@@ -3,34 +3,6 @@
 ## Goal - The only experimental project in the current track.
 - Can I beat the MNIST benchmark using representations learned without label supervision (and if possible in a sample efficient way)?
 
-## The idea
-Generate labeled data describing the **local shape** of 2D objects, where the
-label is what a "feeling hand" would sense at a given pose.
-
-### The feeling hand
-- The hand has **5 fingers**. Each finger extends in a **straight line** up to a
-  maximum length `L_max`.
-- A finger's extension **stops on contact** with a shape edge; its measured
-  value is the distance traveled until contact.
-- The hand has a **position `p`** and a **heading `h`** (orientation). Fingers
-  are arranged in the hand's local frame and rotate/translate with it.
-- The hand can be placed in **any position and orientation**.
-- Fingers start **fully retracted**.
-- The hand may **collide** with / overlap the shape. If a finger's origin starts
-  **inside** the shape, its extension length is `0`.
-- Units are arbitrary — everything is relative.
-
-## Relation to Signed Distance Fields
-
-This is the **ray-based dual of a signed distance function (SDF)**. With `f(x)`
-the SDF (`f = 0` on the boundary, `< 0` inside), a finger `(O, D)` returns the
-first positive root of `f(O + tD) = 0` — i.e. each finger reading is a
-**ray-march (sphere trace) of the shape's SDF along one beam**. So generating the
-labels is exactly "ray-march the SDF along 5 rays," and a net that predicts
-`(O, D) → ℓ` is learning a *directed distance field* (cf. PRIF, DeepSDF's
-ray-based cousins). DeepSDF : SDF :: the planned net : a directed distance field.
-
-
 ## What I wish to test.
 1. Learning Patch embeddings.
    1. [x] Train a classifier with brief.
@@ -52,46 +24,7 @@ ray-based cousins). DeepSDF : SDF :: the planned net : a directed distance field
    3. What is unclear is correspondence is by shape descriptor value but how do I account for the value of the feature "head" i.e. the sum of the area where the value is sampled?
 3. Can shape descriptors meant for 3-d meshes be extended to 5d point where a point is (x, y, dr, dg, db)? Worth looking into. --- Use r,g,b as "locations" and connect adjacent points to create the mesh. The position dimensions are not necessary. r,g,b as locations may not work as it creates a risk of the mesh folding in weird ways as color does not have spatil separation gaurantees. But I think it is worth try with a single channel image.
 
-
-## Work log
-
-All evals on the MNIST test set (10k), full 60k train split. Code lives in
-`grasp_embeddings/mae_patch_embd/`:
-
-- **`mae.py`** (`--arch {vit,cnn,jepa}`) — three self-supervised encoders:
-  `vit` = ViT MAE (He 2021; drop 75% of patches, decode the missing pixels),
-  `cnn` = conv MAE (Pathak 2016; zero the masked patches, conv reconstruct),
-  `jepa` = I-JEPA (Assran 2023; EMA target encoder + predictor in latent space).
-- **`brief.py`** — handcrafted BRIEF (Calonder 2010), zero learning: random pairs
-  vs a structured (census/LBP-style) lattice. Bit = `mean(box_a) < mean(box_b)`,
-  box means via an integral image. Exposed everywhere as `--arch brief` /
-  `--arch brief-mod` (`brief-mod`'s grid is locked to `BRIEF_MOD_GRID = 8`).
-- **`knn.py`** — 5-NN over frozen embeddings (`--arch no-enc` = raw-pixel floor,
-  `--arch brief`/`brief-mod` = handcrafted BRIEF by Hamming distance, `--arch
-  geodesic` = cosine over a geodesic D2 histogram, `--viz-only` to inspect the
-  BRIEF pattern); `--flatten` concatenates the patch tokens instead of
-  mean-pooling them.
-- **`geodesic.py`** — handcrafted, zero-learning geodesic descriptor. Average-
-  downsamples an image 2x (28x28 -> 14x14), builds a grid graph with edges
-  weighted by `|dI| + ALPHA` (ALPHA = 0.1 locked, 8-connected by default), and
-  computes the all-pairs geodesic distance matrix (Dijkstra). Run directly to
-  visualize one image's matrix; reused by `knn`/`retrieve` as `--arch geodesic`.
-- **`train_classifier.py`** — trains the classifier head, reports its **train
-  accuracy** (on the 60K train set) at the end, and saves it to
-  `models/clf_mnist_<arch>_<mode>[_<pool>].pt`: linear probe (frozen) or
-  `--unfreeze` fine-tune; `--arch brief`/`brief-mod` probes directly on the bit
-  vector, `--flatten` probes the concatenated patch tokens. The checkpoint is
-  self-contained (head + its encoder weights, or the BRIEF config).
-- **`eval_classifier.py`** — loads a saved classifier (`--model <path>`) and
-  prints **test** accuracy only (train accuracy is the trainer's job; eval only
-  touches the held-out test set); `--arch geodesic` evaluates the training-free
-  geodesic descriptor by nearest class-centroid (no checkpoint). Also holds the
-  shared classifier primitives (data/encoder loading, feature extraction,
-  scoring) the trainer imports.
-- **`retrieve.py`** — cosine-NN retrieval demo; `--arch brief`/`brief-mod` and
-  `--arch geodesic` (flattened distance matrix) too.
-
-### Results — frozen embedding (5-NN, no labels reach the encoder)
+## Results — frozen embedding (5-NN, no labels reach the encoder)
 
 | method | 5-NN acc | |
 |---|---|---|
@@ -104,18 +37,22 @@ All evals on the MNIST test set (10k), full 60k train split. Code lives in
 | conv MAE (50 ep) | 91.29% | below the floor |
 | geodesic D2 hist (64 bins) | 44.21% | layout-blind shape distribution |
 
-### Results — with labels (linear probe = frozen encoder; fine-tune = unfrozen, 50 ep)
+## Results — with labels (linear probe = frozen encoder; fine-tune = unfrozen, 50 ep)
 
-| method | linear probe | fine-tune |
-|---|---|---|
-| I-JEPA | **98.40%** | 98.69% |
-| ViT MAE (300 ep) | 98.13% | 98.7% |
-| ViT MAE (50 ep) | 97.4% | — |
-| conv MAE | — | **99.0%** |
-| BRIEF, structured (224 bits) | 88.65% | n/a — no parameters |
-| BRIEF, random (64 bits) | 77.37% | n/a — no parameters |
+| method | linear probe (mean) | linear probe (flatten) | fine-tune |
+|---|---|---|---|
+| I-JEPA | 98.40% | **99.11%** | 98.69% |
+| ViT MAE (300 ep) | 98.13% | 98.87% | 98.7% |
+| ViT MAE (50 ep) | 97.4% | — | — |
+| conv MAE | — | — | **99.0%** |
+| BRIEF, structured (224 bits) | 88.65% | n/a | n/a — no parameters |
+| BRIEF, random (64 bits) | 77.37% | n/a | n/a — no parameters |
 
-### Key findings
+Flatten-probe column from finding 7 (concatenated patch tokens). The I-JEPA
+**99.11%** is the 300-ep head and is the best result here -- a frozen encoder
+with a linear head edges past every fine-tuned model.
+
+## Key findings
 
 1. **Reconstruction ≠ good embeddings.** The conv MAE has the *worst* frozen
    embedding (91.29%, below the pixel floor) yet the *best* fine-tuned result
@@ -234,3 +171,19 @@ All evals on the MNIST test set (10k), full 60k train split. Code lives in
 pixel floor is simply too high to separate these pretexts. For real headroom,
 move to CIFAR-10 or a scarce-label regime where a better representation can
 actually show.
+
+## Original intent
+
+This project started from a different idea than the embedding study above, kept
+here for context. The plan was to learn shape from a **"feeling hand"**: 5
+fingers extending in straight lines from a posed origin `(p, h)`, each stopping
+on contact with a shape edge and returning the distance travelled (0 if it
+starts inside the shape). A pose maps to 5 contact distances — a local shape
+label.
+
+This is the **ray-based dual of a signed distance function (SDF)**: with `f` the
+SDF, a finger `(O, D)` returns the first positive root of `f(O + tD) = 0`, so
+each reading is a ray-march of the SDF along one beam and a net predicting
+`(O, D) → ℓ` learns a *directed distance field* (cf. PRIF; DeepSDF : SDF :: this
+net : a directed distance field). The geodesic and BRIEF-like descriptor threads
+are the surviving offshoots of this shape-descriptor line of thinking.
