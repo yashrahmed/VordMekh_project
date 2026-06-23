@@ -17,13 +17,14 @@
    10. [x] Test KNN with I-JEPA.
    11. [x] Test KNN with handcrafted BRIEF (random sampling).
    12. [x] Test KNN with *structured* (designed) BRIEF sampling.
-   13. [ ] Understand I-JEPA better and run experiments on canonical IJEPA.
-2. BRIEF like features.
-   1. A brief feature that moves. Similar to a hand but with a single finger.
-   2. Imagine that this moves from one point to another sampling values. And there are two of these. Then shape descriptors could be used to find correspondence and similarity perhaps.
-   3. What is unclear is correspondence is by shape descriptor value but how do I account for the value of the feature "head" i.e. the sum of the area where the value is sampled?
-3. Can shape descriptors meant for 3-d meshes be extended to 5d point where a point is (x, y, dr, dg, db)? Worth looking into. --- Use r,g,b as "locations" and connect adjacent points to create the mesh. The position dimensions are not necessary. r,g,b as locations may not work as it creates a risk of the mesh folding in weird ways as color does not have spatil separation gaurantees. But I think it is worth try with a single channel image.
-
+2. Looks like I am going to have to double down on IJEPA.
+   1. [ ] Run a test using cropped and scaled images.
+   2. [ ] Run a test using a different patching scheme (Closer to canonical IJEPA).
+   3. [ ] Look into augmentation techniques.
+   4. [ ] Maybe? try increased emebedding dims?
+3. Additional material follow up -
+   1. [ ] [Le-JEPA](https://arxiv.org/pdf/2511.08544)
+   2. [ ] [V-JEPA](https://arxiv.org/pdf/2601.14354)
 ## Results — frozen embedding (5-NN, no labels reach the encoder)
 
 | method | 5-NN acc | |
