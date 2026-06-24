@@ -14,7 +14,8 @@ trained, so it complements the linear probe in ``train_classifier.py``.
     python -m grasp_embeddings.mae_patch_embd.knn --arch geodesic   # geodesic histogram
     python -m grasp_embeddings.mae_patch_embd.knn --no-model-init  # baseline
 
-``--arch {vit,cnn,jepa}`` selects which pretrained encoder to load. ``--arch
+``--arch {vit,cnn,jepa,ijepa-canonical}`` selects which pretrained encoder to load
+(``ijepa-canonical`` is I-JEPA trained with canonical block masking). ``--arch
 no-enc`` skips the encoder entirely and runs k-NN on the raw flattened pixels
 (Euclidean image difference) -- the floor that any learned embedding should
 beat. ``--no-model-init`` uses a random, untrained encoder as a baseline.

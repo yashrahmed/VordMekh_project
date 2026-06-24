@@ -21,9 +21,10 @@ set lives; the eval reports test accuracy only. Three training modes:
     python -m grasp_embeddings.mae_patch_embd.train_classifier --no-model-init
     python -m grasp_embeddings.mae_patch_embd.train_classifier --arch brief-mod
 
-``--arch {vit,cnn,jepa}`` selects which pretrained encoder to load (and must
-match an architecture trained by ``mae.py``); for ``jepa`` the encoder is the
-I-JEPA target encoder. The checkpoint is named after the choices that define it,
+``--arch {vit,cnn,jepa,ijepa-canonical}`` selects which pretrained encoder to load
+(and must match an architecture trained by ``mae.py``); for ``jepa`` /
+``ijepa-canonical`` the encoder is the I-JEPA target encoder (the latter trained
+with canonical block masking). The checkpoint is named after the choices that define it,
 e.g. ``clf_mnist_vit_probe_mean.pt`` / ``clf_mnist_jepa_finetune.pt`` /
 ``clf_mnist_brief-mod_probe.pt``; pass ``--out`` to override. The saved file is
 self-contained -- it carries the head plus its encoder weights (or BRIEF config)
@@ -184,8 +185,9 @@ def main() -> None:
         "--arch",
         choices=(*ARCHES, *brief.BRIEF_ARCHES),
         default="vit",
-        help="Learned encoder (vit/cnn/jepa) or a handcrafted BRIEF descriptor "
-        "(brief = random pairs, brief-mod = structured lattice, no encoder).",
+        help="Learned encoder (vit/cnn/jepa/ijepa-canonical) or a handcrafted BRIEF "
+        "descriptor (brief = random pairs, brief-mod = structured lattice, no "
+        "encoder).",
     )
     parser.add_argument("--epochs", type=int, default=50)
     parser.add_argument("--batch-size", type=int, default=256)
