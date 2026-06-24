@@ -31,11 +31,17 @@ For ``vit``/``cnn`` the loss is the MSE on the masked *pixels*; for ``jepa`` /
 Downloads MNIST into <project>/dataset and writes the trained weights to
 <project>/models/mae_mnist_<arch>_<epochs>ep.pt (both are gitignored). Here <project> is
 the grasp-based-embeddings root.
+
+Training is checkpointed every ``CKPT_INTERVAL`` epochs to a resumable
+``..._e<epoch>of<total>.partial.pt`` file. Re-running the same ``--arch/--epochs``
+resumes from the latest partial (model + optimizer + LR-schedule state); the
+partials are deleted once the final ``..._<epochs>ep.pt`` checkpoint is written.
 """
 
 from __future__ import annotations
 
 import argparse
+import re
 from pathlib import Path
 
 import torch
@@ -51,6 +57,7 @@ MODELS_DIR = PROJECT_ROOT / "models"
 
 IMG_SIZE = 28
 PATCH_SIZE = 7  # -> 4x4 = 16 patches of 49 pixels each
+CKPT_INTERVAL = 50  # save a resumable partial checkpoint every N epochs
 
 
 def pick_device() -> torch.device:
@@ -629,6 +636,78 @@ def find_checkpoint(arch: str, epochs: int | None = None) -> Path:
     return candidates[-1]
 
 
+def partial_path(tag: str, epoch: int, total: int) -> Path:
+    """Path for a resumable mid-run checkpoint at ``epoch`` of a ``total``-epoch run.
+
+    Named distinctly from the final ``..._<n>ep.pt`` (it ends in ``.partial.pt``)
+    so eval-side :func:`find_checkpoint`, which globs ``*ep.pt``, never picks one
+    up. The ``of<total>`` tie keeps a partial bound to its exact run length, since
+    the LR schedule depends on the total epoch count.
+    """
+    return MODELS_DIR / f"mae_mnist_{tag}_e{epoch}of{total}.partial.pt"
+
+
+def _partial_glob(tag: str, total: int) -> tuple[str, re.Pattern[str]]:
+    glob = f"mae_mnist_{tag}_e*of{total}.partial.pt"
+    pat = re.compile(rf"^mae_mnist_{re.escape(tag)}_e(\d+)of{total}\.partial\.pt$")
+    return glob, pat
+
+
+def find_latest_partial(tag: str, total: int) -> tuple[Path, int] | None:
+    """Most-trained partial for this exact ``(tag, total)`` run, or ``None``."""
+    glob, pat = _partial_glob(tag, total)
+    found = []
+    for p in MODELS_DIR.glob(glob):
+        m = pat.match(p.name)
+        if m:
+            found.append((int(m.group(1)), p))
+    if not found:
+        return None
+    epoch, path = max(found)
+    return path, epoch
+
+
+def clear_partials(tag: str, total: int, keep: int | None = None) -> None:
+    """Delete this run's partial checkpoints, optionally sparing epoch ``keep``."""
+    glob, pat = _partial_glob(tag, total)
+    for p in MODELS_DIR.glob(glob):
+        m = pat.match(p.name)
+        if m and (keep is None or int(m.group(1)) != keep):
+            p.unlink()
+
+
+def _ckpt_dict(
+    model: nn.Module,
+    arch: str,
+    mask_ratio: float,
+    preproc: bool,
+    *,
+    opt: torch.optim.Optimizer | None = None,
+    sched: torch.optim.lr_scheduler.LRScheduler | None = None,
+    epoch: int | None = None,
+) -> dict:
+    """Checkpoint payload. The final checkpoint carries only ``state_dict`` +
+    ``config`` (what the eval loaders read); partials additionally stash the
+    optimizer/scheduler/epoch needed to resume."""
+    ckpt: dict = {
+        "state_dict": model.state_dict(),
+        "config": {
+            "arch": arch,
+            "patch_size": PATCH_SIZE,
+            "img_size": IMG_SIZE,
+            "mask_ratio": mask_ratio,
+            "preproc": preproc,
+        },
+    }
+    if opt is not None:
+        ckpt["optim_state_dict"] = opt.state_dict()
+    if sched is not None:
+        ckpt["sched_state_dict"] = sched.state_dict()
+    if epoch is not None:
+        ckpt["epoch"] = epoch
+    return ckpt
+
+
 # --------------------------------------------------------------------------- #
 # Data + training
 # --------------------------------------------------------------------------- #
@@ -655,6 +734,13 @@ def train(
     device = device or pick_device()
     print(f"Device: {device}  arch: {arch}  preproc: {preproc}")
 
+    tag = ckpt_tag(arch, preproc)
+    MODELS_DIR.mkdir(parents=True, exist_ok=True)
+    out = model_path(tag, epochs)
+    if out.exists():  # already finished this exact run; nothing to resume
+        print(f"Final checkpoint already exists -> {out} (nothing to do)")
+        return out
+
     loader = make_loader(batch_size, preproc=preproc)
     model = build_model(arch).to(device)
     opt = torch.optim.AdamW(model.parameters(), lr=lr, weight_decay=0.05)
@@ -662,8 +748,19 @@ def train(
         opt, max_lr=lr, epochs=epochs, steps_per_epoch=len(loader)
     )
 
+    start_epoch = 1
+    resume = find_latest_partial(tag, epochs)
+    if resume is not None:
+        path, done = resume
+        ckpt = torch.load(path, map_location=device)
+        model.load_state_dict(ckpt["state_dict"])
+        opt.load_state_dict(ckpt["optim_state_dict"])
+        sched.load_state_dict(ckpt["sched_state_dict"])
+        start_epoch = done + 1
+        print(f"Resuming from {path} -> epoch {start_epoch}/{epochs}")
+
     model.train()
-    for epoch in range(1, epochs + 1):
+    for epoch in range(start_epoch, epochs + 1):
         running, seen = 0.0, 0
         for imgs, _ in loader:
             imgs = imgs.to(device)
@@ -678,21 +775,19 @@ def train(
             seen += imgs.size(0)
         print(f"epoch {epoch:3d}/{epochs}  recon_mse {running / seen:.5f}")
 
-    MODELS_DIR.mkdir(parents=True, exist_ok=True)
-    out = model_path(ckpt_tag(arch, preproc), epochs)
-    torch.save(
-        {
-            "state_dict": model.state_dict(),
-            "config": {
-                "arch": arch,
-                "patch_size": PATCH_SIZE,
-                "img_size": IMG_SIZE,
-                "mask_ratio": mask_ratio,
-                "preproc": preproc,
-            },
-        },
-        out,
-    )
+        if epoch % CKPT_INTERVAL == 0 and epoch < epochs:
+            part = partial_path(tag, epoch, epochs)
+            torch.save(
+                _ckpt_dict(
+                    model, arch, mask_ratio, preproc, opt=opt, sched=sched, epoch=epoch
+                ),
+                part,
+            )
+            clear_partials(tag, epochs, keep=epoch)  # write-then-prune: never 0 partials
+            print(f"  checkpoint -> {part}")
+
+    torch.save(_ckpt_dict(model, arch, mask_ratio, preproc), out)
+    clear_partials(tag, epochs)  # final reached: drop all intermediates
     print(f"Saved model -> {out}")
     return out
 
