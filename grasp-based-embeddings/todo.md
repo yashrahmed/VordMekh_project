@@ -18,8 +18,8 @@
    11. [x] Test KNN with handcrafted BRIEF (random sampling).
    12. [x] Test KNN with *structured* (designed) BRIEF sampling.
 2. Looks like I am going to have to double down on IJEPA.
-   1. [x] Run a test using cropped and scaled images — bbox-crop + stretch-to-frame is a large win at 50 ep; see finding 9.
-   2. [ ] Run a test using a different patching scheme (Closer to canonical IJEPA).
+   1. [x] Run a test using cropped and scaled images — bbox-crop + stretch-to-frame is a large win at 50 ep; see finding 10.
+   2. [x] Run a test using a different patching scheme (Closer to canonical IJEPA) — canonical block masking underperforms scatter masking at this resolution; see finding 9.
    3. [ ] Look into augmentation techniques.
    4. [ ] Maybe? try increased emebedding dims?
    5. [ ] Re-run the bbox-preproc scatter JEPA at **300 ep** — finding 9 is 50 ep only; does the preproc edge hold (or grow) once raw scatter has caught up at full budget?
@@ -169,7 +169,36 @@ with a linear head edges past every fine-tuned model.
    digits -- masking the background before building the graph is the first
    correction to try.
 
-9. **Bounding-box normalization is a large win — 50 ep of preproc ≈ 300 ep of
+9. **Canonical block masking underperforms random scatter masking on MNIST —
+   the image is too small for a contiguous block to carry information.** The
+   `ijepa-canonical` arch implements Assran et al.'s block masking (a contiguous
+   2×4/4×2 context band carved disjoint from 4 independently-sampled 2-patch
+   "domino" targets, per-block latent prediction, K=1 batch-shared layout) on the
+   same 4×4 patch grid. Epoch-matched against the existing random-scatter `jepa`,
+   it loses on **every** frozen metric, at both 50 and 75 ep:
+
+   | frozen eval | canon 50ep | canon 75ep | scatter 50ep | scatter 75ep |
+   |---|---|---|---|---|
+   | 5-NN (mean) | 88.01% | 87.28% | 93.44% | **95.24%** |
+   | probe (mean) | 86.28% | 88.15% | 94.30% | **95.74%** |
+   | probe (flatten) | 95.92% | 96.23% | 97.72% | **98.09%** |
+
+   The gap is ~7–8 pts on the pooled views and ~1.9 pts on flatten, and it
+   *widens* slightly from 50→75 ep (scatter keeps improving; canonical's 5-NN
+   even ticks down 88.0→87.3, i.e. it has plateaued). **Why:** on a 28×28 digit
+   the 4×4 grid makes a "block" trivially small — the context band is already
+   half the image and a domino target is 2 patches, so a contiguous block carries
+   almost no information that its neighbours don't, and predicting it is too easy
+   to force good features. Random scatter masking poses a harder, spatially
+   distributed prediction task that learns better representations at this
+   resolution. Canonical block masking's intended advantage (predicting *semantic*
+   regions) needs a finer grid (e.g. PATCH_SIZE=2 → 14×14, as in the original
+   I-JEPA) to have room to express itself — the bottleneck here is image/grid
+   resolution, not the objective. Canonical also leans hardest on the flatten
+   probe (mean→flatten jumps ~8 pts vs scatter's ~2–3), consistent with block
+   prediction spreading signal across patch positions that mean-pooling collapses.
+
+10. **Bounding-box normalization is a large win — 50 ep of preproc ≈ 300 ep of
    raw.** Cropping each digit to its tight bounding box and stretching it to fill
    the full 28x28 frame (`--preproc`, aspect ratio *not* preserved) before
    patchifying removes scale/translation nuisance variation up front, so the

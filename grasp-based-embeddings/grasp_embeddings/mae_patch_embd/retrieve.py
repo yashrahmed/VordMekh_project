@@ -21,7 +21,9 @@ Usage:
     python -m grasp_embeddings.mae_patch_embd.retrieve --arch brief      # random BRIEF
     python -m grasp_embeddings.mae_patch_embd.retrieve --arch brief-mod  # structured
 
-``--arch {vit,cnn,jepa}`` selects which pretrained encoder to load.
+``--arch {vit,cnn,jepa,ijepa-canonical}`` selects which pretrained encoder to load
+(``ijepa-canonical`` is the I-JEPA target encoder trained with canonical block
+masking; see :mod:`grasp_embeddings.mae_patch_embd.mae`).
 ``--no-model-init`` skips the checkpoint and embeds with a random, untrained
 encoder -- a baseline showing how much the training actually buys you.
 ``--arch brief`` / ``--arch brief-mod`` skip the encoder entirely and retrieve on
@@ -203,9 +205,10 @@ def main() -> None:
         "--arch",
         choices=(*ARCHES, *BRIEF_ARCHES, GEODESIC_ARCH),
         default="vit",
-        help="Learned encoder (vit/cnn/jepa), a handcrafted BRIEF descriptor "
-        "(brief = random pairs, brief-mod = structured lattice), or geodesic "
-        "(intensity-geodesic distance matrix); brief/geodesic use no encoder.",
+        help="Learned encoder (vit/cnn/jepa/ijepa-canonical), a handcrafted BRIEF "
+        "descriptor (brief = random pairs, brief-mod = structured lattice), or "
+        "geodesic (intensity-geodesic distance matrix); brief/geodesic use no "
+        "encoder.",
     )
     parser.add_argument("--per-class", type=int, default=5)
     parser.add_argument("--topk", type=int, default=3)
