@@ -55,7 +55,12 @@ from grasp_embeddings.mae_patch_embd.eval_classifier import (
     load_encoder,
     mnist_loader,
 )
-from grasp_embeddings.mae_patch_embd.mae import ARCHES, MODELS_DIR, pick_device
+from grasp_embeddings.mae_patch_embd.mae import (
+    ARCHES,
+    MODELS_DIR,
+    ckpt_tag,
+    pick_device,
+)
 
 
 def set_seed(seed: int) -> None:
@@ -113,7 +118,9 @@ def run_frozen(model: nn.Module, args, device, pool: str = "mean"):
     model.eval()
 
     print("Extracting embeddings from the frozen encoder...")
-    Xtr, ytr = extract_features(model, train=True, device=device, pool=pool)
+    Xtr, ytr = extract_features(
+        model, train=True, device=device, pool=pool, preproc=args.preproc
+    )
     print(f"  train: {tuple(Xtr.shape)}")
     in_dim = Xtr.shape[1]
     return train_linear_probe(Xtr, ytr, in_dim, args, device), in_dim
@@ -137,7 +144,9 @@ def run_unfrozen(model: nn.Module, enc_dim: int, args, device) -> nn.Module:
         weight_decay=args.weight_decay,
     )
     crit = nn.CrossEntropyLoss()
-    loader = mnist_loader(train=True, batch_size=args.batch_size, shuffle=True)
+    loader = mnist_loader(
+        train=True, batch_size=args.batch_size, shuffle=True, preproc=args.preproc
+    )
 
     for epoch in range(1, args.epochs + 1):
         model.train()
@@ -215,6 +224,12 @@ def main() -> None:
         action="store_true",
         help="Probe the concatenated patch tokens instead of the mean-pooled "
         "embedding (frozen only; keeps per-patch layout).",
+    )
+    parser.add_argument(
+        "--preproc",
+        action="store_true",
+        help="Use the bbox crop-and-rescale preprocessing (loads the "
+        "'<arch>-preproc' encoder; applies the same transform to the images).",
     )
     parser.add_argument(
         "--patch", type=int, default=4, help="[--arch brief] frame side."
@@ -295,7 +310,11 @@ def main() -> None:
         parser.error("--flatten is frozen-probe only (use it without --unfreeze).")
 
     model = load_encoder(
-        device, args.arch, random_init=args.no_model_init, epochs=args.ckpt_epochs
+        device,
+        args.arch,
+        random_init=args.no_model_init,
+        epochs=args.ckpt_epochs,
+        preproc=args.preproc,
     )
     enc_dim = model.embed_dim
 
@@ -311,10 +330,13 @@ def main() -> None:
         mode = "probe"
         mode_label = f"frozen-encoder linear probe ({pool}-pooled)"
 
-    train_err = error_images(model, head, train=True, device=device, pool=pool)
+    train_err = error_images(
+        model, head, train=True, device=device, pool=pool, preproc=args.preproc
+    )
     print(f"Train accuracy: {1 - train_err:.2%}  (error {train_err:.2%})")
 
-    out = Path(args.out) if args.out else default_path(args.arch, mode, pool)
+    tag = ckpt_tag(args.arch, args.preproc)
+    out = Path(args.out) if args.out else default_path(tag, mode, pool)
     save_classifier(
         {
             "family": ENCODER_FAMILY,
@@ -322,6 +344,7 @@ def main() -> None:
             "mode": mode,
             "mode_label": mode_label,
             "pool": pool,
+            "preproc": args.preproc,
             "in_dim": in_dim,
             "n_classes": N_CLASSES,
             "head_state_dict": head.state_dict(),

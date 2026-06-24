@@ -43,6 +43,7 @@ import torch.nn as nn
 import torch.nn.functional as F
 from torch.utils.data import DataLoader
 from torchvision import datasets, transforms
+from torchvision.transforms import functional as TF
 
 PROJECT_ROOT = Path(__file__).resolve().parents[2]
 DATASET_DIR = PROJECT_ROOT / "dataset"
@@ -58,6 +59,40 @@ def pick_device() -> torch.device:
     if torch.backends.mps.is_available():
         return torch.device("mps")
     return torch.device("cpu")
+
+
+# --------------------------------------------------------------------------- #
+# Bounding-box preprocessing (the "-preproc" experiment)
+# --------------------------------------------------------------------------- #
+def bbox_rescale(img: torch.Tensor) -> torch.Tensor:
+    """Crop to the digit's bounding box and stretch it to fill the frame.
+
+    ``img`` is (1, H, W) in [0, 1]. The foreground is every nonzero pixel; the
+    tight bounding box around it is resized (bilinear) to IMG_SIZE x IMG_SIZE, so
+    every digit fills the whole canvas regardless of its original scale or
+    position (aspect ratio is *not* preserved -- the box is stretched to a
+    square). An all-zero image is returned unchanged.
+    """
+    fg = img[0] > 0
+    if not fg.any():
+        return img
+    rows = torch.where(fg.any(dim=1))[0]
+    cols = torch.where(fg.any(dim=0))[0]
+    crop = img[:, rows[0] : rows[-1] + 1, cols[0] : cols[-1] + 1]
+    return TF.resize(crop, [IMG_SIZE, IMG_SIZE], antialias=True)
+
+
+def make_transform(preproc: bool) -> transforms.Compose:
+    """ToTensor, optionally followed by the bbox crop-and-rescale."""
+    steps = [transforms.ToTensor()]
+    if preproc:
+        steps.append(transforms.Lambda(bbox_rescale))
+    return transforms.Compose(steps)
+
+
+def ckpt_tag(arch: str, preproc: bool) -> str:
+    """Checkpoint name tag: append '-preproc' when bbox preprocessing is on."""
+    return f"{arch}-preproc" if preproc else arch
 
 
 # --------------------------------------------------------------------------- #
@@ -597,9 +632,9 @@ def find_checkpoint(arch: str, epochs: int | None = None) -> Path:
 # --------------------------------------------------------------------------- #
 # Data + training
 # --------------------------------------------------------------------------- #
-def make_loader(batch_size: int) -> DataLoader:
+def make_loader(batch_size: int, preproc: bool = False) -> DataLoader:
     DATASET_DIR.mkdir(parents=True, exist_ok=True)
-    tfm = transforms.ToTensor()  # [0, 1], shape (1, 28, 28)
+    tfm = make_transform(preproc)  # [0, 1], shape (1, 28, 28)
     train = datasets.MNIST(
         root=str(DATASET_DIR), train=True, download=True, transform=tfm
     )
@@ -614,12 +649,13 @@ def train(
     batch_size: int = 256,
     lr: float = 1.5e-3,
     mask_ratio: float = 0.75,
+    preproc: bool = False,
     device: torch.device | None = None,
 ) -> Path:
     device = device or pick_device()
-    print(f"Device: {device}  arch: {arch}")
+    print(f"Device: {device}  arch: {arch}  preproc: {preproc}")
 
-    loader = make_loader(batch_size)
+    loader = make_loader(batch_size, preproc=preproc)
     model = build_model(arch).to(device)
     opt = torch.optim.AdamW(model.parameters(), lr=lr, weight_decay=0.05)
     sched = torch.optim.lr_scheduler.OneCycleLR(
@@ -643,7 +679,7 @@ def train(
         print(f"epoch {epoch:3d}/{epochs}  recon_mse {running / seen:.5f}")
 
     MODELS_DIR.mkdir(parents=True, exist_ok=True)
-    out = model_path(arch, epochs)
+    out = model_path(ckpt_tag(arch, preproc), epochs)
     torch.save(
         {
             "state_dict": model.state_dict(),
@@ -652,6 +688,7 @@ def train(
                 "patch_size": PATCH_SIZE,
                 "img_size": IMG_SIZE,
                 "mask_ratio": mask_ratio,
+                "preproc": preproc,
             },
         },
         out,
@@ -667,6 +704,12 @@ def main() -> None:
     parser.add_argument("--batch-size", type=int, default=256)
     parser.add_argument("--lr", type=float, default=1.5e-3)
     parser.add_argument("--mask-ratio", type=float, default=0.75)
+    parser.add_argument(
+        "--preproc",
+        action="store_true",
+        help="Crop each digit to its bounding box and stretch it to fill the "
+        "frame before patchifying (saves as '<arch>-preproc').",
+    )
     args = parser.parse_args()
     train(
         arch=args.arch,
@@ -674,6 +717,7 @@ def main() -> None:
         batch_size=args.batch_size,
         lr=args.lr,
         mask_ratio=args.mask_ratio,
+        preproc=args.preproc,
     )
 
 
