@@ -22,7 +22,7 @@
    2. [x] Run a test using a different patching scheme (Closer to canonical IJEPA) — canonical block masking underperforms scatter masking at this resolution; see finding 9.
    3. [ ] Look into augmentation techniques.
    4. [ ] Maybe? try increased emebedding dims?
-   5. [ ] Re-run the bbox-preproc scatter JEPA at **300 ep** — finding 9 is 50 ep only; does the preproc edge hold (or grow) once raw scatter has caught up at full budget?
+   5. [ ] Re-run the bbox-preproc scatter JEPA at **300 ep** — finding 10 is 50 ep only; does the preproc edge hold (or grow) once raw scatter has caught up at full budget?
 3. Additional material follow up -
    1. [ ] [Le-JEPA](https://arxiv.org/pdf/2511.08544)
    2. [ ] [V-JEPA](https://arxiv.org/pdf/2601.14354)
