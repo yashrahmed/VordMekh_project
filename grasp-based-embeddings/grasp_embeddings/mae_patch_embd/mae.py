@@ -13,15 +13,20 @@ Three encoder architectures, selected with ``--arch``:
   Images with a Joint-Embedding Predictive Architecture"): a trainable context
   encoder encodes the visible patches, an EMA *target* encoder encodes the full
   image into patch-level targets, and a predictor predicts the target's latent
-  representations at the masked positions.
+  representations at the masked positions. ``jepa`` uses random *scatter* masking.
+* ``ijepa-canonical`` -- the same I-JEPA model with canonical block masking: a
+  contiguous context band and 4 independent target dominoes carved out of it,
+  rather than scattered patches (see :class:`JEPA`). Directly comparable to
+  ``jepa`` -- only the context/target split differs.
 
-For ``vit``/``cnn`` the loss is the MSE on the masked *pixels*; for ``jepa`` it
-is the MSE on the masked patches' *latent representations* -- prediction happens
-in representation space, not pixel space.
+For ``vit``/``cnn`` the loss is the MSE on the masked *pixels*; for ``jepa`` /
+``ijepa-canonical`` it is the MSE on the masked patches' *latent representations*
+-- prediction happens in representation space, not pixel space.
 
     python -m grasp_embeddings.mae_patch_embd.mae                   # vit
     python -m grasp_embeddings.mae_patch_embd.mae --arch cnn --epochs 50
     python -m grasp_embeddings.mae_patch_embd.mae --arch jepa --epochs 50
+    python -m grasp_embeddings.mae_patch_embd.mae --arch ijepa-canonical --epochs 50
 
 Downloads MNIST into <project>/dataset and writes the trained weights to
 <project>/models/mae_mnist_<arch>_<epochs>ep.pt (both are gitignored). Here <project> is
@@ -307,6 +312,19 @@ class ViTTower(nn.Module):
         return self.encoder(self.patch_embed(kept) + pos)
 
 
+# Canonical I-JEPA block-masking (Assran 2023), adapted to the small patch grid.
+# Per step one mask layout is sampled and shared across the batch (K=1), matching
+# I-JEPA's multi-block collator (different layouts come across steps). The context
+# is one 2xG / Gx2 band (8 patches on the 4x4 grid) carved of any target overlap;
+# the targets are N_TARGET_BLOCKS contiguous dominoes of TARGET_BLOCK patches each,
+# sampled independently (overlap *between targets* is allowed). The predictor
+# predicts each target block from the shared context and the loss averages over
+# the blocks -- this is what makes them "blocks" rather than scattered masking.
+N_TARGET_BLOCKS = 4
+TARGET_BLOCK = 2  # a 1x2 / 2x1 domino
+MIN_CONTEXT = 2  # resample targets if carving leaves fewer context patches
+
+
 class JEPA(nn.Module):
     """I-JEPA: predict masked patches' *latent* representations (Assran 2023).
 
@@ -325,6 +343,12 @@ class JEPA(nn.Module):
     target representations at the masked positions -- entirely in latent space,
     with no pixel decoder. Downstream :meth:`encode` uses the *target* encoder
     over the full image (it is the tower that has always seen whole images).
+
+    ``canonical=True`` swaps the masking for canonical I-JEPA block masking
+    (contiguous context band + independent target dominoes carved out of it; see
+    the module notes above) instead of the default random scatter masking. Both
+    share every weight, encoder and the EMA machinery -- only how patches are
+    split into context/targets differs, so the two are directly comparable.
     """
 
     def __init__(
@@ -338,6 +362,7 @@ class JEPA(nn.Module):
         pred_depth: int = 2,
         pred_heads: int = 4,
         momentum: float = 0.996,
+        canonical: bool = False,
     ):
         super().__init__()
         self.n_patches = n_patches
@@ -345,6 +370,10 @@ class JEPA(nn.Module):
         self.embed_dim = enc_dim
         self.pred_dim = pred_dim
         self.momentum = momentum
+        self.canonical = canonical
+        self.grid = int(round(n_patches**0.5))
+        if self.grid * self.grid != n_patches:
+            raise ValueError(f"canonical masking needs a square grid; got {n_patches}.")
 
         self.context = ViTTower(patch_dim, n_patches, enc_dim, enc_depth, enc_heads)
         self.target = ViTTower(patch_dim, n_patches, enc_dim, enc_depth, enc_heads)
@@ -379,7 +408,88 @@ class JEPA(nn.Module):
         feats = self.target.tokens(imgs)  # (B, N, embed_dim)
         return feats.flatten(1) if pool == "flatten" else feats.mean(dim=1)
 
+    def _sample_block_masks(self, device: torch.device):
+        """Sample one canonical I-JEPA mask layout (batch-shared, K=1).
+
+        Returns ``(ctx_ids, target_blocks)``: ``ctx_ids`` is the ``(n_ctx,)``
+        carved context patch indices (a 2xG / Gx2 band minus any target overlap),
+        ``target_blocks`` a list of :data:`N_TARGET_BLOCKS` ``(TARGET_BLOCK,)``
+        index tensors. Targets are sampled independently and may overlap each
+        other; the band is resampled-free and the *targets* are resampled (bounded
+        retries) if carving would leave fewer than :data:`MIN_CONTEXT` context
+        patches. See the module notes above :class:`JEPA`.
+        """
+        g = self.grid
+
+        def domino() -> list[int]:
+            if torch.rand(1).item() < 0.5:  # horizontal (r,c)-(r,c+1)
+                r = torch.randint(0, g, (1,)).item()
+                c = torch.randint(0, g - 1, (1,)).item()
+                return [r * g + c, r * g + c + 1]
+            r = torch.randint(0, g - 1, (1,)).item()  # vertical (r,c)-(r+1,c)
+            c = torch.randint(0, g, (1,)).item()
+            return [r * g + c, (r + 1) * g + c]
+
+        # Context band: 2 contiguous rows or 2 contiguous columns -> 2*g patches.
+        if torch.rand(1).item() < 0.5:
+            r0 = torch.randint(0, g - 1, (1,)).item()
+            ctx = {r * g + c for r in (r0, r0 + 1) for c in range(g)}
+        else:
+            c0 = torch.randint(0, g - 1, (1,)).item()
+            ctx = {r * g + c for r in range(g) for c in (c0, c0 + 1)}
+
+        # Targets: independent dominoes (may overlap each other); carve from ctx.
+        blocks = [domino() for _ in range(N_TARGET_BLOCKS)]
+        for _ in range(50):
+            covered = {p for blk in blocks for p in blk}
+            if len(ctx - covered) >= MIN_CONTEXT:
+                break
+            blocks = [domino() for _ in range(N_TARGET_BLOCKS)]
+        kept = sorted(ctx - {p for blk in blocks for p in blk})
+
+        ctx_ids = torch.tensor(kept, dtype=torch.long, device=device)
+        target_blocks = [
+            torch.tensor(b, dtype=torch.long, device=device) for b in blocks
+        ]
+        return ctx_ids, target_blocks
+
+    def _forward_canonical(self, imgs: torch.Tensor):
+        """Canonical I-JEPA forward: contiguous context band + target dominoes."""
+        b = imgs.size(0)
+        patches = patchify(imgs)  # (B, N, patch_dim)
+        d = self.embed_dim
+
+        # --- targets: full-image target encoder, stop-gradient, LayerNorm'd ---
+        with torch.no_grad():
+            target_tokens = self.target.tokens(imgs)  # (B, N, enc_dim)
+            target_tokens = F.layer_norm(target_tokens, (target_tokens.size(-1),))
+
+        ctx_ids, target_blocks = self._sample_block_masks(imgs.device)
+        n_ctx = ctx_ids.numel()
+
+        # --- encode the carved context band with the context encoder ---
+        ctx = self.context.tokens_from(patches, ctx_ids.unsqueeze(0).expand(b, -1))
+        pred_pos = self.pred_pos[0]  # (N, pred_dim)
+        ctx_tok = self.pred_embed(ctx) + pred_pos[ctx_ids].unsqueeze(0)
+
+        # --- predict each target block from the shared context; average loss ---
+        loss = imgs.new_zeros(())
+        for blk in target_blocks:
+            mask_tok = (self.mask_token + pred_pos[blk].unsqueeze(0)).expand(b, -1, -1)
+            seq = self.predictor(torch.cat([ctx_tok, mask_tok], dim=1))
+            pred = self.pred_proj(seq[:, n_ctx:])  # (B, TARGET_BLOCK, enc_dim)
+            loss = loss + F.mse_loss(pred, target_tokens[:, blk])
+        loss = loss / len(target_blocks)
+
+        # 0/1 mask (1 = predicted) -- union of the target blocks, for parity.
+        mask = torch.zeros(b, self.n_patches, device=imgs.device)
+        mask[:, torch.cat(target_blocks).unique()] = 1.0
+        return loss, None, mask
+
     def forward(self, imgs: torch.Tensor, mask_ratio: float = 0.75):
+        if self.canonical:  # mask_ratio is unused: block masking sets the split
+            return self._forward_canonical(imgs)
+
         b = imgs.size(0)
         patches = patchify(imgs)  # (B, N, patch_dim)
         n, d = self.n_patches, self.embed_dim
@@ -428,7 +538,8 @@ class JEPA(nn.Module):
 # --------------------------------------------------------------------------- #
 # Architecture registry
 # --------------------------------------------------------------------------- #
-ARCHES = ("vit", "cnn", "jepa")
+IJEPA_CANONICAL = "ijepa-canonical"
+ARCHES = ("vit", "cnn", "jepa", IJEPA_CANONICAL)
 
 
 def build_model(arch: str) -> nn.Module:
@@ -439,6 +550,8 @@ def build_model(arch: str) -> nn.Module:
         return ConvMAE()
     if arch == "jepa":
         return JEPA()
+    if arch == IJEPA_CANONICAL:  # I-JEPA with canonical block masking
+        return JEPA(canonical=True)
     raise ValueError(f"Unknown arch {arch!r}; choose from {ARCHES}.")
 
 
