@@ -22,7 +22,7 @@
    2. [x] Run a test using a different patching scheme (Closer to canonical IJEPA) — canonical block masking underperforms scatter masking at this resolution; see finding 9.
    3. [ ] Look into augmentation techniques.
    4. [ ] Maybe? try increased emebedding dims?
-   5. [ ] Re-run the bbox-preproc scatter JEPA at **300 ep** — finding 10 is 50 ep only; does the preproc edge hold (or grow) once raw scatter has caught up at full budget?
+   5. [x] Re-run the bbox-preproc scatter JEPA at **500 ep** (run past the planned 300; flatten only, per request) — see finding 11: the preproc edge **holds** (flatten probe 99.15%, flatten 5-NN 99.01% — new bests) but is mostly *front-loading*; raw scatter nearly matches the probe at full budget.
    6. [ ] Account for known MNIST **label errors** when reading these results — the test set has ~15 human-validated mislabels (~0.15%), a soft ~99.8% ceiling that several frozen probes are now brushing against. See the corrected-test-set viewer / indices: [labelerrors.com](https://labelerrors.com) ([Northcutt et al., NeurIPS 2021](https://arxiv.org/pdf/2103.14749); [cleanlab/label-errors](https://github.com/cleanlab/label-errors)).
 3. Additional material follow up -
    1. [ ] [Le-JEPA](https://arxiv.org/pdf/2511.08544)
@@ -31,7 +31,8 @@
 
 | method | 5-NN acc | |
 |---|---|---|
-| I-JEPA (300 ep) | **98.18%** | tied best |
+| I-JEPA (preproc, 500 ep, flatten) | **99.01%** | new best — geometry-normalized (finding 11) |
+| I-JEPA (300 ep) | **98.18%** | best raw (ties ViT MAE) |
 | ViT MAE (300 ep) | **98.17%** | ties I-JEPA once epoch-matched |
 | ViT MAE (50 ep) | 97.16% | the earlier gap was epochs, not pretext |
 | **raw pixels** | **96.88%** | floor — any learned embedding should beat this |
@@ -45,15 +46,17 @@
 | method | linear probe (mean) | linear probe (flatten) | fine-tune |
 |---|---|---|---|
 | I-JEPA | 98.40% | **99.11%** | 98.69% |
+| I-JEPA (preproc, 500 ep) | — | **99.15%** | — |
 | ViT MAE (300 ep) | 98.13% | 98.87% | 98.7% |
 | ViT MAE (50 ep) | 97.4% | — | — |
 | conv MAE | — | — | **99.0%** |
 | BRIEF, structured (224 bits) | 88.65% | n/a | n/a — no parameters |
 | BRIEF, random (64 bits) | 77.37% | n/a | n/a — no parameters |
 
-Flatten-probe column from finding 7 (concatenated patch tokens). The I-JEPA
-**99.11%** is the 300-ep head and is the best result here -- a frozen encoder
-with a linear head edges past every fine-tuned model.
+Flatten-probe column from finding 7 (concatenated patch tokens). The best result
+here is now I-JEPA **+ preproc at 500 ep, 99.15%** (finding 11); the raw 300-ep
+head's **99.11%** is a hair behind. Either way a frozen encoder with a linear
+head edges past every fine-tuned model.
 
 ## Key findings
 
@@ -218,10 +221,32 @@ with a linear head edges past every fine-tuned model.
    where the metric is most geometry-sensitive: **5-NN +4.94** (aligned digits
    make cosine matching trivial) and **mean probe +4.31**, versus only **+1.21**
    on the flatten probe, which already encodes per-patch layout and sat near the
-   300-ep ceiling. Open question (action item 2.5): re-run at 300 ep to see if
-   the edge holds once raw scatter has its full budget, or whether preproc just
-   *front-loads* a representation raw eventually reaches. Cheap, label-free, and
+   300-ep ceiling. Resolved at 500 ep (finding 11):
+   the edge **holds** (flatten probe 99.15%, flatten 5-NN 99.01% — new bests) but
+   is mostly *front-loading* — raw scatter nearly catches the probe at full
+   budget, though preproc keeps a real ~0.8-pt 5-NN lead. Cheap, label-free, and
    stackable with everything else here — the most promising lever found so far.
+
+11. **Preproc holds at full budget — the edge is mostly front-loading, not a
+   higher ceiling.** Re-running scatter I-JEPA + `--preproc` at **500 ep** (action
+   item 2.5, past the planned 300; flatten-only this run, per request) gives a
+   frozen **flatten probe 99.15%** (probe train err 0.00%) and **flatten 5-NN
+   99.01%** — both the best numbers in the study. But against raw scatter at its
+   own full budget the probe margin is thin: 99.15% vs raw 300-ep's 99.11%
+   (~0.04 pt), and the real preproc story is still the *50-ep* result (98.93%
+   flatten probe ≈ raw 300-ep) — preproc **front-loads** a representation raw
+   eventually reaches rather than raising the asymptote. The exception is k-NN:
+   flatten 5-NN 99.01% clears every prior frozen 5-NN (raw 300-ep 98.23% flatten
+   / 98.18% mean) by ~0.8 pt — aligned, scale-normalized digits make cosine
+   matching markedly easier, and that gain does *not* wash out with budget. Both
+   frozen probes now sit ~0.7 pt below the soft ~99.8% MNIST label-error ceiling
+   (action item 2.6). The pretext MSE rose then plateaued ~0.34 over the run
+   (LayerNorm'd moving target — see finding 3; not a reconstruction loss).
+
+   | frozen eval (flatten) | preproc 50 ep | preproc 500 ep | raw 300 ep |
+   |---|---|---|---|
+   | linear probe | 98.93% | **99.15%** | 99.11% |
+   | 5-NN | — | **99.01%** | 98.23% |
 
 **Caveat now flips to the task.** With the epoch confound removed, MNIST's ~97%
 pixel floor is simply too high to separate these pretexts. For real headroom,
