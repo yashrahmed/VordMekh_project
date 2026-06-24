@@ -23,6 +23,7 @@
    3. [ ] Look into augmentation techniques.
    4. [ ] Maybe? try increased emebedding dims?
    5. [ ] Re-run the bbox-preproc scatter JEPA at **300 ep** — finding 10 is 50 ep only; does the preproc edge hold (or grow) once raw scatter has caught up at full budget?
+   6. [ ] Account for known MNIST **label errors** when reading these results — the test set has ~15 human-validated mislabels (~0.15%), a soft ~99.8% ceiling that several frozen probes are now brushing against. See the corrected-test-set viewer / indices: [labelerrors.com](https://labelerrors.com) ([Northcutt et al., NeurIPS 2021](https://arxiv.org/pdf/2103.14749); [cleanlab/label-errors](https://github.com/cleanlab/label-errors)).
 3. Additional material follow up -
    1. [ ] [Le-JEPA](https://arxiv.org/pdf/2511.08544)
    2. [ ] [V-JEPA](https://arxiv.org/pdf/2601.14354)
