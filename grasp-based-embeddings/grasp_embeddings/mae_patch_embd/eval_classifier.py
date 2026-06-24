@@ -31,7 +31,7 @@ import torch
 import torch.nn as nn
 import torch.nn.functional as F
 from torch.utils.data import DataLoader
-from torchvision import datasets, transforms
+from torchvision import datasets
 
 from grasp_embeddings.mae_patch_embd import brief
 from grasp_embeddings.mae_patch_embd.geodesic import (
@@ -44,7 +44,9 @@ from grasp_embeddings.mae_patch_embd.geodesic import (
 from grasp_embeddings.mae_patch_embd.mae import (
     DATASET_DIR,
     build_model,
+    ckpt_tag,
     find_checkpoint,
+    make_transform,
     pick_device,
 )
 
@@ -65,25 +67,35 @@ BRIEF_FAMILY = "brief"
 # Data + encoder helpers (shared with the trainer)
 # --------------------------------------------------------------------------- #
 def load_encoder(
-    device: torch.device, arch: str, random_init: bool, epochs: int | None = None
+    device: torch.device,
+    arch: str,
+    random_init: bool,
+    epochs: int | None = None,
+    preproc: bool = False,
 ) -> nn.Module:
-    """Build ``arch`` and (unless ``random_init``) load its pretrained weights."""
+    """Build ``arch`` and (unless ``random_init``) load its pretrained weights.
+
+    ``preproc`` only selects which checkpoint to load (the '<arch>-preproc' tag);
+    the model architecture itself is unchanged by bbox preprocessing.
+    """
     model = build_model(arch).to(device)
     if not random_init:
-        ckpt_path = find_checkpoint(arch, epochs)
+        ckpt_path = find_checkpoint(ckpt_tag(arch, preproc), epochs)
         ckpt = torch.load(ckpt_path, map_location=device)
         model.load_state_dict(ckpt["state_dict"])
         print(f"Loaded checkpoint: {ckpt_path.name}")
     return model
 
 
-def mnist_loader(train: bool, batch_size: int, shuffle: bool) -> DataLoader:
+def mnist_loader(
+    train: bool, batch_size: int, shuffle: bool, preproc: bool = False
+) -> DataLoader:
     DATASET_DIR.mkdir(parents=True, exist_ok=True)
     ds = datasets.MNIST(
         root=str(DATASET_DIR),
         train=train,
         download=True,
-        transform=transforms.ToTensor(),
+        transform=make_transform(preproc),
     )
     return DataLoader(ds, batch_size=batch_size, shuffle=shuffle, num_workers=2)
 
@@ -100,12 +112,16 @@ def encode(model: nn.Module, imgs: torch.Tensor, pool: str = "mean") -> torch.Te
 
 @torch.no_grad()
 def extract_features(
-    model: nn.Module, train: bool, device: torch.device, pool: str = "mean"
+    model: nn.Module,
+    train: bool,
+    device: torch.device,
+    pool: str = "mean",
+    preproc: bool = False,
 ):
     """Run the frozen encoder over a split once, return (features, labels)."""
     model.eval()
     feats, labels = [], []
-    for imgs, y in mnist_loader(train, batch_size=512, shuffle=False):
+    for imgs, y in mnist_loader(train, batch_size=512, shuffle=False, preproc=preproc):
         feats.append(encode(model, imgs.to(device), pool=pool).cpu())
         labels.append(y)
     return torch.cat(feats), torch.cat(labels)
@@ -148,13 +164,18 @@ def error_features(head: nn.Module, X, y, device) -> float:
 
 @torch.no_grad()
 def error_images(
-    model: nn.Module, head: nn.Module, train: bool, device, pool: str = "mean"
+    model: nn.Module,
+    head: nn.Module,
+    train: bool,
+    device,
+    pool: str = "mean",
+    preproc: bool = False,
 ) -> float:
     """Misclassification rate, encoding images on the fly with ``pool``."""
     model.eval()
     head.eval()
     correct, total = 0, 0
-    for imgs, y in mnist_loader(train, batch_size=512, shuffle=False):
+    for imgs, y in mnist_loader(train, batch_size=512, shuffle=False, preproc=preproc):
         pred = head(encode(model, imgs.to(device), pool=pool)).argmax(dim=1).cpu()
         correct += (pred == y).sum().item()
         total += len(y)
@@ -191,12 +212,14 @@ def evaluate(ckpt: dict, device: torch.device) -> float:
         return error_features(head, Xte, yte, device)
 
     # Encoder family: rebuild the (probe-frozen or fine-tuned) encoder from the
-    # weights stored alongside the head and score the test images on the fly.
+    # weights stored alongside the head and score the test images on the fly. The
+    # test split must get the same bbox preprocessing the head was trained under.
     pool = ckpt.get("pool", "mean")
+    preproc = ckpt.get("preproc", False)
     model = build_model(ckpt["arch"]).to(device)
     model.load_state_dict(ckpt["encoder_state_dict"])
     model.eval()
-    return error_images(model, head, False, device, pool=pool)
+    return error_images(model, head, False, device, pool=pool, preproc=preproc)
 
 
 def evaluate_geodesic(device: torch.device, bins: int) -> float:

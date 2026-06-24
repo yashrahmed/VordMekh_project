@@ -42,7 +42,7 @@ import argparse
 import torch
 import torch.nn as nn
 import torch.nn.functional as F
-from torchvision import datasets, transforms
+from torchvision import datasets
 
 from grasp_embeddings.mae_patch_embd import brief
 from grasp_embeddings.mae_patch_embd.geodesic import (
@@ -55,7 +55,9 @@ from grasp_embeddings.mae_patch_embd.mae import (
     ARCHES,
     DATASET_DIR,
     build_model,
+    ckpt_tag,
     find_checkpoint,
+    make_transform,
     pick_device,
 )
 
@@ -65,11 +67,15 @@ BRIEF_ARCHES = brief.BRIEF_ARCHES
 
 
 def load_encoder(
-    device: torch.device, arch: str, random_init: bool, epochs: int | None = None
+    device: torch.device,
+    arch: str,
+    random_init: bool,
+    epochs: int | None = None,
+    preproc: bool = False,
 ) -> nn.Module:
     model = build_model(arch).to(device)
     if not random_init:
-        ckpt_path = find_checkpoint(arch, epochs)
+        ckpt_path = find_checkpoint(ckpt_tag(arch, preproc), epochs)
         ckpt = torch.load(ckpt_path, map_location=device)
         model.load_state_dict(ckpt["state_dict"])
         print(f"Loaded checkpoint: {ckpt_path.name}")
@@ -77,13 +83,13 @@ def load_encoder(
     return model
 
 
-def mnist_loader(train: bool, batch_size: int = 512):
+def mnist_loader(train: bool, batch_size: int = 512, preproc: bool = False):
     DATASET_DIR.mkdir(parents=True, exist_ok=True)
     ds = datasets.MNIST(
         root=str(DATASET_DIR),
         train=train,
         download=True,
-        transform=transforms.ToTensor(),
+        transform=make_transform(preproc),
     )
     from torch.utils.data import DataLoader
 
@@ -92,7 +98,11 @@ def mnist_loader(train: bool, batch_size: int = 512):
 
 @torch.no_grad()
 def embed_split(
-    model: nn.Module | None, train: bool, device: torch.device, pool: str = "mean"
+    model: nn.Module | None,
+    train: bool,
+    device: torch.device,
+    pool: str = "mean",
+    preproc: bool = False,
 ):
     """Return (N, D) features and (N,) labels.
 
@@ -103,7 +113,7 @@ def embed_split(
     pixels, compared by direct Euclidean distance.
     """
     feats, labels = [], []
-    for imgs, y in mnist_loader(train):
+    for imgs, y in mnist_loader(train, preproc=preproc):
         if model is None:
             emb = imgs.flatten(1)  # (B, 784) raw pixels
         else:
@@ -229,6 +239,12 @@ def main() -> None:
         "(keeps per-patch layout; ignored for --arch no-enc).",
     )
     parser.add_argument(
+        "--preproc",
+        action="store_true",
+        help="Use the bbox crop-and-rescale preprocessing (loads the "
+        "'<arch>-preproc' encoder; applies the same transform to both splits).",
+    )
+    parser.add_argument(
         "--patch", type=int, default=4, help="[--arch brief] frame side."
     )
     parser.add_argument(
@@ -284,14 +300,22 @@ def main() -> None:
         if args.no_model_init:
             print("Using an UNINITIALIZED (untrained) encoder.")
         model = load_encoder(
-            device, args.arch, random_init=args.no_model_init, epochs=args.ckpt_epochs
+            device,
+            args.arch,
+            random_init=args.no_model_init,
+            epochs=args.ckpt_epochs,
+            preproc=args.preproc,
         )
         metric = "cosine"
 
     print("Embedding train split...")
-    train_emb, train_labels = embed_split(model, train=True, device=device, pool=pool)
+    train_emb, train_labels = embed_split(
+        model, train=True, device=device, pool=pool, preproc=args.preproc
+    )
     print("Embedding test split...")
-    test_emb, test_labels = embed_split(model, train=False, device=device, pool=pool)
+    test_emb, test_labels = embed_split(
+        model, train=False, device=device, pool=pool, preproc=args.preproc
+    )
     print(f"  train: {tuple(train_emb.shape)}   test: {tuple(test_emb.shape)}")
 
     pred = knn_predict(

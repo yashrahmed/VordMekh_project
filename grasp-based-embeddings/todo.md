@@ -18,10 +18,11 @@
    11. [x] Test KNN with handcrafted BRIEF (random sampling).
    12. [x] Test KNN with *structured* (designed) BRIEF sampling.
 2. Looks like I am going to have to double down on IJEPA.
-   1. [ ] Run a test using cropped and scaled images.
+   1. [x] Run a test using cropped and scaled images — bbox-crop + stretch-to-frame is a large win at 50 ep; see finding 9.
    2. [ ] Run a test using a different patching scheme (Closer to canonical IJEPA).
    3. [ ] Look into augmentation techniques.
    4. [ ] Maybe? try increased emebedding dims?
+   5. [ ] Re-run the bbox-preproc scatter JEPA at **300 ep** — finding 9 is 50 ep only; does the preproc edge hold (or grow) once raw scatter has caught up at full budget?
 3. Additional material follow up -
    1. [ ] [Le-JEPA](https://arxiv.org/pdf/2511.08544)
    2. [ ] [V-JEPA](https://arxiv.org/pdf/2601.14354)
@@ -167,6 +168,30 @@ with a linear head edges past every fine-tuned model.
    ~ALPHA), so most of the distance matrix encodes an empty grid identical across
    digits -- masking the background before building the graph is the first
    correction to try.
+
+9. **Bounding-box normalization is a large win — 50 ep of preproc ≈ 300 ep of
+   raw.** Cropping each digit to its tight bounding box and stretching it to fill
+   the full 28x28 frame (`--preproc`, aspect ratio *not* preserved) before
+   patchifying removes scale/translation nuisance variation up front, so the
+   encoder no longer spends capacity learning to be invariant to it. Trained on
+   the **same** scatter I-JEPA for 50 ep, every frozen metric jumps:
+
+   | frozen eval | scatter 50 ep (raw) | scatter 50 ep (preproc) | scatter 300 ep (raw) |
+   |---|---|---|---|
+   | 5-NN (mean) | 93.44% | **98.38%** | 98.18% |
+   | probe (mean) | 94.30% | **98.61%** | 98.40% |
+   | probe (flatten) | 97.72% | **98.93%** | 99.11% |
+
+   The gain is +1.2–4.9 pts over raw 50 ep, and on 5-NN and the mean probe the
+   preproc'd 50-ep model **matches or beats the raw 300-ep model** — normalizing
+   geometry buys roughly what 6x the pretraining budget bought. It helps most
+   where the metric is most geometry-sensitive: **5-NN +4.94** (aligned digits
+   make cosine matching trivial) and **mean probe +4.31**, versus only **+1.21**
+   on the flatten probe, which already encodes per-patch layout and sat near the
+   300-ep ceiling. Open question (action item 2.5): re-run at 300 ep to see if
+   the edge holds once raw scatter has its full budget, or whether preproc just
+   *front-loads* a representation raw eventually reaches. Cheap, label-free, and
+   stackable with everything else here — the most promising lever found so far.
 
 **Caveat now flips to the task.** With the epoch confound removed, MNIST's ~97%
 pixel floor is simply too high to separate these pretexts. For real headroom,
