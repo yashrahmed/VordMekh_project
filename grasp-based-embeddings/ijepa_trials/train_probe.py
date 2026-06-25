@@ -41,8 +41,9 @@ from ijepa_trials._ckpt import (
     final_path,
     find_latest_partial,
     partial_path,
+    set_seed,
 )
-from ijepa_trials.ijepa import N_PATCHES, build_model, find_checkpoint, set_seed
+from ijepa_trials import canonical
 from trials.eval_classifier import mnist_loader
 from trials.mae import pick_device
 
@@ -50,22 +51,33 @@ N_CLASSES = 10
 POOL = "flatten"  # the spec: always probe the flattened output
 FAMILY = "ijepa-flatten-probe"
 
+# Which pretrained encoder to probe. Each module exposes build_model() +
+# find_checkpoint(); encode() and the model attributes (n_patches, embed_dim) are
+# uniform, so the probe is otherwise model-agnostic.
+ENCODERS = {"canonical": canonical}
 
-def ckpt_stem(mode: str) -> str:
-    """Partial/final filename stem for a given mode (``probe`` / ``finetune``)."""
-    return f"ijepa_clf_{mode}_{POOL}"
+
+def ckpt_stem(encoder: str, mode: str) -> str:
+    """Partial/final filename stem (namespaced by encoder so runs don't collide)."""
+    return f"ijepa_clf_{encoder}_{mode}_{POOL}"
 
 
 # --------------------------------------------------------------------------- #
 # Encoder loading + feature extraction
 # --------------------------------------------------------------------------- #
-def load_encoder(device: torch.device, epochs: int | None) -> nn.Module:
-    """Build the I-JEPA and load its pretrained weights (most-trained by default)."""
-    model = build_model().to(device)
-    ckpt_path = find_checkpoint(epochs)
+def load_encoder(device: torch.device, encoder: str, epochs: int | None) -> nn.Module:
+    """Build the selected I-JEPA and load its pretrained weights (most-trained by default).
+
+    Rebuilds at the embedding dim recorded in the base checkpoint's config, so the
+    probe always matches the pretrained encoder regardless of its enc_dim.
+    """
+    mod = ENCODERS[encoder]
+    ckpt_path = mod.find_checkpoint(epochs)
     ckpt = torch.load(ckpt_path, map_location=device)
+    enc_dim = ckpt.get("config", {}).get("enc_dim")
+    model = (mod.build_model(enc_dim=enc_dim) if enc_dim else mod.build_model()).to(device)
     model.load_state_dict(ckpt["state_dict"])
-    print(f"Loaded encoder checkpoint: {ckpt_path.name}")
+    print(f"Loaded encoder checkpoint: {ckpt_path.name} (enc_dim={model.embed_dim})")
     return model
 
 
@@ -133,7 +145,7 @@ def run_frozen(model: nn.Module, args, device):
     crit = nn.CrossEntropyLoss()
     loader = DataLoader(TensorDataset(Xtr, ytr), batch_size=args.batch_size, shuffle=True)
 
-    stem = ckpt_stem("probe")
+    stem = ckpt_stem(args.encoder, "probe")
     start = _maybe_resume(stem, args.epochs, head, model, opt, device)
     for epoch in range(start, args.epochs + 1):
         head.train()
@@ -161,7 +173,7 @@ def run_unfrozen(model: nn.Module, args, device):
     for p in model.parameters():
         p.requires_grad_(True)
 
-    in_dim = N_PATCHES * model.embed_dim
+    in_dim = model.n_patches * model.embed_dim
     head = nn.Linear(in_dim, N_CLASSES).to(device)
     opt = torch.optim.AdamW(
         list(model.parameters()) + list(head.parameters()),
@@ -171,7 +183,7 @@ def run_unfrozen(model: nn.Module, args, device):
     crit = nn.CrossEntropyLoss()
     loader = mnist_loader(train=True, batch_size=args.batch_size, shuffle=True, preproc=True)
 
-    stem = ckpt_stem("finetune")
+    stem = ckpt_stem(args.encoder, "finetune")
     start = _maybe_resume(stem, args.epochs, head, model, opt, device)
     for epoch in range(start, args.epochs + 1):
         model.train()
@@ -217,6 +229,13 @@ def save_classifier(ckpt: dict, out: Path) -> None:
 
 def main() -> None:
     parser = argparse.ArgumentParser(description=__doc__)
+    parser.add_argument(
+        "--encoder",
+        choices=tuple(ENCODERS),
+        default="canonical",
+        help="Which pretrained I-JEPA to probe (canonical = canonical.py "
+        "multi-block).",
+    )
     parser.add_argument("--epochs", type=int, default=50)
     parser.add_argument("--batch-size", type=int, default=256)
     parser.add_argument("--lr", type=float, default=1e-3)
@@ -249,9 +268,9 @@ def main() -> None:
 
     set_seed(args.seed)
     device = pick_device()
-    print(f"Seed: {args.seed}  Device: {device}  pool: {POOL} (preproc)")
+    print(f"Seed: {args.seed}  Device: {device}  encoder: {args.encoder}  pool: {POOL} (preproc)")
 
-    model = load_encoder(device, args.ckpt_epochs)
+    model = load_encoder(device, args.encoder, args.ckpt_epochs)
 
     if args.unfreeze:
         print("Fine-tuning: encoder UNFROZEN, training encoder + head.")
@@ -265,15 +284,17 @@ def main() -> None:
     err = train_error(model, head, device)
     print(f"Train accuracy: {1 - err:.2%}  (error {err:.2%})")
 
-    out = Path(args.out) if args.out else final_path(ckpt_stem(mode), args.epochs)
+    out = Path(args.out) if args.out else final_path(ckpt_stem(args.encoder, mode), args.epochs)
     save_classifier(
         {
             "family": FAMILY,
-            "arch": "scatter",
+            "encoder": args.encoder,
+            "arch": args.encoder,
             "mode": mode,
             "mode_label": mode_label,
             "pool": POOL,
             "preproc": True,
+            "enc_dim": model.embed_dim,
             "in_dim": in_dim,
             "n_classes": N_CLASSES,
             "head_state_dict": head.state_dict(),

@@ -14,8 +14,12 @@ because that one hard-codes the ``mae_mnist_`` prefix.
 
 from __future__ import annotations
 
+import random
 import re
 from pathlib import Path
+
+import numpy as np
+import torch
 
 from trials.mae import MODELS_DIR
 
@@ -24,11 +28,25 @@ CKPT_INTERVAL = 50  # save a resumable partial every N epochs
 __all__ = [
     "CKPT_INTERVAL",
     "MODELS_DIR",
+    "set_seed",
     "final_path",
     "partial_path",
     "find_latest_partial",
     "clear_partials",
 ]
+
+
+def set_seed(seed: int) -> None:
+    """Seed Python/NumPy/Torch so a run is reproducible.
+
+    Covers encoder/predictor weight init, the block-position sampling and the
+    training-loader shuffle (all draw from torch's global RNG).
+    """
+    random.seed(seed)
+    np.random.seed(seed)
+    torch.manual_seed(seed)
+    if torch.cuda.is_available():
+        torch.cuda.manual_seed_all(seed)
 
 
 def final_path(stem: str, epochs: int) -> Path:

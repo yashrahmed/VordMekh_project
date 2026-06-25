@@ -18,8 +18,7 @@ import argparse
 import torch
 import torch.nn as nn
 
-from ijepa_trials.train_probe import N_CLASSES, POOL
-from ijepa_trials.ijepa import build_model
+from ijepa_trials.train_probe import ENCODERS, N_CLASSES, POOL
 from trials.eval_classifier import mnist_loader
 from trials.mae import pick_device
 
@@ -42,7 +41,11 @@ def evaluate(ckpt: dict, device: torch.device) -> float:
     head = nn.Linear(ckpt["in_dim"], ckpt.get("n_classes", N_CLASSES)).to(device)
     head.load_state_dict(ckpt["head_state_dict"])
 
-    model = build_model().to(device)
+    # Rebuild the matching encoder (defaults to canonical for older checkpoints).
+    encoder = ckpt.get("encoder", "canonical")
+    enc_dim = ckpt.get("enc_dim")
+    mod = ENCODERS[encoder]
+    model = (mod.build_model(enc_dim=enc_dim) if enc_dim else mod.build_model()).to(device)
     model.load_state_dict(ckpt["encoder_state_dict"])
     return test_error(model, head, device)
 

@@ -1,9 +1,9 @@
-"""ijepa_trials: a single-2x2-block I-JEPA on MNIST, with a flatten linear probe.
+"""ijepa_trials: canonical multi-block I-JEPA on MNIST, with a flatten linear probe.
 
 A focused companion to ``trials`` (which holds the MAE / multi-arch comparison).
 Three runnable scripts:
 
-* ``ijepa``       -- pretrain the I-JEPA encoder (single random 2x2 target block).
+* ``canonical``   -- pretrain the I-JEPA encoder (canonical multi-block masking).
 * ``train_probe`` -- train a linear probe / fine-tune on the flattened encoder output.
 * ``eval_probe``  -- score a saved probe on the MNIST test split.
 
