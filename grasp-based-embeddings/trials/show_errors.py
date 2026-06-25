@@ -1,12 +1,12 @@
 """Show test digits a saved linear-probe classifier gets wrong.
 
 Loads a classifier checkpoint written by
-:mod:`grasp_embeddings.mae_patch_embd.train_classifier`, rebuilds the encoder +
+:mod:`trials.train_classifier`, rebuilds the encoder +
 head straight from the file (exactly as ``eval_classifier`` does), scores the
 held-out MNIST **test** split, and renders a grid of the first ``--n``
 misclassified digits annotated with their expected (true) and predicted labels.
 
-    python -m grasp_embeddings.mae_patch_embd.show_errors \
+    python -m trials.show_errors \
         --model models/clf_mnist_jepa-preproc_probe_flatten.pt --n 30
 
 Each tile shows the *raw* MNIST digit (what a human reads) titled ``T:<true>
@@ -26,8 +26,8 @@ import torch.nn as nn
 from torch.utils.data import DataLoader
 from torchvision import datasets, transforms
 
-from grasp_embeddings.mae_patch_embd.eval_classifier import N_CLASSES, encode
-from grasp_embeddings.mae_patch_embd.mae import (
+from trials.eval_classifier import N_CLASSES, encode
+from trials.mae import (
     DATASET_DIR,
     PROJECT_ROOT,
     build_model,

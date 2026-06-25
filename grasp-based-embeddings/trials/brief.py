@@ -236,7 +236,7 @@ def describe_split(features, extent, train, chunk=10000):
     """
     from torchvision import datasets
 
-    from grasp_embeddings.mae_patch_embd.mae import DATASET_DIR
+    from trials.mae import DATASET_DIR
 
     DATASET_DIR.mkdir(parents=True, exist_ok=True)
     ds = datasets.MNIST(root=str(DATASET_DIR), train=train, download=True)

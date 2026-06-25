@@ -1,20 +1,20 @@
 """Evaluate a saved MNIST classifier and print its test accuracy.
 
 Loads a classifier checkpoint written by
-:mod:`grasp_embeddings.mae_patch_embd.train_classifier`, rebuilds the head
+:mod:`trials.train_classifier`, rebuilds the head
 (plus its encoder or BRIEF descriptor) entirely from the file -- nothing else is
 needed -- and reports the misclassification rate on the held-out MNIST **test**
 split. (Train accuracy is reported by the trainer at the end of training; eval
 only ever touches the test set.)
 
-    python -m grasp_embeddings.mae_patch_embd.eval_classifier \
+    python -m trials.eval_classifier \
         --model models/clf_mnist_vit_probe_mean.pt
 
 It can also evaluate the training-free geodesic descriptor directly, with no
 checkpoint -- ``--arch geodesic`` builds the geodesic D2 histograms and classifies
 by nearest class-centroid (a closed-form class mean, no head, no training):
 
-    python -m grasp_embeddings.mae_patch_embd.eval_classifier --arch geodesic
+    python -m trials.eval_classifier --arch geodesic
 
 This module also holds the shared classifier primitives (data loading, encoder
 loading, feature extraction, error scoring, the checkpoint schema) imported by
@@ -33,15 +33,15 @@ import torch.nn.functional as F
 from torch.utils.data import DataLoader
 from torchvision import datasets
 
-from grasp_embeddings.mae_patch_embd import brief
-from grasp_embeddings.mae_patch_embd.geodesic import (
+from trials import brief
+from trials.geodesic import (
     ALPHA,
     DEFAULT_CONNECTIVITY,
     GEODESIC_ARCH,
     GEODESIC_BINS,
     geodesic_features,
 )
-from grasp_embeddings.mae_patch_embd.mae import (
+from trials.mae import (
     DATASET_DIR,
     build_model,
     ckpt_tag,
@@ -226,7 +226,7 @@ def evaluate_geodesic(device: torch.device, bins: int) -> float:
     """Training-free eval of the geodesic D2 descriptor by nearest class-centroid.
 
     Builds the geodesic histogram for every image (see
-    :func:`grasp_embeddings.mae_patch_embd.geodesic.geodesic_features`), forms one
+    :func:`trials.geodesic.geodesic_features`), forms one
     centroid per class from the L2-normalised 60K train features, and labels each
     10K test image by its nearest class centroid in cosine space. No head and no
     gradient training -- the centroids are a closed-form class mean. Returns the

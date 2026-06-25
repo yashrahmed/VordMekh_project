@@ -23,10 +23,10 @@ For ``vit``/``cnn`` the loss is the MSE on the masked *pixels*; for ``jepa`` /
 ``ijepa-canonical`` it is the MSE on the masked patches' *latent representations*
 -- prediction happens in representation space, not pixel space.
 
-    python -m grasp_embeddings.mae_patch_embd.mae                   # vit
-    python -m grasp_embeddings.mae_patch_embd.mae --arch cnn --epochs 50
-    python -m grasp_embeddings.mae_patch_embd.mae --arch jepa --epochs 50
-    python -m grasp_embeddings.mae_patch_embd.mae --arch ijepa-canonical --epochs 50
+    python -m trials.mae                   # vit
+    python -m trials.mae --arch cnn --epochs 50
+    python -m trials.mae --arch jepa --epochs 50
+    python -m trials.mae --arch ijepa-canonical --epochs 50
 
 Downloads MNIST into <project>/dataset and writes the trained weights to
 <project>/models/mae_mnist_<arch>_<epochs>ep.pt (both are gitignored). Here <project> is
@@ -51,7 +51,7 @@ from torch.utils.data import DataLoader
 from torchvision import datasets, transforms
 from torchvision.transforms import functional as TF
 
-PROJECT_ROOT = Path(__file__).resolve().parents[2]
+PROJECT_ROOT = Path(__file__).resolve().parents[1]
 DATASET_DIR = PROJECT_ROOT / "dataset"
 MODELS_DIR = PROJECT_ROOT / "models"
 
@@ -618,7 +618,7 @@ def find_checkpoint(arch: str, epochs: int | None = None) -> Path:
         if not path.exists():
             raise FileNotFoundError(
                 f"No checkpoint at {path}. Train one with "
-                f"`python -m grasp_embeddings.mae_patch_embd.mae --arch {arch} "
+                f"`python -m trials.mae --arch {arch} "
                 f"--epochs {epochs}`."
             )
         return path
@@ -631,7 +631,7 @@ def find_checkpoint(arch: str, epochs: int | None = None) -> Path:
         raise FileNotFoundError(
             f"No checkpoint for arch {arch!r} in {MODELS_DIR} "
             f"(looked for mae_mnist_{arch}_*ep.pt). Train one with "
-            f"`python -m grasp_embeddings.mae_patch_embd.mae --arch {arch}`."
+            f"`python -m trials.mae --arch {arch}`."
         )
     return candidates[-1]
 

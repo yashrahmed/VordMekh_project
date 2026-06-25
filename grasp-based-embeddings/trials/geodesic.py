@@ -17,9 +17,9 @@ cost), while crossing the digit's stroke edges is expensive, so the matrix mixes
 the image's intensity terrain with its layout. ``ALPHA`` is locked to
 :data:`ALPHA` (0.1) -- not a flag -- so every consumer builds the same geodesic.
 
-    python -m grasp_embeddings.mae_patch_embd.geodesic --index 0
-    python -m grasp_embeddings.mae_patch_embd.geodesic --image path/to/img.png
-    python -m grasp_embeddings.mae_patch_embd.geodesic --index 7 --connectivity 4
+    python -m trials.geodesic --index 0
+    python -m trials.geodesic --image path/to/img.png
+    python -m trials.geodesic --index 7 --connectivity 4
 
 With ``--save`` (default ``geodesic.png`` under the project ``images/`` dir, which
 is gitignored) it writes a figure: the downsampled image, the geodesic distance
@@ -38,7 +38,7 @@ from scipy.sparse import coo_matrix
 from scipy.sparse.csgraph import shortest_path
 from torchvision import datasets, transforms
 
-from grasp_embeddings.mae_patch_embd.mae import DATASET_DIR, PROJECT_ROOT
+from trials.mae import DATASET_DIR, PROJECT_ROOT
 
 # ``--arch`` value exposed by retrieve.py / knn.py for the geodesic signature.
 GEODESIC_ARCH = "geodesic"

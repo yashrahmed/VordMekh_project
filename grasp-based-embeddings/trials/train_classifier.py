@@ -2,7 +2,7 @@
 
 Trains a linear classification head to predict MNIST digits, reports its **train
 accuracy** (on the 60K train set) at the end, and writes the result to
-``models/`` so :mod:`grasp_embeddings.mae_patch_embd.eval_classifier` can score
+``models/`` so :mod:`trials.eval_classifier` can score
 it on the held-out **test** set. Train accuracy is reported here, where the train
 set lives; the eval reports test accuracy only. Three training modes:
 
@@ -16,10 +16,10 @@ set lives; the eval reports test accuracy only. Three training modes:
   handcrafted BRIEF descriptor (random pairs / structured lattice; see
   :mod:`brief`). Always frozen -- ``--unfreeze`` does not apply.
 
-    python -m grasp_embeddings.mae_patch_embd.train_classifier
-    python -m grasp_embeddings.mae_patch_embd.train_classifier --arch cnn --unfreeze
-    python -m grasp_embeddings.mae_patch_embd.train_classifier --no-model-init
-    python -m grasp_embeddings.mae_patch_embd.train_classifier --arch brief-mod
+    python -m trials.train_classifier
+    python -m trials.train_classifier --arch cnn --unfreeze
+    python -m trials.train_classifier --no-model-init
+    python -m trials.train_classifier --arch brief-mod
 
 ``--arch {vit,cnn,jepa,ijepa-canonical}`` selects which pretrained encoder to load
 (and must match an architecture trained by ``mae.py``); for ``jepa`` /
@@ -42,8 +42,8 @@ import torch
 import torch.nn as nn
 from torch.utils.data import DataLoader, TensorDataset
 
-from grasp_embeddings.mae_patch_embd import brief
-from grasp_embeddings.mae_patch_embd.eval_classifier import (
+from trials import brief
+from trials.eval_classifier import (
     BRIEF_FAMILY,
     ENCODER_FAMILY,
     N_CLASSES,
@@ -55,7 +55,7 @@ from grasp_embeddings.mae_patch_embd.eval_classifier import (
     load_encoder,
     mnist_loader,
 )
-from grasp_embeddings.mae_patch_embd.mae import (
+from trials.mae import (
     ARCHES,
     MODELS_DIR,
     ckpt_tag,

@@ -18,7 +18,7 @@ virtualenv, resolves dependencies from `uv.lock`, and installs the package
 uv sync
 ```
 
-## MAE patch embeddings (`mae_patch_embd`)
+## MAE patch embeddings (`trials`)
 
 A self-contained subpackage with three self-supervised architectures, selected
 via `--arch {vit,cnn,jepa}`:
@@ -34,19 +34,19 @@ via `--arch {vit,cnn,jepa}`:
 
 ```bash
 # Train (downloads MNIST to dataset/, writes models/mae_mnist_<arch>.pt)
-uv run python -m grasp_embeddings.mae_patch_embd.mae --arch vit --epochs 50
-uv run python -m grasp_embeddings.mae_patch_embd.mae --arch cnn --epochs 50
-uv run python -m grasp_embeddings.mae_patch_embd.mae --arch jepa --epochs 50
+uv run python -m trials.mae --arch vit --epochs 50
+uv run python -m trials.mae --arch cnn --epochs 50
+uv run python -m trials.mae --arch jepa --epochs 50
 
 # Nearest-neighbor retrieval with the trained encoder
-uv run python -m grasp_embeddings.mae_patch_embd.retrieve --arch vit --seed 0 --save out.png
+uv run python -m trials.retrieve --arch vit --seed 0 --save out.png
 
 # Classification: linear probe (frozen) or end-to-end fine-tune (--unfreeze)
-uv run python -m grasp_embeddings.mae_patch_embd.classify --arch cnn --unfreeze --epochs 50
+uv run python -m trials.classify --arch cnn --unfreeze --epochs 50
 
 # k-NN over the frozen embeddings (full test set); --arch no-enc = raw-pixel floor
-uv run python -m grasp_embeddings.mae_patch_embd.knn --arch vit --k 5
-uv run python -m grasp_embeddings.mae_patch_embd.knn --arch no-enc
+uv run python -m trials.knn --arch vit --k 5
+uv run python -m trials.knn --arch no-enc
 ```
 
 `dataset/`, `models/`, and `*.png` are gitignored.

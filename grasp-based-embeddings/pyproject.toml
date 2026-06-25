@@ -16,7 +16,7 @@ dependencies = [
 ]
 
 [tool.setuptools]
-packages = ["grasp_embeddings", "grasp_embeddings.mae_patch_embd"]
+packages = ["trials"]
 
 [dependency-groups]
 dev = ["pytest>=8"]

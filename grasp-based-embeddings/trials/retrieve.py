@@ -1,6 +1,6 @@
 """Nearest-neighbor image retrieval with the trained MAE encoder.
 
-Loads the checkpoint written by :mod:`grasp_embeddings.mae_patch_embd.mae`,
+Loads the checkpoint written by :mod:`trials.mae`,
 embeds images with
 the (unmasked) encoder, then runs a simple cosine nearest-neighbor search:
 
@@ -15,15 +15,15 @@ draw. Passing ``--save`` instead writes a single static figure (no button).
 
 Usage:
 
-    python -m grasp_embeddings.mae_patch_embd.retrieve              # show figure
-    python -m grasp_embeddings.mae_patch_embd.retrieve --arch cnn --seed 0
-    python -m grasp_embeddings.mae_patch_embd.retrieve --no-model-init  # baseline
-    python -m grasp_embeddings.mae_patch_embd.retrieve --arch brief      # random BRIEF
-    python -m grasp_embeddings.mae_patch_embd.retrieve --arch brief-mod  # structured
+    python -m trials.retrieve              # show figure
+    python -m trials.retrieve --arch cnn --seed 0
+    python -m trials.retrieve --no-model-init  # baseline
+    python -m trials.retrieve --arch brief      # random BRIEF
+    python -m trials.retrieve --arch brief-mod  # structured
 
 ``--arch {vit,cnn,jepa,ijepa-canonical}`` selects which pretrained encoder to load
 (``ijepa-canonical`` is the I-JEPA target encoder trained with canonical block
-masking; see :mod:`grasp_embeddings.mae_patch_embd.mae`).
+masking; see :mod:`trials.mae`).
 ``--no-model-init`` skips the checkpoint and embeds with a random, untrained
 encoder -- a baseline showing how much the training actually buys you.
 ``--arch brief`` / ``--arch brief-mod`` skip the encoder entirely and retrieve on
@@ -55,15 +55,15 @@ import torch.nn as nn
 import torch.nn.functional as F
 from torchvision import datasets, transforms
 
-from grasp_embeddings.mae_patch_embd import brief
-from grasp_embeddings.mae_patch_embd.brief import BRIEF_ARCHES, BRIEF_MOD_GRID
-from grasp_embeddings.mae_patch_embd.geodesic import (
+from trials import brief
+from trials.brief import BRIEF_ARCHES, BRIEF_MOD_GRID
+from trials.geodesic import (
     ALPHA,
     GEODESIC_ARCH,
     downsample_avg,
     geodesic_matrix,
 )
-from grasp_embeddings.mae_patch_embd.mae import (
+from trials.mae import (
     ARCHES,
     DATASET_DIR,
     build_model,

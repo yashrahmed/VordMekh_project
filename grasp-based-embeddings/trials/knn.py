@@ -6,13 +6,13 @@ neighbours in cosine space. This is a non-parametric read of how
 class-discriminative the *self-supervised* representation is -- no head is
 trained, so it complements the linear probe in ``train_classifier.py``.
 
-    python -m grasp_embeddings.mae_patch_embd.knn --arch vit
-    python -m grasp_embeddings.mae_patch_embd.knn --arch cnn --k 5
-    python -m grasp_embeddings.mae_patch_embd.knn --arch no-enc  # raw-pixel baseline
-    python -m grasp_embeddings.mae_patch_embd.knn --arch brief      # random BRIEF
-    python -m grasp_embeddings.mae_patch_embd.knn --arch brief-mod  # structured BRIEF
-    python -m grasp_embeddings.mae_patch_embd.knn --arch geodesic   # geodesic histogram
-    python -m grasp_embeddings.mae_patch_embd.knn --no-model-init  # baseline
+    python -m trials.knn --arch vit
+    python -m trials.knn --arch cnn --k 5
+    python -m trials.knn --arch no-enc  # raw-pixel baseline
+    python -m trials.knn --arch brief      # random BRIEF
+    python -m trials.knn --arch brief-mod  # structured BRIEF
+    python -m trials.knn --arch geodesic   # geodesic histogram
+    python -m trials.knn --no-model-init  # baseline
 
 ``--arch {vit,cnn,jepa,ijepa-canonical}`` selects which pretrained encoder to load
 (``ijepa-canonical`` is I-JEPA trained with canonical block masking). ``--arch
@@ -45,14 +45,14 @@ import torch.nn as nn
 import torch.nn.functional as F
 from torchvision import datasets
 
-from grasp_embeddings.mae_patch_embd import brief
-from grasp_embeddings.mae_patch_embd.geodesic import (
+from trials import brief
+from trials.geodesic import (
     ALPHA,
     DEFAULT_CONNECTIVITY,
     GEODESIC_ARCH,
     geodesic_features,
 )
-from grasp_embeddings.mae_patch_embd.mae import (
+from trials.mae import (
     ARCHES,
     DATASET_DIR,
     build_model,
