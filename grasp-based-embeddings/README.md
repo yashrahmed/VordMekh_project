@@ -1,11 +1,12 @@
 # grasp-based-embeddings
 
-Generate labeled data describing the **local shape** of 2D objects as sensed by a
-"feeling hand" — five fingers that extend in straight lines from a posed hand
-until they touch the shape. A sample is `(p, h, l1..l5)`: the hand pose plus the
-five contact distances.
+Small **self-supervised encoders** trained on MNIST: a Masked Autoencoder
+(He et al. 2021) in ViT and conv-net flavors, plus an I-JEPA (Assran et al.
+2023), with nearest-neighbor retrieval, k-NN, and classification evals over
+their encoder embeddings. The driving question — can we beat the MNIST
+benchmark with representations learned without label supervision?
 
-See [`todo.md`](todo.md) for the full idea, design notes, and roadmap.
+See [`todo.md`](todo.md) for the full idea, design notes, findings, and roadmap.
 
 ## Install
 
@@ -16,50 +17,6 @@ virtualenv, resolves dependencies from `uv.lock`, and installs the package
 ```bash
 uv sync
 ```
-
-## Quick start
-
-```bash
-# Render a single hand probing the "A" shape -> out/demo.png
-uv run python -m grasp_embeddings.demo
-
-# Generate a labeled dataset and a scatter visualization
-uv run python -m grasp_embeddings.demo --dataset 2000
-
-# Run the tests
-uv run pytest
-```
-
-Or from Python:
-
-```python
-import numpy as np
-from grasp_embeddings.shapes import letter_a
-from grasp_embeddings.hand import Hand
-from grasp_embeddings.sampler import generate_dataset
-
-shape = letter_a()
-hand = Hand.fan(n_fingers=5, spread_deg=80, max_length=3.0)
-
-# One reading at a chosen pose:
-lengths = hand.at(position=(0.0, 0.0), heading=0.0).sense(shape)
-
-# A whole dataset of (p, h, l1..l5):
-data = generate_dataset(shape, hand, n=2000, rng=np.random.default_rng(0))
-```
-
-## Layout
-
-- `geometry.py` — ray–segment intersection, point-in-polygon (even-odd, holes).
-- `shapes.py` — `Shape` (rings = outer + holes) and example shapes.
-- `hand.py` — `Hand` / `Finger`; `sense()` casts the five rays.
-- `sampler.py` — `generate_dataset()` and save/load helpers.
-- `visualize.py` — matplotlib rendering of a probe and of a dataset.
-- `demo.py` — runnable entry point.
-- `mae_patch_embd/` — small **self-supervised encoders** trained on MNIST: a
-  Masked Autoencoder (He et al. 2021) in ViT and conv-net flavors, plus an
-  I-JEPA (Assran et al. 2023), with nearest-neighbor retrieval, k-NN, and
-  classification evals over their encoder embeddings. See below.
 
 ## MAE patch embeddings (`mae_patch_embd`)
 

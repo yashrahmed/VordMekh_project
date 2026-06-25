@@ -5,7 +5,7 @@ build-backend = "setuptools.build_meta"
 [project]
 name = "grasp-based-embeddings"
 version = "0.1.0"
-description = "Local 2D shape descriptors from a five-finger 'feeling hand'."
+description = "Self-supervised patch encoders (MAE / I-JEPA) for MNIST."
 requires-python = ">=3.9"
 dependencies = [
     "numpy>=1.24",
