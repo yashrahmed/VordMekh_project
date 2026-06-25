@@ -10,12 +10,13 @@ A pared-down I-JEPA, canonical in spirit:
 * **context encoder** -- the trainable tower; it sees every patch *outside* the
   target block.
 * **predictor** -- a slim Transformer that, given the encoded context tokens plus
-  mask tokens at the 4 target positions, predicts the target encoder's latent
-  representations there. The loss is the MSE in representation space.
+  a mask token at one target position, predicts the target encoder's latent
+  representation there. The loss is the MSE in representation space.
 
-Only one target block is sampled per step, so there is no cross-block attention
-to suppress -- this matches the canonical setup, where target blocks are
-predicted independently of one another.
+Each of the block's 4 target patches is predicted **independently** -- one
+predictor pass per patch with a single mask token -- so the target patches never
+attend to one another (they attend only to the context). Only one block is
+sampled per step, so there is likewise no cross-block attention.
 
 Images are **always** bbox-preprocessed (each digit cropped to its bounding box
 and stretched to fill the frame) and the patch/embed dimensions match ``trials``'
@@ -99,9 +100,11 @@ class ScatterIJEPA(nn.Module):
     Shares I-JEPA's twin-tower + predictor structure (see :class:`trials.mae.JEPA`):
     a trainable context encoder, an EMA target encoder (stop-gradient, the source
     of the prediction targets, which prevents collapse), and a predictor that maps
-    context tokens + mask tokens to the target reps. The only difference from the
+    context tokens + a mask token to one target rep. The only difference from the
     ``trials`` versions is the masking: exactly one contiguous 2x2 block, at a
-    random grid position, is the target; everything else is context.
+    random grid position, is the target; everything else is context. Each of the
+    block's 4 target patches is predicted independently (a separate predictor pass
+    per patch), so target patches never attend to one another.
 
     Downstream :meth:`encode` uses the *target* encoder over the full image (the
     tower that has always seen whole images).
@@ -180,7 +183,6 @@ class ScatterIJEPA(nn.Module):
     def forward(self, imgs: torch.Tensor):
         b = imgs.size(0)
         patches = patchify(imgs)  # (B, N, patch_dim)
-        d = self.embed_dim
 
         # --- targets: full-image target encoder, stop-gradient, LayerNorm'd ---
         # LayerNorm over the feature dim before the loss (I-JEPA's loss_fn, Assran
@@ -204,13 +206,18 @@ class ScatterIJEPA(nn.Module):
         pred_pos = self.pred_pos[0]  # (N, pred_dim)
         ctx_tok = self.pred_embed(ctx) + pred_pos[ctx_ids].unsqueeze(0)
 
-        # --- predict the target block from the context + mask tokens ---
-        mask_tok = (self.mask_token + pred_pos[block_ids].unsqueeze(0)).expand(b, -1, -1)
-        seq = self.predictor(torch.cat([ctx_tok, mask_tok], dim=1))
-        pred = self.pred_proj(seq[:, n_ctx:])  # (B, 4, enc_dim)
-
-        # --- latent-space MSE on the target block ---
-        loss = F.mse_loss(pred, target_tokens[:, block_ids])
+        # --- predict each target patch INDEPENDENTLY ---
+        # One predictor pass per target patch, each with a single mask token, so
+        # the target patches never share a sequence and thus never attend to one
+        # another -- they attend only to the context. The per-patch latent-space
+        # MSEs are averaged over the block.
+        loss = imgs.new_zeros(())
+        for pid in block_ids.tolist():
+            mask_tok = (self.mask_token + pred_pos[pid].view(1, 1, -1)).expand(b, -1, -1)
+            seq = self.predictor(torch.cat([ctx_tok, mask_tok], dim=1))
+            pred = self.pred_proj(seq[:, n_ctx:])  # (B, 1, enc_dim)
+            loss = loss + F.mse_loss(pred[:, 0], target_tokens[:, pid])
+        loss = loss / block_ids.numel()
 
         # 0/1 mask (1 = predicted) in original patch order, for interface parity.
         mask = torch.zeros(b, self.n_patches, device=imgs.device)
