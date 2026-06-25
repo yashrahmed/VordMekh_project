@@ -250,6 +250,8 @@ head edges past every fine-tuned model.
 
 12. **Independent per-patch target prediction did not help.** Predicting each masked patch in its own predictor pass (no cross-target attention) instead of all jointly was neutral-to-worse than the default scatter I-JEPA (50 ep, no preproc, flatten): probe 97.60% vs 97.72%, 5-NN 93.84% vs 94.70% — the joint prediction's cross-target coupling is mildly useful; not pursued.
 
+13. **Overlapping 14x14 patches did not help.** Replacing the 7x7 non-overlapping grid (16 patches, 2048-d flatten) with 14x14 patches at stride 7 (3x3 = 9 overlapping patches, 1152-d flatten) on scatter I-JEPA looked promising *raw* — 50 ep flatten probe 97.86% vs 97.72% and 5-NN 96.79% vs 94.70%, holding at 100 ep (probe 98.59%, 5-NN 97.85%). But the gain was just the larger windows absorbing scale/translation nuisance — exactly what bbox preproc (finding 10) already does, more cheaply. With `--preproc` the advantage vanished: at 50 ep patch-14 gave probe 98.70% / 5-NN 97.51%, *below* patch-7 preproc's 98.93% flatten probe, and well below the study best (patch-7 preproc 500 ep, 99.15% probe / 99.01% 5-NN). Patch size and geometry normalization are substitutes, not complements; not pursued.
+
 **Caveat now flips to the task.** With the epoch confound removed, MNIST's ~97%
 pixel floor is simply too high to separate these pretexts. For real headroom,
 move to CIFAR-10 or a scarce-label regime where a better representation can
