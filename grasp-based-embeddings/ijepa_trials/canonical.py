@@ -13,6 +13,10 @@ baseline one change at a time. **Step 1 (current):**
 * **Context** -- the remaining ``N_PATCHES - N_TARGETS`` (=8) patches.
 * **Encoder** -- ``enc_dim`` 128, predictor 64. Same EMA target encoder +
   latent-space MSE as every I-JEPA here.
+* **Positions** -- learned absolute embeddings (ViT-style). Fixed 2D sin-cos
+  tables (the canonical recipe) were tested and rejected: neutral-to-slightly
+  negative at this 16-position grid (98.86% vs 98.99%, -0.13 pt single-seed,
+  50 ep flatten probe).
 
 This is one step short of scatter, which masks 12 of 16 patches (vs 8 here) and is
 otherwise the same single-group joint prediction.
@@ -219,6 +223,7 @@ def _ckpt_dict(model, seed, *, opt=None, sched=None, epoch=None) -> dict:
             "n_targets": N_TARGETS,
             "targets": "single-patch-joint",
             "context": "remaining-patches",
+            "pos_embed": "learned-absolute",
             "preproc": True,
             "seed": seed,
         },
