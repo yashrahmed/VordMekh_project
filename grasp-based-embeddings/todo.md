@@ -248,6 +248,8 @@ head edges past every fine-tuned model.
    | linear probe | 98.93% | **99.15%** | 99.11% |
    | 5-NN | — | **99.01%** | 98.23% |
 
+12. **Independent per-patch target prediction did not help.** Predicting each masked patch in its own predictor pass (no cross-target attention) instead of all jointly was neutral-to-worse than the default scatter I-JEPA (50 ep, no preproc, flatten): probe 97.60% vs 97.72%, 5-NN 93.84% vs 94.70% — the joint prediction's cross-target coupling is mildly useful; not pursued.
+
 **Caveat now flips to the task.** With the epoch confound removed, MNIST's ~97%
 pixel floor is simply too high to separate these pretexts. For real headroom,
 move to CIFAR-10 or a scarce-label regime where a better representation can
