@@ -1,24 +1,21 @@
-"""Canonical I-JEPA on MNIST with multi-block targets (Assran et al., 2023).
+"""I-JEPA on MNIST, converging the canonical design toward scatter step by step.
 
-A faithful (small-scale) port of canonical I-JEPA, in contrast to the single-2x2
-``ijepa.py``:
+Starts from canonical I-JEPA (Assran et al., 2023) and walks it toward the scatter
+baseline one change at a time. **Step 1 (current):**
 
 * **Grid** -- 7x7-px patches on the 28x28 image => a 4x4 = 16-patch grid (same as
-  ``ijepa.py`` and the scatter baseline), so this isolates the *masking scheme*
-  against scatter at matched resolution.
-* **Targets** -- the canonical multi-block sampling: ``N_TARGET_BLOCKS`` blocks,
-  each a rectangle of area ``TARGET_SCALE`` of the grid with aspect ratio in
-  ``TARGET_ASPECT``, at a random position, **resampled every step** and allowed
-  to overlap each other (canonical's ``allow_overlap`` governs context-vs-target
-  only). Each block is predicted in its own predictor pass: **intra-block
-  attention on** (a block's patches attend to each other), **inter-block
-  attention off** (blocks are predicted independently).
-* **Context** -- **fixed to the entire grid** with the target union removed (no
-  context-block sampling): the context encoder always sees every non-target
-  patch. This departs from the official collator (which samples a 0.85-1.0
-  context block first) to maximise visible context.
+  the scatter baseline), so this isolates the *masking scheme* at matched
+  resolution.
+* **Targets** -- no contiguous blocks. :data:`N_TARGETS` (=8) **single patches**
+  are picked at random as the targets, **resampled every step**. They form one
+  conceptual block: predicted in a single predictor pass, so the target mask
+  tokens attend to each other (intra-block attention on).
+* **Context** -- the remaining ``N_PATCHES - N_TARGETS`` (=8) patches.
 * **Encoder** -- ``enc_dim`` 128, predictor 64. Same EMA target encoder +
   latent-space MSE as every I-JEPA here.
+
+This is one step short of scatter, which masks 12 of 16 patches (vs 8 here) and is
+otherwise the same single-group joint prediction.
 
 Images are **always** bbox-preprocessed; downstream :meth:`encode` flattens the
 16 tokens (16 * 128 = 2048-d). Both match the rest of ``ijepa_trials``.
@@ -26,14 +23,12 @@ Images are **always** bbox-preprocessed; downstream :meth:`encode` flattens the
     python -m ijepa_trials.canonical --epochs 50 --seed 0
 
 Writes <project>/models/ijepa_mnist_canonical_<epochs>ep.pt (gitignored, disjoint
-from ``ijepa_mnist_scatter*`` and ``trials``' names). Checkpointed every 50
-epochs and resumable, exactly like ``ijepa.py``.
+from ``trials``' names). Checkpointed every 50 epochs and resumable.
 """
 
 from __future__ import annotations
 
 import argparse
-import math
 from pathlib import Path
 
 import torch
@@ -66,41 +61,14 @@ GRID = IMG_SIZE // PATCH  # 4
 N_PATCHES = GRID * GRID  # 16
 PATCH_DIM = PATCH * PATCH  # 49
 
-# Canonical multi-block sampling (Assran 2023; values from the official
-# in1k_vith14 config). Targets may overlap each other. The context is **fixed to
-# the entire grid** with the target union removed (no context-block sampling) --
-# the encoder always sees every non-target patch.
-N_TARGET_BLOCKS = 4
-TARGET_SCALE = (0.15, 0.20)
-TARGET_ASPECT = (0.75, 1.5)
-MIN_KEEP_CTX = 4  # resample if carving leaves fewer context patches
-MIN_KEEP_TGT = 1
+# Step 1 toward scatter: no contiguous blocks. Pick N_TARGETS single patches at
+# random as the targets (one conceptual "block": they attend to each other in a
+# single predictor pass); the remaining N_PATCHES - N_TARGETS patches are context.
+N_TARGETS = 8
 
 ARCH_TAG = "canonical"
 CKPT_STEM = f"ijepa_mnist_{ARCH_TAG}"
 DEFAULT_ENC_DIM = 128  # predictor = enc_dim // 2
-
-
-# --------------------------------------------------------------------------- #
-# Block sampling
-# --------------------------------------------------------------------------- #
-def _uniform(lo: float, hi: float) -> float:
-    return lo + (hi - lo) * torch.rand(1).item()
-
-
-def _sample_rect(grid: int, scale_range, aspect_range) -> list[int]:
-    """One rectangular block's flattened patch indices (canonical sampling).
-
-    Area = scale * grid^2, sides from the aspect ratio, random valid position.
-    """
-    n = grid * grid
-    area = _uniform(*scale_range) * n
-    aspect = _uniform(*aspect_range)
-    h = max(1, min(grid, int(round(math.sqrt(area * aspect)))))
-    w = max(1, min(grid, int(round(math.sqrt(area / aspect)))))
-    top = torch.randint(0, grid - h + 1, (1,)).item()
-    left = torch.randint(0, grid - w + 1, (1,)).item()
-    return [(top + i) * grid + (left + j) for i in range(h) for j in range(w)]
 
 
 # --------------------------------------------------------------------------- #
@@ -115,7 +83,7 @@ class Tower(ViTTower):
 
 
 class CanonicalIJEPA(nn.Module):
-    """Canonical multi-block I-JEPA on the 4x4 grid (see module docstring)."""
+    """I-JEPA on the 4x4 grid with N_TARGETS single-patch joint targets (see module docstring)."""
 
     def __init__(
         self,
@@ -164,27 +132,17 @@ class CanonicalIJEPA(nn.Module):
         return feats.flatten(1) if pool == "flatten" else feats.mean(dim=1)
 
     def _sample_masks(self, device: torch.device):
-        """One canonical mask layout (batch-shared, K=1), resampled each call.
+        """One mask layout (batch-shared, K=1), resampled each call.
 
-        Returns ``(ctx_ids, target_blocks)``: ``ctx_ids`` the context patch indices
-        (**the entire grid** minus the target union); ``target_blocks`` a list of
-        :data:`N_TARGET_BLOCKS` index tensors (targets may overlap each other).
-        Bounded retries keep at least :data:`MIN_KEEP_CTX` context patches.
+        Picks :data:`N_TARGETS` single patches at random as the targets and the
+        remaining patches as context. Returns ``(ctx_ids, target_ids)``, both 1-D
+        index tensors. The targets form a single conceptual block (predicted in one
+        joint pass), but are no longer spatially contiguous.
         """
-        g = self.grid
-        all_patches = set(range(g * g))
-        ctx, blocks = [], []
-        for _ in range(50):
-            blocks = [_sample_rect(g, TARGET_SCALE, TARGET_ASPECT) for _ in range(N_TARGET_BLOCKS)]
-            tgt_union = {p for blk in blocks for p in blk}
-            ctx = sorted(all_patches - tgt_union)
-            if len(ctx) >= MIN_KEEP_CTX and all(len(b) >= MIN_KEEP_TGT for b in blocks):
-                break
-        ctx_ids = torch.tensor(ctx, dtype=torch.long, device=device)
-        target_blocks = [
-            torch.tensor(sorted(set(b)), dtype=torch.long, device=device) for b in blocks
-        ]
-        return ctx_ids, target_blocks
+        perm = torch.randperm(self.n_patches, device=device)
+        target_ids = perm[: N_TARGETS].sort().values
+        ctx_ids = perm[N_TARGETS:].sort().values
+        return ctx_ids, target_ids
 
     def forward(self, imgs: torch.Tensor):
         b = imgs.size(0)
@@ -195,28 +153,24 @@ class CanonicalIJEPA(nn.Module):
             target_tokens = self.target.tokens(imgs)
             target_tokens = F.layer_norm(target_tokens, (target_tokens.size(-1),))
 
-        ctx_ids, target_blocks = self._sample_masks(imgs.device)
+        ctx_ids, target_ids = self._sample_masks(imgs.device)
         n_ctx = ctx_ids.numel()
 
-        # --- encode the carved context with the context encoder ---
+        # --- encode the context patches with the context encoder ---
         ctx = self.context.tokens_from(patches, ctx_ids.unsqueeze(0).expand(b, -1))
         pred_pos = self.pred_pos[0]  # (N, pred_dim)
         ctx_tok = self.pred_embed(ctx) + pred_pos[ctx_ids].unsqueeze(0)
 
-        # --- predict each target block in its OWN pass ---
-        # Intra-block attention: a block's mask tokens share one sequence, so they
-        # attend to each other (and the context). Inter-block: separate passes, so
-        # different blocks never attend to one another. Loss averaged over blocks.
-        loss = imgs.new_zeros(())
-        for blk in target_blocks:
-            mask_tok = (self.mask_token + pred_pos[blk].unsqueeze(0)).expand(b, -1, -1)
-            seq = self.predictor(torch.cat([ctx_tok, mask_tok], dim=1))
-            pred = self.pred_proj(seq[:, n_ctx:])  # (B, |blk|, enc_dim)
-            loss = loss + F.mse_loss(pred, target_tokens[:, blk])
-        loss = loss / len(target_blocks)
+        # --- predict all N_TARGETS patches JOINTLY in one pass ---
+        # The target mask tokens share one sequence, so they attend to each other
+        # (and the context): single conceptual block, intra-block attention on.
+        mask_tok = (self.mask_token + pred_pos[target_ids].unsqueeze(0)).expand(b, -1, -1)
+        seq = self.predictor(torch.cat([ctx_tok, mask_tok], dim=1))
+        pred = self.pred_proj(seq[:, n_ctx:])  # (B, N_TARGETS, enc_dim)
+        loss = F.mse_loss(pred, target_tokens[:, target_ids])
 
         mask = torch.zeros(b, self.n_patches, device=imgs.device)
-        mask[:, torch.cat(target_blocks).unique()] = 1.0
+        mask[:, target_ids] = 1.0
         return loss, None, mask
 
 
@@ -262,10 +216,9 @@ def _ckpt_dict(model, seed, *, opt=None, sched=None, epoch=None) -> dict:
             "n_patches": N_PATCHES,
             "enc_dim": model.embed_dim,
             "pred_dim": model.pred_dim,
-            "n_target_blocks": N_TARGET_BLOCKS,
-            "target_scale": TARGET_SCALE,
-            "target_aspect": TARGET_ASPECT,
-            "context": "full-grid-minus-targets",
+            "n_targets": N_TARGETS,
+            "targets": "single-patch-joint",
+            "context": "remaining-patches",
             "preproc": True,
             "seed": seed,
         },
@@ -303,8 +256,8 @@ def train(
     set_seed(seed)
     device = device or pick_device()
     print(
-        f"Device: {device}  arch: {ARCH_TAG} (4x4 grid, multi-block, full-grid "
-        f"context, preproc)  enc_dim: {enc_dim}  seed: {seed}"
+        f"Device: {device}  arch: {ARCH_TAG} (4x4 grid, {N_TARGETS} single-patch "
+        f"joint targets, preproc)  enc_dim: {enc_dim}  seed: {seed}"
     )
 
     MODELS_DIR.mkdir(parents=True, exist_ok=True)
