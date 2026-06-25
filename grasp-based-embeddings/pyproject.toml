@@ -16,7 +16,7 @@ dependencies = [
 ]
 
 [tool.setuptools]
-packages = ["trials"]
+packages = ["trials", "ijepa_trials"]
 
 [dependency-groups]
 dev = ["pytest>=8"]
