@@ -68,6 +68,8 @@ PATCH_DIM = PATCH * PATCH  # 49
 # Step 1 toward scatter: no contiguous blocks. Pick N_TARGETS single patches at
 # random as the targets (one conceptual "block": they attend to each other in a
 # single predictor pass); the remaining N_PATCHES - N_TARGETS patches are context.
+# N_TARGETS is the *default* split (8 targets / 8 context); it is configurable per
+# run (constructor arg / --n-targets), so a split is "n_targets-(N_PATCHES - n_targets)".
 N_TARGETS = 8
 
 ARCH_TAG = "canonical"
@@ -100,6 +102,7 @@ class CanonicalIJEPA(nn.Module):
         pred_depth: int = 2,
         pred_heads: int = 4,
         momentum: float = 0.996,
+        n_targets: int = N_TARGETS,
     ):
         super().__init__()
         self.n_patches = n_patches
@@ -107,6 +110,9 @@ class CanonicalIJEPA(nn.Module):
         self.embed_dim = enc_dim
         self.pred_dim = pred_dim
         self.momentum = momentum
+        if not 0 < n_targets < n_patches:
+            raise ValueError(f"n_targets must be in (0, {n_patches}); got {n_targets}")
+        self.n_targets = n_targets
         self.grid = int(round(n_patches**0.5))
 
         self.context = Tower(patch_dim, n_patches, enc_dim, enc_depth, enc_heads)
@@ -138,14 +144,14 @@ class CanonicalIJEPA(nn.Module):
     def _sample_masks(self, device: torch.device):
         """One mask layout (batch-shared, K=1), resampled each call.
 
-        Picks :data:`N_TARGETS` single patches at random as the targets and the
+        Picks :attr:`n_targets` single patches at random as the targets and the
         remaining patches as context. Returns ``(ctx_ids, target_ids)``, both 1-D
         index tensors. The targets form a single conceptual block (predicted in one
         joint pass), but are no longer spatially contiguous.
         """
         perm = torch.randperm(self.n_patches, device=device)
-        target_ids = perm[: N_TARGETS].sort().values
-        ctx_ids = perm[N_TARGETS:].sort().values
+        target_ids = perm[: self.n_targets].sort().values
+        ctx_ids = perm[self.n_targets:].sort().values
         return ctx_ids, target_ids
 
     def forward(self, imgs: torch.Tensor):
@@ -178,33 +184,48 @@ class CanonicalIJEPA(nn.Module):
         return loss, None, mask
 
 
-def build_model(enc_dim: int = DEFAULT_ENC_DIM) -> CanonicalIJEPA:
-    return CanonicalIJEPA(enc_dim=enc_dim, pred_dim=enc_dim // 2)
+def build_model(enc_dim: int = DEFAULT_ENC_DIM, n_targets: int = N_TARGETS) -> CanonicalIJEPA:
+    return CanonicalIJEPA(enc_dim=enc_dim, pred_dim=enc_dim // 2, n_targets=n_targets)
 
 
 # --------------------------------------------------------------------------- #
 # Checkpoints (mirrors ijepa.py, with the canonical stem)
 # --------------------------------------------------------------------------- #
-def model_path(epochs: int) -> Path:
-    return final_path(CKPT_STEM, epochs)
+def stem_for(n_targets: int = N_TARGETS) -> str:
+    """Checkpoint stem, namespaced by split so non-default runs don't collide.
+
+    The default 8-target split keeps the bare ``CKPT_STEM`` name (back-compat with
+    existing checkpoints); other splits get a ``_t<n_targets>`` suffix.
+    """
+    return CKPT_STEM if n_targets == N_TARGETS else f"{CKPT_STEM}_t{n_targets}"
 
 
-def find_checkpoint(epochs: int | None = None) -> Path:
+def model_path(epochs: int, n_targets: int = N_TARGETS) -> Path:
+    return final_path(stem_for(n_targets), epochs)
+
+
+def find_checkpoint(epochs: int | None = None, n_targets: int = N_TARGETS) -> Path:
+    stem = stem_for(n_targets)
     if epochs is not None:
-        path = model_path(epochs)
+        path = model_path(epochs, n_targets)
         if not path.exists():
             raise FileNotFoundError(
                 f"No checkpoint at {path}. Train one with "
-                f"`python -m ijepa_trials.canonical --epochs {epochs}`."
+                f"`python -m ijepa_trials.canonical --epochs {epochs} --n-targets {n_targets}`."
             )
         return path
     candidates = sorted(
-        MODELS_DIR.glob(f"{CKPT_STEM}_*ep.pt"),
+        (
+            p
+            for p in MODELS_DIR.glob(f"{stem}_*ep.pt")
+            # exact-stem match: guard the default stem against `_t<N>` variants
+            if p.stem.rsplit("_", 1)[0] == stem
+        ),
         key=lambda p: int(p.stem.rsplit("_", 1)[1].removesuffix("ep")),
     )
     if not candidates:
         raise FileNotFoundError(
-            f"No checkpoint for {CKPT_STEM!r} in {MODELS_DIR}. Train one with "
+            f"No checkpoint for {stem!r} in {MODELS_DIR}. Train one with "
             f"`python -m ijepa_trials.canonical`."
         )
     return candidates[-1]
@@ -220,7 +241,7 @@ def _ckpt_dict(model, seed, *, opt=None, sched=None, epoch=None) -> dict:
             "n_patches": N_PATCHES,
             "enc_dim": model.embed_dim,
             "pred_dim": model.pred_dim,
-            "n_targets": N_TARGETS,
+            "n_targets": model.n_targets,
             "targets": "single-patch-joint",
             "context": "remaining-patches",
             "pos_embed": "learned-absolute",
@@ -256,30 +277,33 @@ def train(
     lr: float = 1.5e-3,
     seed: int = 0,
     enc_dim: int = DEFAULT_ENC_DIM,
+    n_targets: int = N_TARGETS,
     device: torch.device | None = None,
 ) -> Path:
     set_seed(seed)
     device = device or pick_device()
+    stem = stem_for(n_targets)
     print(
-        f"Device: {device}  arch: {ARCH_TAG} (4x4 grid, {N_TARGETS} single-patch "
-        f"joint targets, preproc)  enc_dim: {enc_dim}  seed: {seed}"
+        f"Device: {device}  arch: {ARCH_TAG} (4x4 grid, {n_targets} single-patch "
+        f"joint targets / {N_PATCHES - n_targets} context, preproc)  "
+        f"enc_dim: {enc_dim}  seed: {seed}"
     )
 
     MODELS_DIR.mkdir(parents=True, exist_ok=True)
-    out = model_path(epochs)
+    out = model_path(epochs, n_targets)
     if out.exists():
         print(f"Final checkpoint already exists -> {out} (nothing to do)")
         return out
 
     loader = make_loader(batch_size)
-    model = build_model(enc_dim).to(device)
+    model = build_model(enc_dim, n_targets=n_targets).to(device)
     opt = torch.optim.AdamW(model.parameters(), lr=lr, weight_decay=0.05)
     sched = torch.optim.lr_scheduler.OneCycleLR(
         opt, max_lr=lr, epochs=epochs, steps_per_epoch=len(loader)
     )
 
     start_epoch = 1
-    resume = find_latest_partial(CKPT_STEM, epochs)
+    resume = find_latest_partial(stem, epochs)
     if resume is not None:
         path, done = resume
         ckpt = torch.load(path, map_location=device)
@@ -305,13 +329,13 @@ def train(
         print(f"epoch {epoch:3d}/{epochs}  latent_mse {running / seen:.5f}")
 
         if epoch % CKPT_INTERVAL == 0 and epoch < epochs:
-            part = partial_path(CKPT_STEM, epoch, epochs)
+            part = partial_path(stem, epoch, epochs)
             torch.save(_ckpt_dict(model, seed, opt=opt, sched=sched, epoch=epoch), part)
-            clear_partials(CKPT_STEM, epochs, keep=epoch)
+            clear_partials(stem, epochs, keep=epoch)
             print(f"  checkpoint -> {part}")
 
     torch.save(_ckpt_dict(model, seed), out)
-    clear_partials(CKPT_STEM, epochs)
+    clear_partials(stem, epochs)
     print(f"Saved model -> {out}")
     return out
 
@@ -325,11 +349,16 @@ def main() -> None:
         "--enc-dim", type=int, default=DEFAULT_ENC_DIM,
         help="Per-patch embedding dim (predictor = enc_dim // 2).",
     )
+    parser.add_argument(
+        "--n-targets", type=int, default=N_TARGETS,
+        help=f"Number of single-patch targets per step (context = {N_PATCHES} - "
+        f"n_targets). Default {N_TARGETS} (an {N_TARGETS}-{N_PATCHES - N_TARGETS} split).",
+    )
     parser.add_argument("--seed", type=int, default=0, help="RNG seed.")
     args = parser.parse_args()
     train(
         epochs=args.epochs, batch_size=args.batch_size, lr=args.lr,
-        seed=args.seed, enc_dim=args.enc_dim,
+        seed=args.seed, enc_dim=args.enc_dim, n_targets=args.n_targets,
     )
 
 
