@@ -6,11 +6,12 @@ baseline one change at a time. **Step 1 (current):**
 * **Grid** -- 7x7-px patches on the 28x28 image => a 4x4 = 16-patch grid (same as
   the scatter baseline), so this isolates the *masking scheme* at matched
   resolution.
-* **Targets** -- no contiguous blocks. :data:`N_TARGETS` (=8) **single patches**
-  are picked at random as the targets, **resampled every step**. They form one
-  conceptual block: predicted in a single predictor pass, so the target mask
-  tokens attend to each other (intra-block attention on).
-* **Context** -- the remaining ``N_PATCHES - N_TARGETS`` (=8) patches.
+* **Targets** -- no contiguous blocks. :data:`N_TARGETS` (=10, the sweep optimum;
+  see todo finding 15) **single patches** are picked at random as the targets,
+  **resampled every step**. They form one conceptual block: predicted in a single
+  predictor pass, so the target mask tokens attend to each other (intra-block
+  attention on). Configurable per run via ``--n-targets``.
+* **Context** -- the remaining ``N_PATCHES - N_TARGETS`` (=6) patches.
 * **Encoder** -- ``enc_dim`` 128, predictor 64. Same EMA target encoder +
   latent-space MSE as every I-JEPA here.
 * **Positions** -- learned absolute embeddings (ViT-style). Fixed 2D sin-cos
@@ -18,7 +19,7 @@ baseline one change at a time. **Step 1 (current):**
   negative at this 16-position grid (98.86% vs 98.99%, -0.13 pt single-seed,
   50 ep flatten probe).
 
-This is one step short of scatter, which masks 12 of 16 patches (vs 8 here) and is
+This is one step short of scatter, which masks 12 of 16 patches (vs 10 here) and is
 otherwise the same single-group joint prediction.
 
 Images are **always** bbox-preprocessed; downstream :meth:`encode` flattens the
@@ -68,9 +69,10 @@ PATCH_DIM = PATCH * PATCH  # 49
 # Step 1 toward scatter: no contiguous blocks. Pick N_TARGETS single patches at
 # random as the targets (one conceptual "block": they attend to each other in a
 # single predictor pass); the remaining N_PATCHES - N_TARGETS patches are context.
-# N_TARGETS is the *default* split (8 targets / 8 context); it is configurable per
-# run (constructor arg / --n-targets), so a split is "n_targets-(N_PATCHES - n_targets)".
-N_TARGETS = 8
+# N_TARGETS is the *default* split (10 targets / 6 context -- the sweep optimum,
+# see todo finding 15); it is configurable per run (constructor arg / --n-targets),
+# so a split is "n_targets-(N_PATCHES - n_targets)".
+N_TARGETS = 10
 
 ARCH_TAG = "canonical"
 CKPT_STEM = f"ijepa_mnist_{ARCH_TAG}"
@@ -194,8 +196,8 @@ def build_model(enc_dim: int = DEFAULT_ENC_DIM, n_targets: int = N_TARGETS) -> C
 def stem_for(n_targets: int = N_TARGETS) -> str:
     """Checkpoint stem, namespaced by split so non-default runs don't collide.
 
-    The default 8-target split keeps the bare ``CKPT_STEM`` name (back-compat with
-    existing checkpoints); other splits get a ``_t<n_targets>`` suffix.
+    The default split (:data:`N_TARGETS`) keeps the bare ``CKPT_STEM`` name; other
+    splits get a ``_t<n_targets>`` suffix.
     """
     return CKPT_STEM if n_targets == N_TARGETS else f"{CKPT_STEM}_t{n_targets}"
 
