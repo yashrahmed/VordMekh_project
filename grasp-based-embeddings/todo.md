@@ -21,7 +21,8 @@
    1. [x] Run a test using cropped and scaled images — bbox-crop + stretch-to-frame is a large win at 50 ep; see finding 10.
    2. [x] Run a test using a different patching scheme (Closer to canonical IJEPA) — canonical block masking underperforms scatter masking at this resolution; see finding 9.
    3. [ ] Look into augmentation techniques.
-   4. [ ] Maybe? try increased emebedding dims?
+   4. [x] Tried increased embedding dims — didn't help.
+   7. [ ] Try a **Conv-net stem** (replace the linear patch embedding with a small conv front-end).
    5. [x] Re-run the bbox-preproc scatter JEPA at **500 ep** (run past the planned 300; flatten only, per request) — see finding 11: the preproc edge **holds** (flatten probe 99.15%, flatten 5-NN 99.01% — new bests) but is mostly *front-loading*; raw scatter nearly matches the probe at full budget.
    6. [ ] Account for known MNIST **label errors** when reading these results — the test set has ~15 human-validated mislabels (~0.15%), a soft ~99.8% ceiling that several frozen probes are now brushing against. See the corrected-test-set viewer / indices: [labelerrors.com](https://labelerrors.com) ([Northcutt et al., NeurIPS 2021](https://arxiv.org/pdf/2103.14749); [cleanlab/label-errors](https://github.com/cleanlab/label-errors)).
 3. Additional material follow up -
