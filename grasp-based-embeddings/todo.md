@@ -288,14 +288,37 @@ head edges past every fine-tuned model.
    | frozen flatten probe | 75 | 75 | 99.94% | 98.97% |
    | frozen flatten probe | 300 | 50 | 99.87% | 99.06% |
 
+   Split sweep, same old CNN stem, frozen flatten probe, 50 probe epochs:
+
+   | split (t-c) | n_targets | train @50 ep | test @50 ep |
+   |---|---:|---:|---:|
+   | 2-14 | 2 | 99.37% | 97.76% |
+   | 4-12 | 4 | 99.57% | 98.15% |
+   | 6-10 | 6 | 99.68% | 98.42% |
+   | 8-8 | 8 | 99.81% | 98.62% |
+   | **10-6** | **10** | **99.90%** | **98.80%** |
+   | 12-4 | 12 | 99.77% | 98.53% |
+
+   | split (t-c) | n_targets | train @75 ep | test @75 ep |
+   |---|---:|---:|---:|
+   | 2-14 | 2 | 99.11% | 97.70% |
+   | 4-12 | 4 | 99.61% | 98.19% |
+   | 6-10 | 6 | 99.53% | 98.38% |
+   | 8-8 | 8 | 99.82% | 98.60% |
+   | **10-6** | **10** | **99.90%** | **99.02%** |
+   | 12-4 | 12 | 99.90% | 98.91% |
+
    Probe length does not explain the gap: on the same 75-ep encoder, 50 probe
    epochs were best (99.02%), while 75 probe epochs overfit/slipped slightly
    (98.97%) and 25 probe epochs undertrained (98.87%). More encoder pretraining
    helped only modestly: 50→75→300 encoder epochs gave 98.80→99.02→99.06. The
-   best old-stem result therefore matches custom 10-6 at 75 ep (99.06%) but
-   trails custom 10-6 at 300 ep (99.12%) and 500 ep (99.21%). Verdict: keep the
-   old CNN stem as a documented branch, but it is not the path to the 99.5% goal
-   unless the architecture/objective changes substantially.
+   split sweep confirms the same best operating point as custom I-JEPA — **10
+   targets / 6 context** — with 12-4 as the closest runner-up at 75 ep. However,
+   the CNN stem is still **not outperforming custom I-JEPA**: its best 75-ep
+   result (99.02%) trails custom 10-6 at 75 ep (99.06%), and its 300-ep result
+   (99.06%) trails custom 10-6 at 300 ep (99.12%) and 500 ep (99.21%). Verdict:
+   keep the old CNN stem as a documented branch, but it is not the path to the
+   99.5% goal unless the architecture/objective changes substantially.
 
 **Caveat now flips to the task.** With the epoch confound removed, MNIST's ~97%
 pixel floor leaves little room to separate these pretexts, but the explicit goal

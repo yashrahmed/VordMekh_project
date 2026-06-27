@@ -65,14 +65,22 @@ def ckpt_stem(encoder: str, mode: str) -> str:
 # --------------------------------------------------------------------------- #
 # Encoder loading + feature extraction
 # --------------------------------------------------------------------------- #
-def load_encoder(device: torch.device, encoder: str, epochs: int | None) -> nn.Module:
+def load_encoder(
+    device: torch.device,
+    encoder: str,
+    epochs: int | None,
+    n_targets: int | None = None,
+) -> nn.Module:
     """Build the selected I-JEPA and load its pretrained weights (most-trained by default).
 
     Rebuilds at the embedding dim recorded in the base checkpoint's config, so the
     probe always matches the pretrained encoder regardless of its enc_dim.
     """
     mod = ENCODERS[encoder]
-    ckpt_path = mod.find_checkpoint(epochs)
+    find_kwargs = {}
+    if n_targets is not None:
+        find_kwargs["n_targets"] = n_targets
+    ckpt_path = mod.find_checkpoint(epochs, **find_kwargs)
     ckpt = torch.load(ckpt_path, map_location=device)
     config = ckpt.get("config", {})
     enc_dim = config.get("enc_dim")
@@ -262,6 +270,13 @@ def main() -> None:
         "(default: the most-trained one on disk).",
     )
     parser.add_argument(
+        "--n-targets",
+        type=int,
+        default=None,
+        help="Target-token count of the encoder checkpoint to load "
+        "(default: encoder module default).",
+    )
+    parser.add_argument(
         "--out",
         type=str,
         default=None,
@@ -279,7 +294,7 @@ def main() -> None:
     device = pick_device()
     print(f"Seed: {args.seed}  Device: {device}  encoder: {args.encoder}  pool: {POOL} (preproc)")
 
-    model = load_encoder(device, args.encoder, args.ckpt_epochs)
+    model = load_encoder(device, args.encoder, args.ckpt_epochs, args.n_targets)
 
     if args.unfreeze:
         print("Fine-tuning: encoder UNFROZEN, training encoder + head.")
