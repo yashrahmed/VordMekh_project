@@ -22,7 +22,7 @@
    2. [x] Run a test using a different patching scheme (Closer to canonical IJEPA) — canonical block masking underperforms scatter masking at this resolution; see finding 9.
    3. [ ] Look into augmentation techniques.
    4. [x] Tried increased embedding dims — didn't help.
-   7. [ ] Try a **Conv-net stem** (replace the linear patch embedding with a small conv front-end).
+   7. [x] Try a **Conv-net stem** (replace the linear patch embedding with a small conv front-end) — old stem `Conv3 s2 p1 -> Conv2 s2 p1` underperformed custom 10-6 I-JEPA; see finding 16.
    5. [x] Re-run the bbox-preproc scatter JEPA at **500 ep** (run past the planned 300; flatten only, per request) — see finding 11: the preproc edge **holds** (flatten probe 99.15%, flatten 5-NN 99.01% — new bests) but is mostly *front-loading*; raw scatter nearly matches the probe at full budget.
    6. [ ] Account for known MNIST **label errors** when reading these results — the test set has ~15 human-validated mislabels (~0.15%), a soft ~99.8% ceiling that several frozen probes are now brushing against. See the corrected-test-set viewer / indices: [labelerrors.com](https://labelerrors.com) ([Northcutt et al., NeurIPS 2021](https://arxiv.org/pdf/2103.14749); [cleanlab/label-errors](https://github.com/cleanlab/label-errors)).
 3. Additional material follow up -
@@ -48,6 +48,7 @@
 |---|---|---|---|
 | I-JEPA | 98.40% | **99.11%** | 98.69% |
 | I-JEPA (preproc, 500 ep) | — | **99.15%** | — |
+| CNN-stem I-JEPA (preproc, old stem, best) | — | **99.06%** | — |
 | ViT MAE (300 ep) | 98.13% | 98.87% | 98.7% |
 | ViT MAE (50 ep) | 97.4% | — | — |
 | conv MAE | — | — | **99.0%** |
@@ -270,6 +271,31 @@ head edges past every fine-tuned model.
    **300-ep confirmation.** Ran 10-6 at the full 300-ep budget (same protocol): **flatten probe test 99.12%** (train 99.86%) — a new best 300-ep number, edging the prior scatter 300-ep (99.11%) and the 8-8 line, and confirming the 75-ep edge holds. But the gain over its own 75-ep result is only +0.06 pt (99.06 → 99.12) for 4x the compute — the same front-loading / diminishing-returns pattern as finding 11. Pretext MSE plateaued ~0.29.
 
    **500-ep — new study best (99.21%).** Ran 10-6 at 500 ep (same protocol): **flatten probe test 99.21%** (train 99.82%) — the best frozen-flatten-probe number on record, clearing the prior study best (scatter 500-ep preproc 99.15%, finding 11) by +0.06 pt. Unlike the 75→300 step (+0.06 pt for 4x compute, pure front-loading), the **300→500 step gained +0.09 pt** (99.12 → 99.21), so 10-6 is *not* plateaued at 300 — extra budget still buys real accuracy, nudging the apparent asymptote up from ~99.15% toward ~99.2%+. Net: the split optimum holds at every budget tested, and at 500 ep both *raises* the ceiling over scatter and reaches it. Progression: 99.06 (75) → 99.12 (300) → 99.21 (500). Still ~0.6 pt under the soft ~99.8% MNIST label-error floor.
+
+16. **The old CNN stem is usable but not better than custom 10-6 I-JEPA.** Added
+   `ijepa_trials/cnn_stem_ijepa.py` as a feature-space I-JEPA variant: bbox
+   preproc stays on, a dense stem maps `1x28x28 -> Conv3 s2 p1 -> 32x14x14 ->
+   GELU -> Conv2 s2 p1 -> 64x8x8 -> GELU`, then the `8x8x64` feature map is
+   split into the same 16-token `4x4` grid of `2x2x64` feature patches. Default
+   split is still **10 targets / 6 context**; masking happens after the dense
+   stem, so this is a feature-space JEPA rather than strict raw-patch I-JEPA.
+
+   | old CNN-stem run | encoder ep | probe ep | train acc | test acc |
+   |---|---:|---:|---:|---:|
+   | frozen flatten probe | 50 | 50 | 99.90% | 98.80% |
+   | frozen flatten probe | 75 | 25 | 99.68% | 98.87% |
+   | frozen flatten probe | 75 | 50 | 99.90% | 99.02% |
+   | frozen flatten probe | 75 | 75 | 99.94% | 98.97% |
+   | frozen flatten probe | 300 | 50 | 99.87% | 99.06% |
+
+   Probe length does not explain the gap: on the same 75-ep encoder, 50 probe
+   epochs were best (99.02%), while 75 probe epochs overfit/slipped slightly
+   (98.97%) and 25 probe epochs undertrained (98.87%). More encoder pretraining
+   helped only modestly: 50→75→300 encoder epochs gave 98.80→99.02→99.06. The
+   best old-stem result therefore matches custom 10-6 at 75 ep (99.06%) but
+   trails custom 10-6 at 300 ep (99.12%) and 500 ep (99.21%). Verdict: keep the
+   old CNN stem as a documented branch, but it is not the path to the 99.5% goal
+   unless the architecture/objective changes substantially.
 
 **Caveat now flips to the task.** With the epoch confound removed, MNIST's ~97%
 pixel floor leaves little room to separate these pretexts, but the explicit goal
