@@ -1,4 +1,4 @@
-"""I-JEPA on MNIST, converging the canonical design toward scatter step by step.
+"""Custom I-JEPA on MNIST, converging the canonical design toward scatter.
 
 Starts from canonical I-JEPA (Assran et al., 2023) and walks it toward the scatter
 baseline one change at a time. **Step 1 (current):**
@@ -25,9 +25,9 @@ otherwise the same single-group joint prediction.
 Images are **always** bbox-preprocessed; downstream :meth:`encode` flattens the
 16 tokens (16 * 128 = 2048-d). Both match the rest of ``ijepa_trials``.
 
-    python -m ijepa_trials.canonical --epochs 50 --seed 0
+    python -m ijepa_trials.custom_ijepa --epochs 50 --seed 0
 
-Writes <project>/models/ijepa_mnist_canonical_<epochs>ep.pt (gitignored, disjoint
+Writes <project>/models/ijepa_mnist_custom_ijepa_<epochs>ep.pt (gitignored, disjoint
 from ``trials``' names). Checkpointed every 50 epochs and resumable.
 """
 
@@ -74,7 +74,7 @@ PATCH_DIM = PATCH * PATCH  # 49
 # so a split is "n_targets-(N_PATCHES - n_targets)".
 N_TARGETS = 10
 
-ARCH_TAG = "canonical"
+ARCH_TAG = "custom_ijepa"
 CKPT_STEM = f"ijepa_mnist_{ARCH_TAG}"
 DEFAULT_ENC_DIM = 128  # predictor = enc_dim // 2
 
@@ -90,7 +90,7 @@ class Tower(ViTTower):
         return self.encoder(x)
 
 
-class CanonicalIJEPA(nn.Module):
+class CustomIJEPA(nn.Module):
     """I-JEPA on the 4x4 grid with N_TARGETS single-patch joint targets (see module docstring)."""
 
     def __init__(
@@ -186,12 +186,12 @@ class CanonicalIJEPA(nn.Module):
         return loss, None, mask
 
 
-def build_model(enc_dim: int = DEFAULT_ENC_DIM, n_targets: int = N_TARGETS) -> CanonicalIJEPA:
-    return CanonicalIJEPA(enc_dim=enc_dim, pred_dim=enc_dim // 2, n_targets=n_targets)
+def build_model(enc_dim: int = DEFAULT_ENC_DIM, n_targets: int = N_TARGETS) -> CustomIJEPA:
+    return CustomIJEPA(enc_dim=enc_dim, pred_dim=enc_dim // 2, n_targets=n_targets)
 
 
 # --------------------------------------------------------------------------- #
-# Checkpoints (mirrors ijepa.py, with the canonical stem)
+# Checkpoints
 # --------------------------------------------------------------------------- #
 def stem_for(n_targets: int = N_TARGETS) -> str:
     """Checkpoint stem, namespaced by split so non-default runs don't collide.
@@ -213,7 +213,7 @@ def find_checkpoint(epochs: int | None = None, n_targets: int = N_TARGETS) -> Pa
         if not path.exists():
             raise FileNotFoundError(
                 f"No checkpoint at {path}. Train one with "
-                f"`python -m ijepa_trials.canonical --epochs {epochs} --n-targets {n_targets}`."
+                f"`python -m ijepa_trials.custom_ijepa --epochs {epochs} --n-targets {n_targets}`."
             )
         return path
     candidates = sorted(
@@ -228,7 +228,7 @@ def find_checkpoint(epochs: int | None = None, n_targets: int = N_TARGETS) -> Pa
     if not candidates:
         raise FileNotFoundError(
             f"No checkpoint for {stem!r} in {MODELS_DIR}. Train one with "
-            f"`python -m ijepa_trials.canonical`."
+            f"`python -m ijepa_trials.custom_ijepa`."
         )
     return candidates[-1]
 

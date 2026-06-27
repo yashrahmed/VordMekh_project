@@ -41,11 +41,18 @@ def evaluate(ckpt: dict, device: torch.device) -> float:
     head = nn.Linear(ckpt["in_dim"], ckpt.get("n_classes", N_CLASSES)).to(device)
     head.load_state_dict(ckpt["head_state_dict"])
 
-    # Rebuild the matching encoder (defaults to canonical for older checkpoints).
-    encoder = ckpt.get("encoder", "canonical")
+    # Rebuild the matching encoder. Map pre-rename checkpoint labels to the new names.
+    encoder = ckpt.get("encoder", "custom_ijepa")
+    encoder = {"canonical": "custom_ijepa", "cnn-stem": "cnn_stem_ijepa"}.get(encoder, encoder)
     enc_dim = ckpt.get("enc_dim")
+    n_targets = ckpt.get("n_targets")
     mod = ENCODERS[encoder]
-    model = (mod.build_model(enc_dim=enc_dim) if enc_dim else mod.build_model()).to(device)
+    kwargs = {}
+    if enc_dim:
+        kwargs["enc_dim"] = enc_dim
+    if n_targets:
+        kwargs["n_targets"] = n_targets
+    model = mod.build_model(**kwargs).to(device)
     model.load_state_dict(ckpt["encoder_state_dict"])
     return test_error(model, head, device)
 

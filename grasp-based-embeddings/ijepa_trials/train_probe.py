@@ -43,7 +43,7 @@ from ijepa_trials._ckpt import (
     partial_path,
     set_seed,
 )
-from ijepa_trials import canonical
+from ijepa_trials import cnn_stem_ijepa, custom_ijepa
 from trials.eval_classifier import mnist_loader
 from trials.mae import pick_device
 
@@ -54,7 +54,7 @@ FAMILY = "ijepa-flatten-probe"
 # Which pretrained encoder to probe. Each module exposes build_model() +
 # find_checkpoint(); encode() and the model attributes (n_patches, embed_dim) are
 # uniform, so the probe is otherwise model-agnostic.
-ENCODERS = {"canonical": canonical}
+ENCODERS = {"custom_ijepa": custom_ijepa, "cnn_stem_ijepa": cnn_stem_ijepa}
 
 
 def ckpt_stem(encoder: str, mode: str) -> str:
@@ -74,10 +74,20 @@ def load_encoder(device: torch.device, encoder: str, epochs: int | None) -> nn.M
     mod = ENCODERS[encoder]
     ckpt_path = mod.find_checkpoint(epochs)
     ckpt = torch.load(ckpt_path, map_location=device)
-    enc_dim = ckpt.get("config", {}).get("enc_dim")
-    model = (mod.build_model(enc_dim=enc_dim) if enc_dim else mod.build_model()).to(device)
+    config = ckpt.get("config", {})
+    enc_dim = config.get("enc_dim")
+    n_targets = config.get("n_targets")
+    kwargs = {}
+    if enc_dim:
+        kwargs["enc_dim"] = enc_dim
+    if n_targets:
+        kwargs["n_targets"] = n_targets
+    model = mod.build_model(**kwargs).to(device)
     model.load_state_dict(ckpt["state_dict"])
-    print(f"Loaded encoder checkpoint: {ckpt_path.name} (enc_dim={model.embed_dim})")
+    print(
+        f"Loaded encoder checkpoint: {ckpt_path.name} "
+        f"(enc_dim={model.embed_dim}, n_targets={getattr(model, 'n_targets', 'n/a')})"
+    )
     return model
 
 
@@ -232,9 +242,8 @@ def main() -> None:
     parser.add_argument(
         "--encoder",
         choices=tuple(ENCODERS),
-        default="canonical",
-        help="Which pretrained I-JEPA to probe (canonical = canonical.py "
-        "multi-block).",
+        default="custom_ijepa",
+        help="Which pretrained I-JEPA variant to probe.",
     )
     parser.add_argument("--epochs", type=int, default=50)
     parser.add_argument("--batch-size", type=int, default=256)
@@ -295,6 +304,7 @@ def main() -> None:
             "pool": POOL,
             "preproc": True,
             "enc_dim": model.embed_dim,
+            "n_targets": getattr(model, "n_targets", None),
             "in_dim": in_dim,
             "n_classes": N_CLASSES,
             "head_state_dict": head.state_dict(),
