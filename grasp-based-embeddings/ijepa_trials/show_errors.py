@@ -8,7 +8,7 @@ does), scores the held-out MNIST **test** split, and renders a grid of the first
 plotting is reused verbatim from ``trials.show_errors`` so the figure matches.
 
     python -m ijepa_trials.show_errors \
-        --model models/ijepa_clf_canonical_probe_flatten_50ep.pt --n 30
+        --model models/ijepa_clf_custom_ijepa_probe_flatten_50ep.pt --n 30
 
 Each tile shows the *raw* MNIST digit titled ``T:<true> P:<pred>``; the encoder
 itself saw the bbox-preprocessed input (always on here). Writes a PNG to ``out/``.
@@ -100,7 +100,7 @@ def main() -> None:
     parser = argparse.ArgumentParser(description=__doc__)
     parser.add_argument(
         "--model",
-        default="models/ijepa_clf_canonical_probe_flatten_50ep.pt",
+        default="models/ijepa_clf_custom_ijepa_probe_flatten_50ep.pt",
         help="Path to a probe checkpoint saved by ijepa_trials.train_probe.",
     )
     parser.add_argument("--n", type=int, default=30, help="how many errors to show")
@@ -119,10 +119,17 @@ def main() -> None:
     head = nn.Linear(ckpt["in_dim"], ckpt.get("n_classes", N_CLASSES)).to(device)
     head.load_state_dict(ckpt["head_state_dict"])
 
-    encoder = ckpt.get("encoder", "canonical")
+    encoder = ckpt.get("encoder", "custom_ijepa")
+    encoder = {"canonical": "custom_ijepa", "cnn-stem": "cnn_stem_ijepa"}.get(encoder, encoder)
     enc_dim = ckpt.get("enc_dim")
+    n_targets = ckpt.get("n_targets")
     mod = ENCODERS[encoder]
-    model = (mod.build_model(enc_dim=enc_dim) if enc_dim else mod.build_model()).to(device)
+    kwargs = {}
+    if enc_dim:
+        kwargs["enc_dim"] = enc_dim
+    if n_targets:
+        kwargs["n_targets"] = n_targets
+    model = mod.build_model(**kwargs).to(device)
     model.load_state_dict(ckpt["encoder_state_dict"])
 
     print(f"Device: {device}  model: {args.model}")

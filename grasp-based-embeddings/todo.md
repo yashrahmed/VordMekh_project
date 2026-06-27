@@ -1,7 +1,7 @@
 # Grasp-based embeddings
 
 ## Goal - The only experimental project in the current track.
-- Can I beat the MNIST benchmark using representations learned without label supervision (and if possible in a sample efficient way)?
+- Beat **99.5% test accuracy on MNIST** using representations learned without label supervision (and if possible in a sample efficient way).
 
 ## What I wish to test.
 1. Learning Patch embeddings.
@@ -22,7 +22,7 @@
    2. [x] Run a test using a different patching scheme (Closer to canonical IJEPA) — canonical block masking underperforms scatter masking at this resolution; see finding 9.
    3. [ ] Look into augmentation techniques.
    4. [x] Tried increased embedding dims — didn't help.
-   7. [ ] Try a **Conv-net stem** (replace the linear patch embedding with a small conv front-end).
+   7. [x] Try a **Conv-net stem** (replace the linear patch embedding with a small conv front-end) — old stem `Conv3 s2 p1 -> Conv2 s2 p1` underperformed custom 10-6 I-JEPA; see finding 16.
    5. [x] Re-run the bbox-preproc scatter JEPA at **500 ep** (run past the planned 300; flatten only, per request) — see finding 11: the preproc edge **holds** (flatten probe 99.15%, flatten 5-NN 99.01% — new bests) but is mostly *front-loading*; raw scatter nearly matches the probe at full budget.
    6. [ ] Account for known MNIST **label errors** when reading these results — the test set has ~15 human-validated mislabels (~0.15%), a soft ~99.8% ceiling that several frozen probes are now brushing against. See the corrected-test-set viewer / indices: [labelerrors.com](https://labelerrors.com) ([Northcutt et al., NeurIPS 2021](https://arxiv.org/pdf/2103.14749); [cleanlab/label-errors](https://github.com/cleanlab/label-errors)).
 3. Additional material follow up -
@@ -48,6 +48,7 @@
 |---|---|---|---|
 | I-JEPA | 98.40% | **99.11%** | 98.69% |
 | I-JEPA (preproc, 500 ep) | — | **99.15%** | — |
+| CNN-stem I-JEPA (preproc, old stem, best) | — | **99.06%** | — |
 | ViT MAE (300 ep) | 98.13% | 98.87% | 98.7% |
 | ViT MAE (50 ep) | 97.4% | — | — |
 | conv MAE | — | — | **99.0%** |
@@ -176,7 +177,7 @@ head edges past every fine-tuned model.
 
 9. **Canonical block masking underperforms random scatter masking on MNIST —
    the image is too small for a contiguous block to carry information.** The
-   `ijepa-canonical` arch implements Assran et al.'s block masking (a contiguous
+   `custom_ijepa` arch (formerly `ijepa-canonical`) implements Assran et al.'s block masking (a contiguous
    2×4/4×2 context band carved disjoint from 4 independently-sampled 2-patch
    "domino" targets, per-block latent prediction, K=1 batch-shared layout) on the
    same 4×4 patch grid. Epoch-matched against the existing random-scatter `jepa`,
@@ -253,9 +254,9 @@ head edges past every fine-tuned model.
 
 13. **Overlapping 14x14 patches did not help.** Replacing the 7x7 non-overlapping grid (16 patches, 2048-d flatten) with 14x14 patches at stride 7 (3x3 = 9 overlapping patches, 1152-d flatten) on scatter I-JEPA looked promising *raw* — 50 ep flatten probe 97.86% vs 97.72% and 5-NN 96.79% vs 94.70%, holding at 100 ep (probe 98.59%, 5-NN 97.85%). But the gain was just the larger windows absorbing scale/translation nuisance — exactly what bbox preproc (finding 10) already does, more cheaply. With `--preproc` the advantage vanished: at 50 ep patch-14 gave probe 98.70% / 5-NN 97.51%, *below* patch-7 preproc's 98.93% flatten probe, and well below the study best (patch-7 preproc 500 ep, 99.15% probe / 99.01% 5-NN). Patch size and geometry normalization are substitutes, not complements; not pursued.
 
-14. **Scattered single-patch targets — best 50-ep result so far (98.99%).** Converging the canonical block design toward scatter one step at a time (`ijepa_trials/canonical.py`): replacing the 4 contiguous target *blocks* with **8 single patches** picked at random as the targets (the other 8 patches the context), all predicted **jointly** in one predictor pass (one conceptual block, intra-block attention on). Same patch-7 / 4x4 grid, enc_dim 128, preproc, frozen flatten probe, seed 0, 50 ep. **Test 98.99% (train 99.89%)** — the top 50-ep flatten-probe number on record, edging the prior 50-ep best (scatter preproc 98.93%) and matching enc32-canonical at 300 ep. The jump is all in the masking *shape*: the same setup with contiguous blocks scored only 98.60% (+0.39 pt from scattering the targets), confirming finding 9's claim that block targets are a worse pretext here — a block hides a whole local region with no visible interior anchors, while scattered targets each sit among visible neighbours. Latent_mse settles lower too (~0.244 vs ~0.30 for blocks). **Caveats:** the 0.06-pt margin over scatter is ~6 test images, single-seed — a statistical tie, not a decisive win; and it's still below the longer scatter runs (300 ep 99.11%, 500 ep 99.15%). Next convergence step: 12 targets / 4 context to fully match scatter's mask ratio (swept in finding 15).
+14. **Scattered single-patch targets — best 50-ep result so far (98.99%).** Converging the canonical block design toward scatter one step at a time (`ijepa_trials/custom_ijepa.py`): replacing the 4 contiguous target *blocks* with **8 single patches** picked at random as the targets (the other 8 patches the context), all predicted **jointly** in one predictor pass (one conceptual block, intra-block attention on). Same patch-7 / 4x4 grid, enc_dim 128, preproc, frozen flatten probe, seed 0, 50 ep. **Test 98.99% (train 99.89%)** — the top 50-ep flatten-probe number on record, edging the prior 50-ep best (scatter preproc 98.93%) and matching enc32 custom I-JEPA at 300 ep. The jump is all in the masking *shape*: the same setup with contiguous blocks scored only 98.60% (+0.39 pt from scattering the targets), confirming finding 9's claim that block targets are a worse pretext here — a block hides a whole local region with no visible interior anchors, while scattered targets each sit among visible neighbours. Latent_mse settles lower too (~0.244 vs ~0.30 for blocks). **Caveats:** the 0.06-pt margin over scatter is ~6 test images, single-seed — a statistical tie, not a decisive win; and it's still below the longer scatter runs (300 ep 99.11%, 500 ep 99.15%). Next convergence step: 12 targets / 4 context to fully match scatter's mask ratio (swept in finding 15).
 
-15. **Target/context split sweep — the optimum is 10 targets / 6 context, not the 8-8 default.** Made the single-patch target count configurable (`canonical.py` `--n-targets`; split written as targets-context) and swept `n_targets ∈ {4,6,8,10,12}` at two pretraining budgets, frozen flatten probe, patch-7 / 4x4 grid, enc_dim 128, preproc, seed 0.
+15. **Target/context split sweep — the optimum is 10 targets / 6 context, not the 8-8 default.** Made the single-patch target count configurable (`custom_ijepa.py` `--n-targets`; split written as targets-context) and swept `n_targets ∈ {4,6,8,10,12}` at two pretraining budgets, frozen flatten probe, patch-7 / 4x4 grid, enc_dim 128, preproc, seed 0.
 
    | split (t-c) | n_targets | test @50 ep | test @75 ep |
    |---|---|---|---|
@@ -271,10 +272,36 @@ head edges past every fine-tuned model.
 
    **500-ep — new study best (99.21%).** Ran 10-6 at 500 ep (same protocol): **flatten probe test 99.21%** (train 99.82%) — the best frozen-flatten-probe number on record, clearing the prior study best (scatter 500-ep preproc 99.15%, finding 11) by +0.06 pt. Unlike the 75→300 step (+0.06 pt for 4x compute, pure front-loading), the **300→500 step gained +0.09 pt** (99.12 → 99.21), so 10-6 is *not* plateaued at 300 — extra budget still buys real accuracy, nudging the apparent asymptote up from ~99.15% toward ~99.2%+. Net: the split optimum holds at every budget tested, and at 500 ep both *raises* the ceiling over scatter and reaches it. Progression: 99.06 (75) → 99.12 (300) → 99.21 (500). Still ~0.6 pt under the soft ~99.8% MNIST label-error floor.
 
+16. **The old CNN stem is usable but not better than custom 10-6 I-JEPA.** Added
+   `ijepa_trials/cnn_stem_ijepa.py` as a feature-space I-JEPA variant: bbox
+   preproc stays on, a dense stem maps `1x28x28 -> Conv3 s2 p1 -> 32x14x14 ->
+   GELU -> Conv2 s2 p1 -> 64x8x8 -> GELU`, then the `8x8x64` feature map is
+   split into the same 16-token `4x4` grid of `2x2x64` feature patches. Default
+   split is still **10 targets / 6 context**; masking happens after the dense
+   stem, so this is a feature-space JEPA rather than strict raw-patch I-JEPA.
+
+   | old CNN-stem run | encoder ep | probe ep | train acc | test acc |
+   |---|---:|---:|---:|---:|
+   | frozen flatten probe | 50 | 50 | 99.90% | 98.80% |
+   | frozen flatten probe | 75 | 25 | 99.68% | 98.87% |
+   | frozen flatten probe | 75 | 50 | 99.90% | 99.02% |
+   | frozen flatten probe | 75 | 75 | 99.94% | 98.97% |
+   | frozen flatten probe | 300 | 50 | 99.87% | 99.06% |
+
+   Probe length does not explain the gap: on the same 75-ep encoder, 50 probe
+   epochs were best (99.02%), while 75 probe epochs overfit/slipped slightly
+   (98.97%) and 25 probe epochs undertrained (98.87%). More encoder pretraining
+   helped only modestly: 50→75→300 encoder epochs gave 98.80→99.02→99.06. The
+   best old-stem result therefore matches custom 10-6 at 75 ep (99.06%) but
+   trails custom 10-6 at 300 ep (99.12%) and 500 ep (99.21%). Verdict: keep the
+   old CNN stem as a documented branch, but it is not the path to the 99.5% goal
+   unless the architecture/objective changes substantially.
+
 **Caveat now flips to the task.** With the epoch confound removed, MNIST's ~97%
-pixel floor is simply too high to separate these pretexts. For real headroom,
-move to CIFAR-10 or a scarce-label regime where a better representation can
-actually show.
+pixel floor leaves little room to separate these pretexts, but the explicit goal
+is still to push the unsupervised MNIST pipeline past **99.5%**. Future work
+should focus on changes that plausibly close the remaining ~0.3 pt gap from the
+current 99.21% best, while accounting for known MNIST label errors.
 
 ## Original intent
 
