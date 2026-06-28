@@ -372,6 +372,9 @@ head edges past every fine-tuned model.
    | 40-24 | 40 | 98.82% | 98.92% |
    | 44-20 | 44 | 99.20% | 99.21% |
    | **48-16** | **48** | **99.28%** | **99.15%** |
+   | 50-14 | 50 | 99.22% | 99.23% |
+   | 52-12 | 52 | 98.96% | 99.12% |
+   | 54-10 | 54 | 98.70% | 98.99% |
 
    The completed sweep sets a new study best: **48 targets / 16 context at 75 ep,
    mean probe = 99.28%**. This clears the previous all-time custom I-JEPA result
