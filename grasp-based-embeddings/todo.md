@@ -28,6 +28,8 @@
 3. Additional material follow up -
    1. [ ] [Le-JEPA](https://arxiv.org/pdf/2511.08544)
    2. [ ] [V-JEPA](https://arxiv.org/pdf/2601.14354)
+   3. [ ] Explore [DINOv2](https://arxiv.org/pdf/2304.07193) — self-distillation SSL (augmentation-invariance vs JEPA's predictive pretext); strong frozen features.
+   4. [ ] Explore [ConvNeXt](https://arxiv.org/pdf/2201.03545) — modern pure-ConvNet; its patchify conv stem is the natural front-end for the conv-stem idea (item 2.7).
 ## Results — frozen embedding (5-NN, no labels reach the encoder)
 
 | method | 5-NN acc | |
