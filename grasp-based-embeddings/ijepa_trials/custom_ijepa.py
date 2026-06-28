@@ -336,7 +336,7 @@ def train(
             clear_partials(stem, epochs, keep=epoch)
             print(f"  checkpoint -> {part}")
 
-    torch.save(_ckpt_dict(model, seed), out)
+    torch.save(_ckpt_dict(model, seed, opt=opt, sched=sched, epoch=epochs), out)
     clear_partials(stem, epochs)
     print(f"Saved model -> {out}")
     return out

@@ -320,6 +320,20 @@ head edges past every fine-tuned model.
    keep the old CNN stem as a documented branch, but it is not the path to the
    99.5% goal unless the architecture/objective changes substantially.
 
+17. **1000 ep does not beat the 500-ep custom 10-6 ceiling.** For completeness,
+   ran the best custom I-JEPA setup from scratch for **1000 encoder epochs**
+   (bbox preproc, 4x4 patch grid, **10 target / 6 context** scattered
+   single-patch joint targets, enc_dim 128, seed 0), then trained the standard
+   **50-ep frozen flatten probe**. Result: **99.20% test accuracy** (80 errors,
+   train 99.77%), essentially tied with but slightly below the 500-ep best
+   (**99.21%**, finding 15). A separate warm-start continuation from the 500-ep
+   checkpoint also failed to help: 50/100/500-ep probes on that continued encoder
+   scored 99.10% / 99.16% / 99.15%, respectively. Implication: the current
+   custom 10-6 feature recipe is not compute-limited at 500 ep; longer encoder
+   training is at best flat and can degrade the downstream linear geometry.
+   Future attempts to reach 99.5% need a representation/objective change rather
+   than simply more epochs on this exact setup.
+
 **Caveat now flips to the task.** With the epoch confound removed, MNIST's ~97%
 pixel floor leaves little room to separate these pretexts, but the explicit goal
 is still to push the unsupervised MNIST pipeline past **99.5%**. Future work
