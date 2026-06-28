@@ -334,6 +334,43 @@ head edges past every fine-tuned model.
    Future attempts to reach 99.5% need a representation/objective change rather
    than simply more epochs on this exact setup.
 
+18. **56x56 upscaled-bbox with a finer 8x8 patch grid improves the short-run
+   split sweep, but has not yet reached 99.5%.** Changed the preprocessing to
+   upscale MNIST to **56x56**, bbox-crop the upscaled digit, then stretch the crop
+   to 56x56. Changed custom I-JEPA from 14px patches on the 56x56 image
+   (4x4 = 16 tokens) to **7px patches** (8x8 = 64 tokens), and swept scaled
+   target/context ratios with both mean and flattened frozen linear probes
+   (50 probe epochs, seed 0).
+
+   Completed 50-ep encoder results:
+
+   | split (t-c) | n_targets | mean probe | flatten probe |
+   |---|---:|---:|---:|
+   | 8-56 | 8 | 96.25% | 98.13% |
+   | 16-48 | 16 | 97.29% | 98.44% |
+   | 24-40 | 24 | 97.66% | 98.52% |
+   | 32-32 | 32 | 98.21% | 98.87% |
+   | 36-28 | 36 | 98.43% | 98.93% |
+   | 40-24 | 40 | 98.75% | 98.97% |
+   | **44-20** | **44** | **98.95%** | **99.14%** |
+   | 48-16 | 48 | 98.33% | 98.87% |
+
+   This establishes a new best **50-ep** result: **44 targets / 20 context,
+   flatten probe = 99.14%**, beating the prior 16-token 75-ep split-sweep best
+   (10-6 @ 75 ep = 99.06%) and the 56x56/14px-patch branch (10-6 @ 75 ep =
+   98.96%). It is still below the all-time best custom I-JEPA result
+   (**10-6 @ 500 ep = 99.21%**), and still short of the 99.5% goal. The shape of
+   the 50-ep curve is informative: accuracy rises as the target ratio increases,
+   peaks near **44/64 targets** (~69%), then drops at 48/64 targets, suggesting
+   the finer grid wants heavier masking than the old 10/16 (~62.5%) optimum but
+   still fails when the context becomes too small.
+
+   Mean pooling improved as masking got heavier but remained below flatten at
+   every split, confirming that spatial layout is still carrying most of the
+   downstream signal. The 75-ep half of the sweep is still running; the first
+   completed point, 8-56 @ 75 ep, scored 96.43% mean / 98.08% flatten, essentially
+   no improvement over 8-56 @ 50 ep.
+
 **Caveat now flips to the task.** With the epoch confound removed, MNIST's ~97%
 pixel floor leaves little room to separate these pretexts, but the explicit goal
 is still to push the unsupervised MNIST pipeline past **99.5%**. Future work
