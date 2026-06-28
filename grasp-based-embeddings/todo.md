@@ -388,6 +388,22 @@ head edges past every fine-tuned model.
    their 50-ep versions, so the benefit of extra epochs appears concentrated in
    the heaviest mask-ratio regime.
 
+   **High-mask completion sweep.** For completeness, also swept 50-14, 52-12,
+   and 54-10 at both encoder budgets. These did not improve on 48-16 @ 75 ep.
+
+   | split (t-c) | n_targets | mean @50 ep | flatten @50 ep | mean @75 ep | flatten @75 ep |
+   |---|---:|---:|---:|---:|---:|
+   | 50-14 | 50 | 98.48% | 98.82% | 99.22% | 99.23% |
+   | 52-12 | 52 | 93.71% | 98.29% | 98.96% | 99.12% |
+   | 54-10 | 54 | 95.67% | 98.67% | 98.70% | 98.99% |
+
+   The high-mask tail confirms the peak is around **48/64 targets**, not beyond
+   it. At 50 ep, performance collapses sharply once context falls below 16
+   patches, especially for mean pooling. At 75 ep, 50-14 partly recovers
+   (99.23% flatten), but 52-12 and 54-10 remain clearly below the 48-16 mean
+   winner. Net: **48-16 @ 75 ep mean = 99.28%** remains the best operating point
+   found in this sweep.
+
 **Caveat now flips to the task.** With the epoch confound removed, MNIST's ~97%
 pixel floor leaves little room to separate these pretexts, but the explicit goal
 is still to push the unsupervised MNIST pipeline past **99.5%**. Future work

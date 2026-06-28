@@ -3,7 +3,7 @@
 Protocol:
 
 * pretrain custom I-JEPA for 50 and 75 epochs;
-* sweep n_targets in {8, 16, 24, 32, 36, 40, 44, 48};
+* sweep n_targets in {8, 16, 24, 32, 36, 40, 44, 48, 50, 52, 54};
 * train frozen mean and flatten linear probes for 50 epochs for each encoder;
 * evaluate on the MNIST test split with the same preprocessing.
 
@@ -29,7 +29,7 @@ RESULTS_CSV = OUT_DIR / "upscale_bbox_p7_split_sweep_results.csv"
 
 PRETRAIN_EPOCHS = (50, 75)
 N_PATCHES = 64
-N_TARGETS = (8, 16, 24, 32, 36, 40, 44, 48)
+N_TARGETS = (8, 16, 24, 32, 36, 40, 44, 48, 50, 52, 54)
 POOLS = ("mean", "flatten")
 PROBE_EPOCHS = 50
 
