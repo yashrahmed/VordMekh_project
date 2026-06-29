@@ -434,11 +434,37 @@ head edges past every fine-tuned model.
    remains competitive in the heavy-mask region, but the best individual result
    is again mean-pooled.
 
+   **Best-config 300/500-ep continuation.** Extended the best 56x56 config
+   directly rather than running a separate 300-ep pretrain: custom I-JEPA,
+   upscaled-bbox 56x56 inputs, 7x7 patches (8x8 = 64 tokens), **48 targets / 16
+   context**, scattered single-patch joint targets, enc_dim 128, seed 0. The
+   500-ep training trajectory saved a normal probe-loadable **300-ep**
+   checkpoint along the way, then saved the final 500-ep checkpoint. Both were
+   evaluated with frozen linear probes using mean and flattened readouts.
+
+   | encoder ep | probe ep | readout | train acc | test acc |
+   |---:|---:|---|---:|---:|
+   | 300 | 50 | mean | 99.41% | 99.29% |
+   | **300** | **50** | **flatten** | **99.94%** | **99.36%** |
+   | 500 | 50 | mean | 99.33% | 99.30% |
+   | 500 | 50 | flatten | 99.88% | 99.34% |
+   | 300 | 100 | mean | 99.44% | 99.30% |
+   | 300 | 100 | flatten | 99.83% | 99.21% |
+   | 500 | 100 | mean | 99.36% | 99.32% |
+   | 500 | 100 | flatten | 99.91% | 99.31% |
+
+   The new best is **300 ep encoder + 50 ep flatten probe = 99.36%**. Extending
+   the encoder to 500 ep did not improve the representation, and extending the
+   probe to 100 ep did not help either: mean readout gained only +0.01/+0.02 pt,
+   while flatten readout degraded. The useful conclusion is sharper than the
+   100-ep sweep alone: for this 48-16 / 64-token geometry, more encoder training
+   past ~300 ep and more probe training past 50 ep are not the path to 99.5%.
+
 **Caveat now flips to the task.** With the epoch confound removed, MNIST's ~97%
 pixel floor leaves little room to separate these pretexts, but the explicit goal
 is still to push the unsupervised MNIST pipeline past **99.5%**. Future work
-should focus on changes that plausibly close the remaining ~0.17 pt gap from the
-current 99.33% best, while accounting for known MNIST label errors.
+should focus on changes that plausibly close the remaining ~0.14 pt gap from the
+current 99.36% best, while accounting for known MNIST label errors.
 
 ## Original intent
 

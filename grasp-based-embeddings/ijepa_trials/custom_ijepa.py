@@ -281,6 +281,7 @@ def train(
     seed: int = 0,
     enc_dim: int = DEFAULT_ENC_DIM,
     n_targets: int = N_TARGETS,
+    save_epochs: tuple[int, ...] = (),
     device: torch.device | None = None,
 ) -> Path:
     set_seed(seed)
@@ -297,6 +298,7 @@ def train(
     if out.exists():
         print(f"Final checkpoint already exists -> {out} (nothing to do)")
         return out
+    save_epochs = tuple(sorted(e for e in set(save_epochs) if 0 < e < epochs))
 
     loader = make_loader(batch_size)
     model = build_model(enc_dim, n_targets=n_targets).to(device)
@@ -336,6 +338,10 @@ def train(
             torch.save(_ckpt_dict(model, seed, opt=opt, sched=sched, epoch=epoch), part)
             clear_partials(stem, epochs, keep=epoch)
             print(f"  checkpoint -> {part}")
+        if epoch in save_epochs:
+            milestone = model_path(epoch, n_targets)
+            torch.save(_ckpt_dict(model, seed, opt=opt, sched=sched, epoch=epoch), milestone)
+            print(f"  saved epoch checkpoint -> {milestone}")
 
     torch.save(_ckpt_dict(model, seed, opt=opt, sched=sched, epoch=epochs), out)
     clear_partials(stem, epochs)
@@ -358,10 +364,19 @@ def main() -> None:
         f"n_targets). Default {N_TARGETS} (an {N_TARGETS}-{N_PATCHES - N_TARGETS} split).",
     )
     parser.add_argument("--seed", type=int, default=0, help="RNG seed.")
+    parser.add_argument(
+        "--save-epoch",
+        dest="save_epochs",
+        action="append",
+        type=int,
+        default=[],
+        help="Also save a normal checkpoint at this intermediate epoch. May be repeated.",
+    )
     args = parser.parse_args()
     train(
         epochs=args.epochs, batch_size=args.batch_size, lr=args.lr,
         seed=args.seed, enc_dim=args.enc_dim, n_targets=args.n_targets,
+        save_epochs=tuple(args.save_epochs),
     )
 
 
