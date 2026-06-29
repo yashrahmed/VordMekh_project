@@ -391,8 +391,9 @@ head edges past every fine-tuned model.
    their 50-ep versions, so the benefit of extra epochs appears concentrated in
    the heaviest mask-ratio regime.
 
-   **High-mask completion sweep.** For completeness, also swept 50-14, 52-12,
-   and 54-10 at both encoder budgets. These did not improve on 48-16 @ 75 ep.
+   **High-mask completion sweep at 50/75 ep.** For completeness, also swept
+   50-14, 52-12, and 54-10 at both initial encoder budgets. These did not
+   improve on 48-16 @ 75 ep.
 
    | split (t-c) | n_targets | mean @50 ep | flatten @50 ep | mean @75 ep | flatten @75 ep |
    |---|---:|---:|---:|---:|---:|
@@ -404,14 +405,40 @@ head edges past every fine-tuned model.
    it. At 50 ep, performance collapses sharply once context falls below 16
    patches, especially for mean pooling. At 75 ep, 50-14 partly recovers
    (99.23% flatten), but 52-12 and 54-10 remain clearly below the 48-16 mean
-   winner. Net: **48-16 @ 75 ep mean = 99.28%** remains the best operating point
-   found in this sweep.
+   winner. Net before the 100-ep run: **48-16 @ 75 ep mean = 99.28%** remained
+   the best operating point.
+
+   Completed 100-ep encoder results:
+
+   | split (t-c) | n_targets | mean probe | flatten probe |
+   |---|---:|---:|---:|
+   | 8-56 | 8 | 96.56% | 98.26% |
+   | 16-48 | 16 | 97.63% | 98.53% |
+   | 24-40 | 24 | 97.92% | 98.55% |
+   | 32-32 | 32 | 98.25% | 98.72% |
+   | 36-28 | 36 | 98.60% | 98.91% |
+   | 40-24 | 40 | 98.97% | 98.92% |
+   | 44-20 | 44 | 99.13% | 99.31% |
+   | **48-16** | **48** | **99.33%** | 99.22% |
+   | 50-14 | 50 | 99.20% | 99.32% |
+   | 52-12 | 52 | 99.30% | 99.32% |
+   | 54-10 | 54 | 99.13% | 99.16% |
+
+   The 100-ep sweep sets another small new best: **48 targets / 16 context at
+   100 ep, mean probe = 99.33%**. This improves over the 75-ep best by +0.05 pt
+   and over the old 500-ep 16-token custom I-JEPA best by +0.12 pt. The gain is
+   real but still small; the model remains short of the **99.5%** target by about
+   0.17 pt. The best region is now stable: heavy masking with **44-52 targets**
+   and **12-20 context patches** dominates, with the single best split staying at
+   **48-16**. Flatten readout is generally better in the low/mid-mask region and
+   remains competitive in the heavy-mask region, but the best individual result
+   is again mean-pooled.
 
 **Caveat now flips to the task.** With the epoch confound removed, MNIST's ~97%
 pixel floor leaves little room to separate these pretexts, but the explicit goal
 is still to push the unsupervised MNIST pipeline past **99.5%**. Future work
-should focus on changes that plausibly close the remaining ~0.2 pt gap from the
-current 99.28% best, while accounting for known MNIST label errors.
+should focus on changes that plausibly close the remaining ~0.17 pt gap from the
+current 99.33% best, while accounting for known MNIST label errors.
 
 ## Original intent
 
