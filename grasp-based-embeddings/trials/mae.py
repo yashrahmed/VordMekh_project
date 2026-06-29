@@ -55,8 +55,8 @@ PROJECT_ROOT = Path(__file__).resolve().parents[1]
 DATASET_DIR = PROJECT_ROOT / "dataset"
 MODELS_DIR = PROJECT_ROOT / "models"
 
-IMG_SIZE = 28
-PATCH_SIZE = 7  # -> 4x4 = 16 patches of 49 pixels each
+IMG_SIZE = 56
+PATCH_SIZE = 7  # -> 8x8 = 64 patches of 49 pixels each
 CKPT_INTERVAL = 50  # save a resumable partial checkpoint every N epochs
 
 
@@ -72,14 +72,16 @@ def pick_device() -> torch.device:
 # Bounding-box preprocessing (the "-preproc" experiment)
 # --------------------------------------------------------------------------- #
 def bbox_rescale(img: torch.Tensor) -> torch.Tensor:
-    """Crop to the digit's bounding box and stretch it to fill the frame.
+    """Upscale, crop to the digit's bounding box, then stretch to fill the frame.
 
     ``img`` is (1, H, W) in [0, 1]. The foreground is every nonzero pixel; the
-    tight bounding box around it is resized (bilinear) to IMG_SIZE x IMG_SIZE, so
-    every digit fills the whole canvas regardless of its original scale or
-    position (aspect ratio is *not* preserved -- the box is stretched to a
-    square). An all-zero image is returned unchanged.
+    image is first resized to 2x MNIST resolution, then the tight bounding box
+    around the upscaled foreground is resized (bilinear) to IMG_SIZE x IMG_SIZE,
+    so every digit fills the 56x56 canvas regardless of its original scale or
+    position. Aspect ratio is *not* preserved -- the box is stretched to a
+    square. An all-zero image is returned as a blank IMG_SIZE x IMG_SIZE tensor.
     """
+    img = TF.resize(img, [IMG_SIZE, IMG_SIZE], antialias=True)
     fg = img[0] > 0
     if not fg.any():
         return img

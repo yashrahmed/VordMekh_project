@@ -1,4 +1,4 @@
-"""Evaluate a saved I-JEPA flatten probe and print its test accuracy.
+"""Evaluate a saved I-JEPA probe and print its test accuracy.
 
 Loads a classifier checkpoint written by :mod:`ijepa_trials.train_probe`,
 rebuilds the head plus its encoder entirely from the file -- nothing else is
@@ -18,19 +18,19 @@ import argparse
 import torch
 import torch.nn as nn
 
-from ijepa_trials.train_probe import ENCODERS, N_CLASSES, POOL
+from ijepa_trials.train_probe import DEFAULT_POOL, ENCODERS, N_CLASSES
 from trials.eval_classifier import mnist_loader
 from trials.mae import pick_device
 
 
 @torch.no_grad()
-def test_error(model: nn.Module, head: nn.Module, device) -> float:
-    """Misclassification rate on the preprocessed MNIST test split (flatten)."""
+def test_error(model: nn.Module, head: nn.Module, device, pool: str) -> float:
+    """Misclassification rate on the preprocessed MNIST test split."""
     model.eval()
     head.eval()
     correct, total = 0, 0
     for imgs, y in mnist_loader(train=False, batch_size=512, shuffle=False, preproc=True):
-        pred = head(model.encode(imgs.to(device), pool=POOL)).argmax(dim=1).cpu()
+        pred = head(model.encode(imgs.to(device), pool=pool)).argmax(dim=1).cpu()
         correct += (pred == y).sum().item()
         total += len(y)
     return 1.0 - correct / total
@@ -38,6 +38,7 @@ def test_error(model: nn.Module, head: nn.Module, device) -> float:
 
 def evaluate(ckpt: dict, device: torch.device) -> float:
     """Rebuild the (frozen-probe or fine-tuned) encoder + head and score the test set."""
+    pool = ckpt.get("pool", DEFAULT_POOL)
     head = nn.Linear(ckpt["in_dim"], ckpt.get("n_classes", N_CLASSES)).to(device)
     head.load_state_dict(ckpt["head_state_dict"])
 
@@ -54,7 +55,7 @@ def evaluate(ckpt: dict, device: torch.device) -> float:
         kwargs["n_targets"] = n_targets
     model = mod.build_model(**kwargs).to(device)
     model.load_state_dict(ckpt["encoder_state_dict"])
-    return test_error(model, head, device)
+    return test_error(model, head, device, pool)
 
 
 def main() -> None:
@@ -69,7 +70,7 @@ def main() -> None:
     device = pick_device()
     ckpt = torch.load(args.model, map_location=device)
     print(f"Device: {device}  model: {args.model}")
-    print(f"  family: {ckpt['family']}  mode: {ckpt['mode']}  pool: {ckpt.get('pool', POOL)}")
+    print(f"  family: {ckpt['family']}  mode: {ckpt['mode']}  pool: {ckpt.get('pool', DEFAULT_POOL)}")
 
     err = evaluate(ckpt, device)
     print(f"\n--- {ckpt.get('mode_label', ckpt['mode'])} ---")

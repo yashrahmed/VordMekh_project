@@ -336,11 +336,137 @@ head edges past every fine-tuned model.
    Future attempts to reach 99.5% need a representation/objective change rather
    than simply more epochs on this exact setup.
 
+18. **56x56 upscaled-bbox with a finer 8x8 patch grid sets a new best, but still
+   has not reached 99.5%.** Changed the preprocessing to
+   upscale MNIST to **56x56**, bbox-crop the upscaled digit, then stretch the crop
+   to 56x56. Changed custom I-JEPA from 14px patches on the 56x56 image
+   (4x4 = 16 tokens) to **7px patches** (8x8 = 64 tokens), and swept scaled
+   target/context ratios with both mean and flattened frozen linear probes
+   (50 probe epochs, seed 0).
+
+   Completed 50-ep encoder results:
+
+   | split (t-c) | n_targets | mean probe | flatten probe |
+   |---|---:|---:|---:|
+   | 8-56 | 8 | 96.25% | 98.13% |
+   | 16-48 | 16 | 97.29% | 98.44% |
+   | 24-40 | 24 | 97.66% | 98.52% |
+   | 32-32 | 32 | 98.21% | 98.87% |
+   | 36-28 | 36 | 98.43% | 98.93% |
+   | 40-24 | 40 | 98.75% | 98.97% |
+   | **44-20** | **44** | **98.95%** | **99.14%** |
+   | 48-16 | 48 | 98.33% | 98.87% |
+
+   This established a new best **50-ep** result: **44 targets / 20 context,
+   flatten probe = 99.14%**, beating the prior 16-token 75-ep split-sweep best
+   (10-6 @ 75 ep = 99.06%) and the 56x56/14px-patch branch (10-6 @ 75 ep =
+   98.96%).
+
+   Completed 75-ep encoder results:
+
+   | split (t-c) | n_targets | mean probe | flatten probe |
+   |---|---:|---:|---:|
+   | 8-56 | 8 | 96.43% | 98.08% |
+   | 16-48 | 16 | 97.11% | 98.27% |
+   | 24-40 | 24 | 97.94% | 98.43% |
+   | 32-32 | 32 | 98.39% | 98.81% |
+   | 36-28 | 36 | 98.66% | 98.82% |
+   | 40-24 | 40 | 98.82% | 98.92% |
+   | 44-20 | 44 | 99.20% | 99.21% |
+   | **48-16** | **48** | **99.28%** | **99.15%** |
+   | 50-14 | 50 | 99.22% | 99.23% |
+   | 52-12 | 52 | 98.96% | 99.12% |
+   | 54-10 | 54 | 98.70% | 98.99% |
+
+   The completed sweep sets a new study best: **48 targets / 16 context at 75 ep,
+   mean probe = 99.28%**. This clears the previous all-time custom I-JEPA result
+   (**10-6 @ 500 ep, flatten = 99.21%**) by +0.07 pt, using much less encoder
+   pretraining. It is still short of the 99.5% goal.
+
+   Two readout/masking patterns matter. First, flattened readout remains strongest
+   across most of the grid and peaks at **44-20 @ 75 ep = 99.21%**, but it drops
+   at 48-16. Second, mean pooling becomes competitive only under very heavy
+   masking: **48-16 @ 75 ep mean = 99.28%** is the only mean-probe winner. This
+   suggests that the finer 8x8 grid plus heavy masking learns a globally useful
+   per-token representation, while flatten readout is more sensitive to the
+   context becoming too sparse. The 75-ep light/mid splits mostly underperformed
+   their 50-ep versions, so the benefit of extra epochs appears concentrated in
+   the heaviest mask-ratio regime.
+
+   **High-mask completion sweep at 50/75 ep.** For completeness, also swept
+   50-14, 52-12, and 54-10 at both initial encoder budgets. These did not
+   improve on 48-16 @ 75 ep.
+
+   | split (t-c) | n_targets | mean @50 ep | flatten @50 ep | mean @75 ep | flatten @75 ep |
+   |---|---:|---:|---:|---:|---:|
+   | 50-14 | 50 | 98.48% | 98.82% | 99.22% | 99.23% |
+   | 52-12 | 52 | 93.71% | 98.29% | 98.96% | 99.12% |
+   | 54-10 | 54 | 95.67% | 98.67% | 98.70% | 98.99% |
+
+   The high-mask tail confirms the peak is around **48/64 targets**, not beyond
+   it. At 50 ep, performance collapses sharply once context falls below 16
+   patches, especially for mean pooling. At 75 ep, 50-14 partly recovers
+   (99.23% flatten), but 52-12 and 54-10 remain clearly below the 48-16 mean
+   winner. Net before the 100-ep run: **48-16 @ 75 ep mean = 99.28%** remained
+   the best operating point.
+
+   Completed 100-ep encoder results:
+
+   | split (t-c) | n_targets | mean probe | flatten probe |
+   |---|---:|---:|---:|
+   | 8-56 | 8 | 96.56% | 98.26% |
+   | 16-48 | 16 | 97.63% | 98.53% |
+   | 24-40 | 24 | 97.92% | 98.55% |
+   | 32-32 | 32 | 98.25% | 98.72% |
+   | 36-28 | 36 | 98.60% | 98.91% |
+   | 40-24 | 40 | 98.97% | 98.92% |
+   | 44-20 | 44 | 99.13% | 99.31% |
+   | **48-16** | **48** | **99.33%** | 99.22% |
+   | 50-14 | 50 | 99.20% | 99.32% |
+   | 52-12 | 52 | 99.30% | 99.32% |
+   | 54-10 | 54 | 99.13% | 99.16% |
+
+   The 100-ep sweep sets another small new best: **48 targets / 16 context at
+   100 ep, mean probe = 99.33%**. This improves over the 75-ep best by +0.05 pt
+   and over the old 500-ep 16-token custom I-JEPA best by +0.12 pt. The gain is
+   real but still small; the model remains short of the **99.5%** target by about
+   0.17 pt. The best region is now stable: heavy masking with **44-52 targets**
+   and **12-20 context patches** dominates, with the single best split staying at
+   **48-16**. Flatten readout is generally better in the low/mid-mask region and
+   remains competitive in the heavy-mask region, but the best individual result
+   is again mean-pooled.
+
+   **Best-config 300/500-ep continuation.** Extended the best 56x56 config
+   directly rather than running a separate 300-ep pretrain: custom I-JEPA,
+   upscaled-bbox 56x56 inputs, 7x7 patches (8x8 = 64 tokens), **48 targets / 16
+   context**, scattered single-patch joint targets, enc_dim 128, seed 0. The
+   500-ep training trajectory saved a normal probe-loadable **300-ep**
+   checkpoint along the way, then saved the final 500-ep checkpoint. Both were
+   evaluated with frozen linear probes using mean and flattened readouts.
+
+   | encoder ep | probe ep | readout | train acc | test acc |
+   |---:|---:|---|---:|---:|
+   | 300 | 50 | mean | 99.41% | 99.29% |
+   | **300** | **50** | **flatten** | **99.94%** | **99.36%** |
+   | 500 | 50 | mean | 99.33% | 99.30% |
+   | 500 | 50 | flatten | 99.88% | 99.34% |
+   | 300 | 100 | mean | 99.44% | 99.30% |
+   | 300 | 100 | flatten | 99.83% | 99.21% |
+   | 500 | 100 | mean | 99.36% | 99.32% |
+   | 500 | 100 | flatten | 99.91% | 99.31% |
+
+   The new best is **300 ep encoder + 50 ep flatten probe = 99.36%**. Extending
+   the encoder to 500 ep did not improve the representation, and extending the
+   probe to 100 ep did not help either: mean readout gained only +0.01/+0.02 pt,
+   while flatten readout degraded. The useful conclusion is sharper than the
+   100-ep sweep alone: for this 48-16 / 64-token geometry, more encoder training
+   past ~300 ep and more probe training past 50 ep are not the path to 99.5%.
+
 **Caveat now flips to the task.** With the epoch confound removed, MNIST's ~97%
 pixel floor leaves little room to separate these pretexts, but the explicit goal
 is still to push the unsupervised MNIST pipeline past **99.5%**. Future work
-should focus on changes that plausibly close the remaining ~0.3 pt gap from the
-current 99.21% best, while accounting for known MNIST label errors.
+should focus on changes that plausibly close the remaining ~0.14 pt gap from the
+current 99.36% best, while accounting for known MNIST label errors.
 
 ## Original intent
 

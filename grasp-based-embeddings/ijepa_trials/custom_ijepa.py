@@ -3,15 +3,15 @@
 Starts from canonical I-JEPA (Assran et al., 2023) and walks it toward the scatter
 baseline one change at a time. **Step 1 (current):**
 
-* **Grid** -- 7x7-px patches on the 28x28 image => a 4x4 = 16-patch grid (same as
-  the scatter baseline), so this isolates the *masking scheme* at matched
-  resolution.
-* **Targets** -- no contiguous blocks. :data:`N_TARGETS` (=10, the sweep optimum;
-  see todo finding 15) **single patches** are picked at random as the targets,
+* **Preprocessing/grid** -- the 28x28 MNIST image is first upscaled to 56x56, then
+  bbox-cropped and stretched back to 56x56. I-JEPA uses 7x7-px patches on that
+  56x56 image => an 8x8 = 64-patch grid.
+* **Targets** -- no contiguous blocks. :data:`N_TARGETS` (=40, the 64-token
+  analogue of the prior 10/16-patch optimum) **single patches** are picked at random as the targets,
   **resampled every step**. They form one conceptual block: predicted in a single
   predictor pass, so the target mask tokens attend to each other (intra-block
   attention on). Configurable per run via ``--n-targets``.
-* **Context** -- the remaining ``N_PATCHES - N_TARGETS`` (=6) patches.
+* **Context** -- the remaining ``N_PATCHES - N_TARGETS`` (=24) patches.
 * **Encoder** -- ``enc_dim`` 128, predictor 64. Same EMA target encoder +
   latent-space MSE as every I-JEPA here.
 * **Positions** -- learned absolute embeddings (ViT-style). Fixed 2D sin-cos
@@ -22,8 +22,9 @@ baseline one change at a time. **Step 1 (current):**
 This is one step short of scatter, which masks 12 of 16 patches (vs 10 here) and is
 otherwise the same single-group joint prediction.
 
-Images are **always** bbox-preprocessed; downstream :meth:`encode` flattens the
-16 tokens (16 * 128 = 2048-d). Both match the rest of ``ijepa_trials``.
+Images are **always** upscaled-bbox-preprocessed; downstream :meth:`encode`
+flattens the 64 tokens (64 * 128 = 8192-d). Both match the rest of
+``ijepa_trials``.
 
     python -m ijepa_trials.custom_ijepa --epochs 50 --seed 0
 
@@ -61,20 +62,20 @@ from trials.mae import (
     pick_device,
 )
 
-PATCH = 7  # 7x7-px patches
-GRID = IMG_SIZE // PATCH  # 4
-N_PATCHES = GRID * GRID  # 16
+PATCH = 7  # 7x7-px patches on the 56x56 upscaled-bbox image
+GRID = IMG_SIZE // PATCH  # 8
+N_PATCHES = GRID * GRID  # 64
 PATCH_DIM = PATCH * PATCH  # 49
 
 # Step 1 toward scatter: no contiguous blocks. Pick N_TARGETS single patches at
 # random as the targets (one conceptual "block": they attend to each other in a
 # single predictor pass); the remaining N_PATCHES - N_TARGETS patches are context.
-# N_TARGETS is the *default* split (10 targets / 6 context -- the sweep optimum,
-# see todo finding 15); it is configurable per run (constructor arg / --n-targets),
+# N_TARGETS is the *default* split (40 targets / 24 context -- the 64-token
+# analogue of the old 10/16-patch optimum); it is configurable per run (constructor arg / --n-targets),
 # so a split is "n_targets-(N_PATCHES - n_targets)".
-N_TARGETS = 10
+N_TARGETS = 40
 
-ARCH_TAG = "custom_ijepa"
+ARCH_TAG = "custom_ijepa_p7_56"
 CKPT_STEM = f"ijepa_mnist_{ARCH_TAG}"
 DEFAULT_ENC_DIM = 128  # predictor = enc_dim // 2
 
@@ -139,7 +140,7 @@ class CustomIJEPA(nn.Module):
             tp.mul_(m).add_(cp.detach(), alpha=1.0 - m)
 
     def encode(self, imgs: torch.Tensor, pool: str = "mean") -> torch.Tensor:
-        """(B, 1, 28, 28) -> (B, D): target-encoder tokens, then pool the grid."""
+        """(B, 1, 56, 56) -> (B, D): target-encoder tokens, then pool the grid."""
         feats = self.target.tokens(imgs)  # (B, 16, embed_dim)
         return feats.flatten(1) if pool == "flatten" else feats.mean(dim=1)
 
@@ -280,13 +281,14 @@ def train(
     seed: int = 0,
     enc_dim: int = DEFAULT_ENC_DIM,
     n_targets: int = N_TARGETS,
+    save_epochs: tuple[int, ...] = (),
     device: torch.device | None = None,
 ) -> Path:
     set_seed(seed)
     device = device or pick_device()
     stem = stem_for(n_targets)
     print(
-        f"Device: {device}  arch: {ARCH_TAG} (4x4 grid, {n_targets} single-patch "
+        f"Device: {device}  arch: {ARCH_TAG} ({GRID}x{GRID} grid, {n_targets} single-patch "
         f"joint targets / {N_PATCHES - n_targets} context, preproc)  "
         f"enc_dim: {enc_dim}  seed: {seed}"
     )
@@ -296,6 +298,7 @@ def train(
     if out.exists():
         print(f"Final checkpoint already exists -> {out} (nothing to do)")
         return out
+    save_epochs = tuple(sorted(e for e in set(save_epochs) if 0 < e < epochs))
 
     loader = make_loader(batch_size)
     model = build_model(enc_dim, n_targets=n_targets).to(device)
@@ -335,6 +338,10 @@ def train(
             torch.save(_ckpt_dict(model, seed, opt=opt, sched=sched, epoch=epoch), part)
             clear_partials(stem, epochs, keep=epoch)
             print(f"  checkpoint -> {part}")
+        if epoch in save_epochs:
+            milestone = model_path(epoch, n_targets)
+            torch.save(_ckpt_dict(model, seed, opt=opt, sched=sched, epoch=epoch), milestone)
+            print(f"  saved epoch checkpoint -> {milestone}")
 
     torch.save(_ckpt_dict(model, seed, opt=opt, sched=sched, epoch=epochs), out)
     clear_partials(stem, epochs)
@@ -357,10 +364,19 @@ def main() -> None:
         f"n_targets). Default {N_TARGETS} (an {N_TARGETS}-{N_PATCHES - N_TARGETS} split).",
     )
     parser.add_argument("--seed", type=int, default=0, help="RNG seed.")
+    parser.add_argument(
+        "--save-epoch",
+        dest="save_epochs",
+        action="append",
+        type=int,
+        default=[],
+        help="Also save a normal checkpoint at this intermediate epoch. May be repeated.",
+    )
     args = parser.parse_args()
     train(
         epochs=args.epochs, batch_size=args.batch_size, lr=args.lr,
         seed=args.seed, enc_dim=args.enc_dim, n_targets=args.n_targets,
+        save_epochs=tuple(args.save_epochs),
     )
 
 

@@ -1,10 +1,10 @@
-"""Train a linear probe on the flattened I-JEPA output (or fine-tune end-to-end).
+"""Train a linear probe on an I-JEPA output (or fine-tune end-to-end).
 
-Puts a linear classification head on the **flattened** encoder output -- the N
-patch tokens concatenated (D = n_patches * embed_dim), keeping the per-patch
-layout rather than mean-pooling. Reports train accuracy on the 60K train set and
-writes a self-contained checkpoint (head + encoder weights + config) that
-:mod:`ijepa_trials.eval_probe` scores on the held-out test set.
+Puts a linear classification head on either the **flattened** encoder output
+(the N patch tokens concatenated) or the mean-pooled output. Reports train
+accuracy on the 60K train set and writes a self-contained checkpoint (head +
+encoder weights + config) that :mod:`ijepa_trials.eval_probe` scores on the
+held-out test set.
 
 Two modes, chosen with ``--unfreeze`` (default: frozen):
 
@@ -22,7 +22,7 @@ final checkpoint is written.
     python -m ijepa_trials.train_probe
     python -m ijepa_trials.train_probe --unfreeze --epochs 50
 
-Writes <project>/models/ijepa_clf_<mode>_flatten_<epochs>ep.pt (gitignored).
+Writes <project>/models/ijepa_clf_<mode>_<pool>_<epochs>ep.pt (gitignored).
 """
 
 from __future__ import annotations
@@ -48,8 +48,8 @@ from trials.eval_classifier import mnist_loader
 from trials.mae import pick_device
 
 N_CLASSES = 10
-POOL = "flatten"  # the spec: always probe the flattened output
-FAMILY = "ijepa-flatten-probe"
+DEFAULT_POOL = "flatten"
+FAMILY = "ijepa-probe"
 
 # Which pretrained encoder to probe. Each module exposes build_model() +
 # find_checkpoint(); encode() and the model attributes (n_patches, embed_dim) are
@@ -57,9 +57,9 @@ FAMILY = "ijepa-flatten-probe"
 ENCODERS = {"custom_ijepa": custom_ijepa, "cnn_stem_ijepa": cnn_stem_ijepa}
 
 
-def ckpt_stem(encoder: str, mode: str) -> str:
+def ckpt_stem(encoder: str, mode: str, pool: str = DEFAULT_POOL) -> str:
     """Partial/final filename stem (namespaced by encoder so runs don't collide)."""
-    return f"ijepa_clf_{encoder}_{mode}_{POOL}"
+    return f"ijepa_clf_{encoder}_{mode}_{pool}"
 
 
 # --------------------------------------------------------------------------- #
@@ -100,15 +100,15 @@ def load_encoder(
 
 
 @torch.no_grad()
-def extract_flatten_features(model: nn.Module, device: torch.device):
+def extract_features(model: nn.Module, device: torch.device, pool: str):
     """Run the frozen encoder over the (preprocessed) train split once.
 
-    Returns ``(X, y)`` with X the flattened per-patch embeddings.
+    Returns ``(X, y)`` with X the selected encoder embeddings.
     """
     model.eval()
     feats, labels = [], []
     for imgs, y in mnist_loader(train=True, batch_size=512, shuffle=False, preproc=True):
-        feats.append(model.encode(imgs.to(device), pool=POOL).cpu())
+        feats.append(model.encode(imgs.to(device), pool=pool).cpu())
         labels.append(y)
     return torch.cat(feats), torch.cat(labels)
 
@@ -153,8 +153,8 @@ def run_frozen(model: nn.Module, args, device):
         p.requires_grad_(False)
     model.eval()
 
-    print("Extracting flattened embeddings from the frozen encoder...")
-    Xtr, ytr = extract_flatten_features(model, device)
+    print(f"Extracting {args.pool} embeddings from the frozen encoder...")
+    Xtr, ytr = extract_features(model, device, args.pool)
     print(f"  train: {tuple(Xtr.shape)}")
     in_dim = Xtr.shape[1]
 
@@ -163,7 +163,7 @@ def run_frozen(model: nn.Module, args, device):
     crit = nn.CrossEntropyLoss()
     loader = DataLoader(TensorDataset(Xtr, ytr), batch_size=args.batch_size, shuffle=True)
 
-    stem = ckpt_stem(args.encoder, "probe")
+    stem = ckpt_stem(args.encoder, "probe", args.pool)
     start = _maybe_resume(stem, args.epochs, head, model, opt, device)
     for epoch in range(start, args.epochs + 1):
         head.train()
@@ -185,13 +185,13 @@ def run_frozen(model: nn.Module, args, device):
 
 
 def run_unfrozen(model: nn.Module, args, device):
-    """Fine-tune the encoder + head end-to-end on the labels (flatten-pooled)."""
+    """Fine-tune the encoder + head end-to-end on the labels."""
     # Make the whole encoder trainable -- the I-JEPA target encoder ships frozen
     # (requires_grad=False) from EMA pretraining.
     for p in model.parameters():
         p.requires_grad_(True)
 
-    in_dim = model.n_patches * model.embed_dim
+    in_dim = model.n_patches * model.embed_dim if args.pool == "flatten" else model.embed_dim
     head = nn.Linear(in_dim, N_CLASSES).to(device)
     opt = torch.optim.AdamW(
         list(model.parameters()) + list(head.parameters()),
@@ -201,7 +201,7 @@ def run_unfrozen(model: nn.Module, args, device):
     crit = nn.CrossEntropyLoss()
     loader = mnist_loader(train=True, batch_size=args.batch_size, shuffle=True, preproc=True)
 
-    stem = ckpt_stem(args.encoder, "finetune")
+    stem = ckpt_stem(args.encoder, "finetune", args.pool)
     start = _maybe_resume(stem, args.epochs, head, model, opt, device)
     for epoch in range(start, args.epochs + 1):
         model.train()
@@ -209,7 +209,7 @@ def run_unfrozen(model: nn.Module, args, device):
         running, seen = 0.0, 0
         for imgs, y in loader:
             imgs, y = imgs.to(device), y.to(device)
-            loss = crit(head(model.encode(imgs, pool=POOL)), y)
+            loss = crit(head(model.encode(imgs, pool=args.pool)), y)
             opt.zero_grad(set_to_none=True)
             loss.backward()
             opt.step()
@@ -227,13 +227,13 @@ def run_unfrozen(model: nn.Module, args, device):
 # Scoring + saving
 # --------------------------------------------------------------------------- #
 @torch.no_grad()
-def train_error(model: nn.Module, head: nn.Module, device) -> float:
-    """Misclassification rate on the (preprocessed) train split, flatten-pooled."""
+def train_error(model: nn.Module, head: nn.Module, device, pool: str) -> float:
+    """Misclassification rate on the (preprocessed) train split."""
     model.eval()
     head.eval()
     correct, total = 0, 0
     for imgs, y in mnist_loader(train=True, batch_size=512, shuffle=False, preproc=True):
-        pred = head(model.encode(imgs.to(device), pool=POOL)).argmax(dim=1).cpu()
+        pred = head(model.encode(imgs.to(device), pool=pool)).argmax(dim=1).cpu()
         correct += (pred == y).sum().item()
         total += len(y)
     return 1.0 - correct / total
@@ -254,6 +254,12 @@ def main() -> None:
         help="Which pretrained I-JEPA variant to probe.",
     )
     parser.add_argument("--epochs", type=int, default=50)
+    parser.add_argument(
+        "--pool",
+        choices=("mean", "flatten"),
+        default=DEFAULT_POOL,
+        help="Readout to probe: mean-pooled tokens or flattened token grid.",
+    )
     parser.add_argument("--batch-size", type=int, default=256)
     parser.add_argument("--lr", type=float, default=1e-3)
     parser.add_argument("--weight-decay", type=float, default=0.05)
@@ -292,7 +298,7 @@ def main() -> None:
 
     set_seed(args.seed)
     device = pick_device()
-    print(f"Seed: {args.seed}  Device: {device}  encoder: {args.encoder}  pool: {POOL} (preproc)")
+    print(f"Seed: {args.seed}  Device: {device}  encoder: {args.encoder}  pool: {args.pool} (preproc)")
 
     model = load_encoder(device, args.encoder, args.ckpt_epochs, args.n_targets)
 
@@ -301,14 +307,14 @@ def main() -> None:
         head, in_dim = run_unfrozen(model, args, device)
         mode, mode_label = "finetune", "fine-tuned encoder + linear head (flatten)"
     else:
-        print("Frozen linear probe (flatten-pooled).")
+        print(f"Frozen linear probe ({args.pool}-pooled).")
         head, in_dim = run_frozen(model, args, device)
-        mode, mode_label = "probe", "frozen-encoder linear probe (flatten-pooled)"
+        mode, mode_label = "probe", f"frozen-encoder linear probe ({args.pool}-pooled)"
 
-    err = train_error(model, head, device)
+    err = train_error(model, head, device, args.pool)
     print(f"Train accuracy: {1 - err:.2%}  (error {err:.2%})")
 
-    out = Path(args.out) if args.out else final_path(ckpt_stem(args.encoder, mode), args.epochs)
+    out = Path(args.out) if args.out else final_path(ckpt_stem(args.encoder, mode, args.pool), args.epochs)
     save_classifier(
         {
             "family": FAMILY,
@@ -316,7 +322,7 @@ def main() -> None:
             "arch": args.encoder,
             "mode": mode,
             "mode_label": mode_label,
-            "pool": POOL,
+            "pool": args.pool,
             "preproc": True,
             "enc_dim": model.embed_dim,
             "n_targets": getattr(model, "n_targets", None),
