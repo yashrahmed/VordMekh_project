@@ -1,6 +1,5 @@
 ## Goal
 - [Career - Agent assisted coding] - The RTS like code visualizer + editor addons.
-- Reference result from the embedding track: [99.50% MNIST triplet I-JEPA ensemble replication guide](../grasp-based-embeddings/docs/replicate_9950_triplet_ensemble.md).
 
 ## V0.1
 - Learn Three.js.

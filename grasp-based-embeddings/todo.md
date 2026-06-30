@@ -4,6 +4,7 @@
 
 ### Version 1 - 
 - [x] Beat **99.5% test accuracy on MNIST** using representations learned without label supervision (and if possible in a sample efficient way).
+- [Replication guide for the 99.50% MNIST triplet I-JEPA ensemble](docs/replicate_9950_triplet_ensemble.md).
 
 ### Version 2 -
 - [ ] Explore DINOV2 and V3, ConvNext and LeJEPA.
