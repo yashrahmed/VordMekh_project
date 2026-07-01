@@ -8,7 +8,7 @@
 
 ### Version 2 -
 - [ ] Explore DINOV2 and V3, ConvNext and LeJEPA.
-- [ ] Check if RL can be used to learn Visual strategy.
+- [ ] Check if RL can be used to learn Visual strategy (Try program synthesis based on IJEPA patch sampling and distance comparison).
 
 ## What I wish to test.
 1. Learning Patch embeddings.
