@@ -8,7 +8,10 @@
 
 ### Version 2 -
 - [ ] Explore DINOV2 and V3, ConvNext and LeJEPA.
-- [ ] Check if RL can be used to learn Visual strategy (Try program synthesis based on IJEPA patch sampling and distance comparison).
+- [ ] Check if RL and evolutionary programs can be used to learn Visual strategy (Try program synthesis based on IJEPA patch sampling and distance comparison).
+
+### Version 3 -
+- [ ] Run an experiment with Decision tree + Neural net hybrids.
 
 ## What I wish to test.
 1. Learning Patch embeddings.
