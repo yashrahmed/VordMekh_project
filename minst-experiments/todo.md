@@ -36,9 +36,10 @@
    6. [ ] Account for known MNIST **label errors** when reading these results — the test set has ~15 human-validated mislabels (~0.15%), a soft ~99.8% ceiling that several frozen probes are now brushing against. See the corrected-test-set viewer / indices: [labelerrors.com](https://labelerrors.com) ([Northcutt et al., NeurIPS 2021](https://arxiv.org/pdf/2103.14749); [cleanlab/label-errors](https://github.com/cleanlab/label-errors)).
 3. Additional material follow up -
    1. [ ] [Le-JEPA](https://arxiv.org/pdf/2511.08544)
-   2. [ ] [V-JEPA](https://arxiv.org/pdf/2601.14354)
+   2. [ ] [V-JEPA with action condition](https://arxiv.org/pdf/2601.14354) - See ways to sample trajectories.
    3. [ ] Explore [DINOv2](https://arxiv.org/pdf/2304.07193) — self-distillation SSL (augmentation-invariance vs JEPA's predictive pretext); strong frozen features.
    4. [ ] Explore [ConvNeXt](https://arxiv.org/pdf/2201.03545) — modern pure-ConvNet; its patchify conv stem is the natural front-end for the conv-stem idea (item 2.7).
+   5. [ ] Trace the lineage of the above ideas.
 ## Results — frozen embedding (5-NN, no labels reach the encoder)
 
 | method | 5-NN acc | |
