@@ -8,10 +8,12 @@
 
 ### Version 2 -
 - [ ] Explore DINOV2 and V3, ConvNext and LeJEPA.
-- [ ] Check if RL and evolutionary programs can be used to learn Visual strategy (Try program synthesis based on IJEPA patch sampling and distance comparison).
+- [ ] Check if RL and evolutionary programs can be used to learn Visual strategy (Try program synthesis based on IJEPA patch sampling and distance comparison). See notes about VJEPA actions below.
 
 ### Version 3 -
 - [ ] Run an experiment with Decision tree + Neural net hybrids.
+- [ ] Try using point tracking as a supervision signal to learn good features.
+- [ ] Try using VJEPA actions to develop sampling strategy.
 
 ## What I wish to test.
 1. Learning Patch embeddings.
@@ -39,7 +41,8 @@
    2. [ ] [V-JEPA with action condition](https://arxiv.org/pdf/2601.14354) - See ways to sample trajectories.
    3. [ ] Explore [DINOv2](https://arxiv.org/pdf/2304.07193) — self-distillation SSL (augmentation-invariance vs JEPA's predictive pretext); strong frozen features.
    4. [ ] Explore [ConvNeXt](https://arxiv.org/pdf/2201.03545) — modern pure-ConvNet; its patchify conv stem is the natural front-end for the conv-stem idea (item 2.7).
-   5. [ ] Trace the lineage of the above ideas.
+   5. [ ] Check out [LeWorldModel](https://arxiv.org/abs/2603.19312) 
+   6. [ ] Trace the lineage of the above ideas.
 ## Results — frozen embedding (5-NN, no labels reach the encoder)
 
 | method | 5-NN acc | |
