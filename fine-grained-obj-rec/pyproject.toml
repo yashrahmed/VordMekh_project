@@ -1,0 +1,20 @@
+[build-system]
+requires = ["hatchling"]
+build-backend = "hatchling.build"
+
+[project]
+name = "fine-grained-obj-rec"
+version = "0.1.0"
+description = "Sample-efficient fine-grained object recognition for aircraft and car make/model labels."
+readme = "todo.md"
+requires-python = ">=3.11"
+dependencies = []
+
+[dependency-groups]
+dev = ["pytest>=8"]
+
+[tool.uv]
+package = true
+
+[tool.hatch.build.targets.wheel]
+packages = ["src/fine_grained_obj_rec"]
