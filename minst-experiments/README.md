@@ -1,10 +1,11 @@
 # grasp-based-embeddings
 
 Small **self-supervised encoders** trained on MNIST: a Masked Autoencoder
-(He et al. 2021) in ViT and conv-net flavors, plus an I-JEPA (Assran et al.
-2023), with nearest-neighbor retrieval, k-NN, and classification evals over
-their encoder embeddings. The driving question — can we beat the MNIST
-benchmark with representations learned without label supervision?
+(He et al. 2021) in ViT and conv-net flavors, an I-JEPA (Assran et al. 2023),
+and a from-scratch DINOv2 implementation, with nearest-neighbor retrieval,
+k-NN, and classification evals over their encoder embeddings. The driving
+question — can we beat the MNIST benchmark with representations learned
+without label supervision?
 
 See [`todo.md`](todo.md) for the full idea, design notes, findings, and roadmap.
 
@@ -50,3 +51,17 @@ uv run python -m trials.knn --arch no-enc
 ```
 
 `dataset/`, `models/`, and `*.png` are gitignored.
+
+## DINOv2 (`dino-trials`)
+
+[`dino-trials`](dino-trials/README.md) implements the DINOv2 ViT, EMA teacher,
+DINO/iBOT/KoLeo losses, multi-crop augmentation, masking, and schedules directly
+with PyTorch primitives. Its defaults are scaled to MNIST while retaining the
+paper's training recipe:
+
+```bash
+uv run python dino-trials/train.py --epochs 100
+
+# Small end-to-end verification run
+uv run python dino-trials/train.py --epochs 2 --subset 512 --batch-size 64 --workers 0
+```
