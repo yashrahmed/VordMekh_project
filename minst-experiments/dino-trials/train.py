@@ -10,6 +10,7 @@ import argparse
 import json
 import math
 import random
+import re
 from dataclasses import asdict, dataclass
 from pathlib import Path
 
@@ -36,9 +37,9 @@ class Config:
     global_size: int = 56
     local_size: int = 28
     patch_size: int = 7
-    dim: int = 192
-    depth: int = 6
-    heads: int = 6
+    dim: int = 128
+    depth: int = 4
+    heads: int = 4
     prototypes: int = 1024
     head_hidden_dim: int = 512
     bottleneck_dim: int = 128
@@ -73,6 +74,47 @@ class Config:
     subset: int = 0
     workers: int = 2
     seed: int = 0
+
+
+CHECKPOINT_VERSION = 2
+
+
+def milestone_path(output: Path, epoch: int) -> Path:
+    return output.with_name(f"{output.stem}_epoch{epoch:04d}{output.suffix}")
+
+
+def rolling_path(output: Path) -> Path:
+    return output.with_name(f"{output.stem}_resume{output.suffix}")
+
+
+def parse_epoch_list(value: str) -> tuple[int, ...]:
+    epochs = tuple(sorted(set(int(item) for item in re.split(r"[, ]+", value.strip()) if item)))
+    if any(epoch < 1 for epoch in epochs):
+        raise argparse.ArgumentTypeError("checkpoint epochs must be positive")
+    return epochs
+
+
+def get_rng_state(device: torch.device) -> dict:
+    state = {
+        "python": random.getstate(),
+        "numpy": np.random.get_state(),
+        "torch": torch.get_rng_state(),
+    }
+    if device.type == "cuda":
+        state["device"] = torch.cuda.get_rng_state(device)
+    elif device.type == "mps":
+        state["device"] = torch.mps.get_rng_state()
+    return state
+
+
+def set_rng_state(state: dict, device: torch.device) -> None:
+    random.setstate(state["python"])
+    np.random.set_state(state["numpy"])
+    torch.set_rng_state(state["torch"])
+    if "device" in state and device.type == "cuda":
+        torch.cuda.set_rng_state(state["device"], device)
+    elif "device" in state and device.type == "mps":
+        torch.mps.set_rng_state(state["device"])
 
 
 def pick_device() -> torch.device:
@@ -152,7 +194,94 @@ def make_loader(config: Config) -> DataLoader:
     )
 
 
-def train(config: Config, output: Path, device: torch.device | None = None) -> dict:
+def checkpoint_payload(
+    config: Config,
+    model: StudentTeacher,
+    optimizer: torch.optim.Optimizer,
+    class_center: CenteredTeacher,
+    patch_center: CenteredTeacher,
+    history: list[dict],
+    device: torch.device,
+    global_step: int,
+) -> dict:
+    return {
+        "checkpoint_version": CHECKPOINT_VERSION,
+        "config": asdict(config),
+        "history": history,
+        "device": str(device),
+        "parameters": sum(p.numel() for p in model.student_parameters()),
+        "completed_epoch": len(history),
+        "global_step": global_step,
+        "teacher_backbone": model.teacher_backbone.state_dict(),
+        "teacher_dino_head": model.teacher_dino_head.state_dict(),
+        "teacher_ibot_head": model.teacher_ibot_head.state_dict(),
+        "student_backbone": model.student_backbone.state_dict(),
+        "student_dino_head": model.student_dino_head.state_dict(),
+        "student_ibot_head": model.student_ibot_head.state_dict(),
+        "class_center": class_center.state_dict(),
+        "patch_center": patch_center.state_dict(),
+        "optimizer": optimizer.state_dict(),
+        "rng_state": get_rng_state(device),
+    }
+
+
+def save_checkpoint(path: Path, payload: dict, write_metrics: bool = True) -> None:
+    path.parent.mkdir(parents=True, exist_ok=True)
+    temporary_path = path.with_suffix(path.suffix + ".tmp")
+    torch.save(payload, temporary_path)
+    temporary_path.replace(path)
+    if write_metrics:
+        result = {
+            key: payload[key]
+            for key in ("config", "history", "device", "parameters", "completed_epoch", "global_step")
+        }
+        path.with_suffix(".json").write_text(json.dumps(result, indent=2) + "\n")
+    print(f"checkpoint={path} epoch={payload['completed_epoch']}", flush=True)
+
+
+def restore_checkpoint(
+    path: Path,
+    config: Config,
+    model: StudentTeacher,
+    optimizer: torch.optim.Optimizer,
+    class_center: CenteredTeacher,
+    patch_center: CenteredTeacher,
+    device: torch.device,
+) -> tuple[list[dict], int, int]:
+    checkpoint = torch.load(path, map_location=device, weights_only=False)
+    if checkpoint.get("checkpoint_version", 0) < CHECKPOINT_VERSION:
+        raise ValueError(f"{path} is not a resumable version-{CHECKPOINT_VERSION} checkpoint")
+    saved_config = checkpoint["config"]
+    current_config = asdict(config)
+    mismatches = [
+        key for key, value in current_config.items()
+        if saved_config.get(key) != value
+    ]
+    if mismatches:
+        raise ValueError(f"resume configuration differs for: {', '.join(mismatches)}")
+    for name in (
+        "teacher_backbone", "teacher_dino_head", "teacher_ibot_head",
+        "student_backbone", "student_dino_head", "student_ibot_head",
+    ):
+        getattr(model, name).load_state_dict(checkpoint[name])
+    class_center.load_state_dict(checkpoint["class_center"])
+    patch_center.load_state_dict(checkpoint["patch_center"])
+    optimizer.load_state_dict(checkpoint["optimizer"])
+    set_rng_state(checkpoint["rng_state"], device)
+    start_epoch = checkpoint["completed_epoch"]
+    global_step = checkpoint["global_step"]
+    print(f"resumed={path} completed_epoch={start_epoch} global_step={global_step}", flush=True)
+    return checkpoint["history"], start_epoch, global_step
+
+
+def train(
+    config: Config,
+    output: Path,
+    device: torch.device | None = None,
+    checkpoint_epochs: tuple[int, ...] = (50, 75, 100),
+    checkpoint_every: int = 50,
+    resume: Path | None = None,
+) -> dict:
     seed_everything(config.seed)
     device = device or pick_device()
     loader = make_loader(config)
@@ -179,8 +308,15 @@ def train(config: Config, output: Path, device: torch.device | None = None) -> d
     total_steps = config.epochs * len(loader)
     warmup_steps = min(config.warmup_epochs, config.epochs // 2) * len(loader)
     teacher_warmup_steps = min(config.teacher_warmup_epochs, config.epochs // 2) * len(loader)
-    history = []
+    history: list[dict] = []
     global_step = 0
+    start_epoch = 0
+    if checkpoint_every < 0:
+        raise ValueError("--checkpoint-every cannot be negative")
+    if resume is not None:
+        history, start_epoch, global_step = restore_checkpoint(
+            resume, config, model, optimizer, class_center, patch_center, device
+        )
     print(
         f"device={device} samples={len(loader.dataset)} batches={len(loader)} "
         f"model=ViT-{config.depth}x{config.dim} patches={config.global_size // config.patch_size}x"
@@ -189,7 +325,7 @@ def train(config: Config, output: Path, device: torch.device | None = None) -> d
     )
 
     model.train()
-    for epoch in range(config.epochs):
+    for epoch in range(start_epoch, config.epochs):
         totals = {"loss": 0.0, "dino": 0.0, "ibot": 0.0, "koleo": 0.0}
         for views, _ in loader:
             global_crops = [crop.to(device) for crop in views["global"]]
@@ -199,10 +335,10 @@ def train(config: Config, output: Path, device: torch.device | None = None) -> d
                 make_masks(
                     batch_size,
                     config.global_size // config.patch_size,
-                    device,
+                    torch.device("cpu"),
                     (config.mask_ratio_min, config.mask_ratio_max),
                     config.mask_probability,
-                )
+                ).to(device)
                 for _ in global_crops
             ]
             lr = scheduled_value(
@@ -319,32 +455,33 @@ def train(config: Config, output: Path, device: torch.device | None = None) -> d
             flush=True,
         )
 
-    output.parent.mkdir(parents=True, exist_ok=True)
-    result = {
-        "config": asdict(config),
-        "history": history,
-        "device": str(device),
-        "parameters": sum(p.numel() for p in model.student_parameters()),
-    }
-    torch.save(
-        {
-            **result,
-            "teacher_backbone": model.teacher_backbone.state_dict(),
-            "teacher_dino_head": model.teacher_dino_head.state_dict(),
-            "teacher_ibot_head": model.teacher_ibot_head.state_dict(),
-            "student_backbone": model.student_backbone.state_dict(),
-            "student_dino_head": model.student_dino_head.state_dict(),
-            "student_ibot_head": model.student_ibot_head.state_dict(),
-        },
-        output,
+        payload = checkpoint_payload(
+            config, model, optimizer, class_center, patch_center,
+            history, device, global_step,
+        )
+        completed_epoch = epoch + 1
+        if completed_epoch in checkpoint_epochs:
+            save_checkpoint(milestone_path(output, completed_epoch), payload)
+        if checkpoint_every and completed_epoch % checkpoint_every == 0:
+            save_checkpoint(rolling_path(output), payload, write_metrics=False)
+
+    final_payload = checkpoint_payload(
+        config, model, optimizer, class_center, patch_center,
+        history, device, global_step,
     )
-    metrics_path = output.with_suffix(".json")
-    metrics_path.write_text(json.dumps(result, indent=2) + "\n")
-    print(f"saved={output} metrics={metrics_path}", flush=True)
+    save_checkpoint(output, final_payload)
+    temporary = rolling_path(output)
+    temporary.unlink(missing_ok=True)
+    temporary.with_suffix(".json").unlink(missing_ok=True)
+    print(f"completed={output} temporary_checkpoint_cleaned={temporary}", flush=True)
+    result = {
+        key: final_payload[key]
+        for key in ("config", "history", "device", "parameters", "completed_epoch", "global_step")
+    }
     return result
 
 
-def parse_args() -> tuple[Config, Path, torch.device | None]:
+def parse_args() -> tuple:
     parser = argparse.ArgumentParser(description=__doc__)
     parser.add_argument("--epochs", type=int, default=100)
     parser.add_argument("--batch-size", type=int, default=128)
@@ -352,9 +489,9 @@ def parse_args() -> tuple[Config, Path, torch.device | None]:
     parser.add_argument("--workers", type=int, default=2)
     parser.add_argument("--seed", type=int, default=0)
     parser.add_argument("--lr", type=float, default=5e-4)
-    parser.add_argument("--dim", type=int, default=192)
-    parser.add_argument("--depth", type=int, default=6)
-    parser.add_argument("--heads", type=int, default=6)
+    parser.add_argument("--dim", type=int, default=128)
+    parser.add_argument("--depth", type=int, default=4)
+    parser.add_argument("--heads", type=int, default=4)
     parser.add_argument("--prototypes", type=int, default=1024)
     parser.add_argument("--local-crops", type=int, default=4)
     parser.add_argument(
@@ -369,6 +506,18 @@ def parse_args() -> tuple[Config, Path, torch.device | None]:
     parser.add_argument("--device", choices=("cpu", "cuda", "mps"))
     parser.add_argument(
         "--output", type=Path, default=MODELS_DIR / "dinov2_mnist_preproc.pt"
+    )
+    parser.add_argument(
+        "--checkpoint-epochs", type=parse_epoch_list, default=(50, 75, 100),
+        help="Comma-separated milestone epochs to preserve (default: 50,75,100).",
+    )
+    parser.add_argument(
+        "--checkpoint-every", type=int, default=50,
+        help="Write a replaceable resumable checkpoint every N epochs; 0 disables it.",
+    )
+    parser.add_argument(
+        "--resume", type=Path,
+        help="Resume from a full training-state checkpoint.",
     )
     args = parser.parse_args()
     config = Config(
@@ -385,7 +534,14 @@ def parse_args() -> tuple[Config, Path, torch.device | None]:
         local_crops=args.local_crops,
         preprocess=args.preprocess,
     )
-    return config, args.output, torch.device(args.device) if args.device else None
+    return (
+        config,
+        args.output,
+        torch.device(args.device) if args.device else None,
+        args.checkpoint_epochs,
+        args.checkpoint_every,
+        args.resume,
+    )
 
 
 if __name__ == "__main__":

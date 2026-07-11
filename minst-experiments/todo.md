@@ -7,7 +7,7 @@
 - [Replication guide for the 99.50% MNIST triplet I-JEPA ensemble](docs/replicate_9950_triplet_ensemble.md).
 
 ### Version 2 -
-- [ ] Explore DINOV2 and V3, ConvNext and LeJEPA.
+- [ ] Explore additional self-supervised and modern vision architectures.
 - [ ] Check if RL and evolutionary programs can be used to learn Visual strategy (Try program synthesis based on IJEPA patch sampling and distance comparison). See notes about VJEPA actions below.
 
 ### Version 3 -
@@ -39,10 +39,183 @@
 3. Additional material follow up -
    1. [ ] [Le-JEPA](https://arxiv.org/pdf/2511.08544)
    2. [ ] [V-JEPA with action condition](https://arxiv.org/pdf/2601.14354) - See ways to sample trajectories.
-   3. [ ] Explore [DINOv2](https://arxiv.org/pdf/2304.07193) — self-distillation SSL (augmentation-invariance vs JEPA's predictive pretext); strong frozen features.
-   4. [ ] Explore [ConvNeXt](https://arxiv.org/pdf/2201.03545) — modern pure-ConvNet; its patchify conv stem is the natural front-end for the conv-stem idea (item 2.7).
-   5. [ ] Check out [LeWorldModel](https://arxiv.org/abs/2603.19312) 
-   6. [ ] Trace the lineage of the above ideas.
+   3. [ ] Explore [ConvNeXt](https://arxiv.org/pdf/2201.03545) — modern pure-ConvNet; its patchify conv stem is the natural front-end for the conv-stem idea (item 2.7).
+   4. [ ] Check out [LeWorldModel](https://arxiv.org/abs/2603.19312)
+   5. [ ] Trace the lineage of the above ideas.
+
+## DINOv2
+
+Paper: [DINOv2: Learning Robust Visual Features without Supervision](https://arxiv.org/pdf/2304.07193).
+Implementation: [`dino-trials/`](dino-trials/README.md).
+
+DINOv2 is the Version 2 self-distillation track: learn augmentation-invariant
+global features with the DINO class-token objective, retain spatial information
+with the iBOT masked-patch objective, and prevent global representation collapse
+with KoLeo. The implementation is built from PyTorch primitives rather than an
+external DINO/iBOT package.
+
+### Current MNIST configuration
+
+- **Input preprocessing (default):** raw `1x28x28` MNIST -> upscale to `1x56x56`
+  -> tight nonzero bounding-box crop -> stretch back to `1x56x56`. This matches
+  the geometry normalization that materially improved the custom I-JEPA runs.
+- **Views per image:** two `1x56x56` global crops and four `1x28x28` local
+  crops. The teacher receives the two unmasked global crops. The student
+  receives masked versions of those global crops plus all four unmasked local
+  crops. Views are resampled whenever an image is loaded.
+- **Patches:** non-overlapping `7x7` patches. A global crop gives an `8x8 = 64`
+  patch grid; a local crop gives a `4x4 = 16` patch grid.
+- **Backbone:** embedding width 128, four Transformer blocks, four attention
+  heads (32 dimensions per head), SwiGLU hidden width 344, LayerScale, and
+  stochastic depth.
+- **Projection heads:** independent DINO CLS and iBOT patch heads, each
+  `128 -> 512 -> 512 -> 128 -> 1024 prototypes`. Student and teacher have
+  separate copies of both heads; each teacher head is the EMA of its matching
+  student head.
+- **Student size:** 1,865,024 trainable parameters. Teacher parameters receive
+  no gradients and follow the student by EMA.
+
+### End-to-end tensor and loss flow
+
+```mermaid
+flowchart TD
+    A["Raw MNIST batch<br/>B x 1 x 28 x 28"]
+    P["Upscale + bbox crop/stretch<br/>B x 1 x 56 x 56"]
+    G["2 global crops<br/>each B x 1 x 56 x 56"]
+    L["4 local crops<br/>each B x 1 x 28 x 28"]
+
+    A --> P
+    P --> G
+    P --> L
+
+    G --> TG["Teacher backbone, unmasked<br/>sequence B x 65 x 128"]
+    G --> M["Replace selected patch embeddings<br/>with learned mask tokens"]
+    M --> SG["Student global backbone<br/>sequence B x 65 x 128"]
+    L --> SL["Student local backbone<br/>sequence B x 17 x 128"]
+
+    TG --> TC["Teacher global CLS<br/>2 tensors: B x 128"]
+    TG --> TP["Teacher global patches<br/>2 tensors: B x 64 x 128"]
+    SG --> SGC["Student global CLS<br/>2 tensors: B x 128"]
+    SG --> SGP["Student global patches<br/>2 tensors: B x 64 x 128"]
+    SL --> SLC["Student local CLS<br/>4 tensors: B x 128"]
+
+    TC --> TDH["Teacher DINO head<br/>128 -> 1024"]
+    SGC --> SDH["Student DINO head<br/>128 -> 1024"]
+    SLC --> SDH
+    TP --> TIH["Teacher iBOT head<br/>128 -> 1024 per patch"]
+    SGP --> SIH["Student iBOT head<br/>128 -> 1024 per patch"]
+
+    TDH --> DINO["DINO cross-view CLS loss"]
+    SDH --> DINO
+    TIH --> IBOT["iBOT same-view masked-patch loss"]
+    SIH --> IBOT
+    SGC --> KOLEO["KoLeo on raw normalized<br/>128-d global CLS embeddings"]
+
+    DINO --> TOTAL["Total loss<br/>DINO + iBOT + 0.1 KoLeo"]
+    IBOT --> TOTAL
+    KOLEO --> TOTAL
+```
+
+The patch embedding convolution has kernel and stride 7. After adding the CLS
+token and learned positional embeddings, the Transformer preserves the final
+dimension:
+
+| view | image tensor | patch output | + CLS Transformer sequence | final outputs |
+|---|---|---|---|---|
+| one global crop | `B x 1 x 56 x 56` | `B x 64 x 128` | `B x 65 x 128` | CLS `B x 128`; patches `B x 64 x 128` |
+| one local crop | `B x 1 x 28 x 28` | `B x 16 x 128` | `B x 17 x 128` | CLS `B x 128`; patches `B x 16 x 128` |
+
+A mask token is a learned 128-dimensional vector, not a black image patch. At a
+masked global position `i`, the student replaces the pixel-derived embedding
+while retaining position:
+
+```text
+patch_embedding_i + position_i  ->  mask_token + position_i
+```
+
+The teacher sees the same global crop without this replacement. Local crops are
+not masked.
+
+### Simplified objectives
+
+Use `T1`, `T2` for the teacher's two global views; `Sg1`, `Sg2` for the
+student's two global views; and `Sl1` through `Sl4` for the student local views.
+`H(T, S)` is cross-entropy between teacher and student distributions over the
+relevant head's 1,024 prototypes.
+
+The DINO image loss uses projected CLS tokens. It compares each teacher global
+view with the other student global view and every student local view—never the
+identical global view:
+
+```text
+L_DINO = (1/10) * [
+    H(T1, Sg2) + H(T2, Sg1)
+  + H(T1, Sl1) + H(T1, Sl2) + H(T1, Sl3) + H(T1, Sl4)
+  + H(T2, Sl1) + H(T2, Sl2) + H(T2, Sl3) + H(T2, Sl4)
+]
+```
+
+The iBOT patch loss uses the separate patch head. For masked position sets `M1`
+and `M2`, it compares the unmasked teacher patch with the same-position masked
+student patch. Local crops do not participate:
+
+```text
+L_iBOT = (1/2) * [
+    (1/|M1|) * sum over i in M1 of H(T1_patch_i, Sg1_patch_i)
+  + (1/|M2|) * sum over i in M2 of H(T2_patch_i, Sg2_patch_i)
+]
+```
+
+KoLeo operates before the projection head. For each student global crop, it
+L2-normalizes every `B x 128` CLS vector, finds each sample's nearest different
+sample in the batch, and minimizes the negative log of that distance. This
+spreads global image representations apart and discourages collapse. It is not
+a patch-level loss.
+
+```text
+L_total = L_DINO + L_iBOT + 0.1 * L_KoLeo
+```
+
+### Training and evaluation
+
+```bash
+# Default full training; preprocessing is on
+uv run python dino-trials/train.py --epochs 100
+
+# Explicit raw-image ablation
+uv run python dino-trials/train.py --epochs 100 --no-preprocess
+
+# Frozen-teacher weighted 5-NN evaluation. The preprocessing setting is read
+# from the checkpoint unless explicitly overridden.
+uv run python dino-trials/eval_knn.py \
+  --model models/dinov2_mnist_preproc.pt --k 5
+```
+
+Downstream evaluation discards both projection heads and uses the EMA teacher
+backbone. Available features are CLS (`128` dimensions), mean patch pooling
+(`128`), or their concatenation (`256`).
+
+### Validation and next work
+
+The current integration passed seven focused tests. A two-epoch smoke run on a
+512-image subset with batch size 64 completed on MPS with preprocessing and
+untied heads enabled; all six student/teacher backbone/head state dictionaries
+were finite. iBOT decreased `3.4150 -> 3.3235`, and KoLeo decreased
+`8.0325 -> 4.1506`. This validates execution, not representation quality.
+
+- [x] Implement the ViT, DINO/iBOT/KoLeo losses, EMA teacher, multi-crop
+  augmentation, schedules, masking, and checkpointing from scratch.
+- [x] Make the successful upscale/bbox preprocessing available and on by
+  default, with a raw-image ablation flag.
+- [x] Untie DINO and iBOT heads to match the final paper recipe.
+- [x] Add frozen-teacher weighted k-NN evaluation with checkpoint-aware
+  preprocessing.
+- [ ] Run the full pretraining schedule and record frozen 5-NN results for CLS,
+  mean-patch, and concatenated features.
+- [ ] Compare preprocessed vs raw inputs at matched seeds and budgets.
+- [ ] Sweep prototype count, local-crop count/scale, and mask ratio after a
+  stable full-run baseline exists.
+
 ## Results — frozen embedding (5-NN, no labels reach the encoder)
 
 | method | 5-NN acc | |

@@ -24,11 +24,12 @@ algorithm implementation is imported.
 
 The original recipe targets hundreds of millions of RGB images and very large
 ViTs. For MNIST, global crops are 56x56 and local crops 28x28, with 7x7 patches
-(8x8 and 4x4 token grids). The default encoder has dimension 192, six blocks,
-six heads, and 1,024 prototypes. Four local crops replace the paper's eight to
-avoid excessive duplicate content and compute on tiny digits. Brightness and
-contrast replace RGB color jitter, and horizontal flips are disabled because
-they are not label-preserving for digits. The iBOT mask interval (10%-50%),
+(8x8 and 4x4 token grids). The default encoder matches the custom I-JEPA scale:
+dimension 128, four blocks, four heads, and 1,024 prototypes. Four local crops
+replace the paper's eight to avoid excessive duplicate content and compute on
+tiny digits. Brightness and contrast replace RGB color jitter, and horizontal
+flips are disabled because they are not label-preserving for digits. The iBOT
+mask interval (10%-50%),
 masking probability (50%), loss weights, temperatures, KoLeo weight, and the
 0.994-to-1.0 teacher momentum schedule follow the paper/repository recipe.
 
@@ -48,7 +49,8 @@ From `minst-experiments`:
 
 ```bash
 uv sync
-uv run python dino-trials/train.py --epochs 100
+uv run python dino-trials/train.py \
+  --epochs 100 --checkpoint-epochs 50,75,100 --checkpoint-every 50
 
 # Frozen-teacher weighted k-NN evaluation; preprocessing is read from checkpoint
 uv run python dino-trials/eval_knn.py \
@@ -63,11 +65,26 @@ uv run python dino-trials/train.py \
   --output models/dinov2_mnist_smoke.pt
 ```
 
-The checkpoint contains both networks, separate DINO/iBOT head weights, the
-full configuration, and epoch metrics; the adjacent JSON file contains the
-configuration and metrics without model weights. For downstream features,
-instantiate `StudentTeacher` from the stored configuration, load
-`teacher_backbone`, and use `encode`.
+The 100-epoch command is one continuous run. It preserves
+`dinov2_mnist_preproc_epoch0050.pt`, `..._epoch0075.pt`, and
+`..._epoch0100.pt`, as well as the final `dinov2_mnist_preproc.pt`. A rolling
+`..._resume.pt` is replaced every 50 epochs and removed only after successful
+completion. If a run is interrupted after a rolling save, resume the same
+schedule and output with:
+
+```bash
+uv run python dino-trials/train.py \
+  --epochs 100 --checkpoint-epochs 50,75,100 --checkpoint-every 50 \
+  --resume models/dinov2_mnist_preproc_resume.pt
+```
+
+Every `.pt` checkpoint contains both networks, separate DINO/iBOT head weights,
+teacher centers, AdamW optimizer state, completed epoch/global step, RNG state,
+the full configuration, and epoch metrics. This makes both milestone and
+rolling checkpoints resumable. The adjacent JSON files contain configuration
+and metrics without tensors. For downstream features, instantiate
+`StudentTeacher` from the stored configuration, load `teacher_backbone`, and
+use `encode`.
 
 `eval_knn.py` applies the same deterministic preprocessing to both the MNIST
 reference and test splits. It follows the checkpoint's saved `preprocess` value

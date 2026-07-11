@@ -16,6 +16,14 @@ from losses import CenteredTeacher, dino_loss, ibot_loss, koleo_loss
 from model import StudentTeacher, VisionTransformer
 
 
+def test_default_backbone_matches_custom_ijepa_scale():
+    model = VisionTransformer()
+    assert model.dim == 128
+    assert len(model.blocks) == 4
+    assert model.blocks[0].attention.heads == 4
+    assert sum(parameter.numel() for parameter in model.parameters()) == 814_144
+
+
 def test_vit_supports_global_local_and_masked_views():
     model = VisionTransformer(image_size=56, patch_size=7, dim=48, depth=2, heads=3)
     global_images = torch.randn(2, 1, 56, 56)

@@ -30,9 +30,9 @@ def build_teacher(checkpoint: dict, device: torch.device) -> StudentTeacher:
     model = StudentTeacher(
         image_size=config.get("global_size", 56),
         patch_size=config.get("patch_size", 7),
-        dim=config.get("dim", 192),
-        depth=config.get("depth", 6),
-        heads=config.get("heads", 6),
+        dim=config.get("dim", 128),
+        depth=config.get("depth", 4),
+        heads=config.get("heads", 4),
         prototypes=config.get("prototypes", 1024),
         head_hidden_dim=config.get("head_hidden_dim", 512),
         bottleneck_dim=config.get("bottleneck_dim", 128),
