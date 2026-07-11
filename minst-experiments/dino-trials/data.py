@@ -8,10 +8,46 @@ import random
 import torch
 from torchvision import transforms
 from torchvision.transforms import InterpolationMode
+from torchvision.transforms import functional as TF
 
 
 MNIST_MEAN = (0.1307,)
 MNIST_STD = (0.3081,)
+
+
+def upscale_bbox(image: torch.Tensor, size: int = 56) -> torch.Tensor:
+    """Apply the successful custom-I-JEPA upscale/bbox/stretch preprocessing.
+
+    The order deliberately matches :func:`trials.mae.bbox_rescale`: resize the
+    original 28x28 tensor to ``size`` first, locate the nonzero foreground on
+    that upscaled image, crop to its tight bounding box, then stretch the crop
+    back to ``size`` x ``size``. Aspect ratio is intentionally not preserved.
+    """
+    image = TF.resize(image, [size, size], antialias=True)
+    foreground = image[0] > 0
+    if not foreground.any():
+        return image
+    rows = torch.where(foreground.any(dim=1))[0]
+    columns = torch.where(foreground.any(dim=0))[0]
+    crop = image[:, rows[0] : rows[-1] + 1, columns[0] : columns[-1] + 1]
+    return TF.resize(crop, [size, size], antialias=True)
+
+
+class EvaluationTransform:
+    """Deterministic teacher input with optional upscale-bbox preprocessing."""
+
+    def __init__(self, image_size: int = 56, preprocess: bool = True):
+        self.image_size = image_size
+        self.preprocess = preprocess
+        self.normalize = transforms.Normalize(MNIST_MEAN, MNIST_STD)
+
+    def __call__(self, image) -> torch.Tensor:
+        image = TF.to_tensor(image)
+        if self.preprocess:
+            image = upscale_bbox(image, self.image_size)
+        else:
+            image = TF.resize(image, [self.image_size, self.image_size], antialias=True)
+        return self.normalize(image)
 
 
 class MultiCropMNIST:
@@ -29,14 +65,15 @@ class MultiCropMNIST:
         local_crops: int = 4,
         global_scale: tuple[float, float] = (0.5, 1.0),
         local_scale: tuple[float, float] = (0.2, 0.5),
+        preprocess: bool = True,
     ):
         self.local_crops = local_crops
+        self.global_size = global_size
+        self.preprocess = preprocess
         color = transforms.RandomApply(
             [transforms.ColorJitter(brightness=0.4, contrast=0.4)], p=0.8
         )
-        normalize = transforms.Compose(
-            [transforms.ToTensor(), transforms.Normalize(MNIST_MEAN, MNIST_STD)]
-        )
+        normalize = transforms.Normalize(MNIST_MEAN, MNIST_STD)
 
         def geometric(size: int, scale: tuple[float, float]):
             return transforms.RandomResizedCrop(
@@ -44,14 +81,20 @@ class MultiCropMNIST:
             )
 
         self.global_one = transforms.Compose(
-            [geometric(global_size, global_scale), color, transforms.GaussianBlur(5, (0.1, 2.0)), normalize]
+            [
+                geometric(global_size, global_scale),
+                color,
+                transforms.GaussianBlur(5, (0.1, 2.0)),
+                normalize,
+            ]
         )
         self.global_two = transforms.Compose(
             [
                 geometric(global_size, global_scale),
                 color,
                 transforms.RandomApply([transforms.GaussianBlur(5, (0.1, 2.0))], p=0.1),
-                transforms.RandomSolarize(128, p=0.2),
+                # Views are tensors in [0, 1] after the common preprocessing.
+                transforms.RandomSolarize(0.5, p=0.2),
                 normalize,
             ]
         )
@@ -65,6 +108,11 @@ class MultiCropMNIST:
         )
 
     def __call__(self, image):
+        # Match custom I-JEPA before drawing DINO views:
+        # 28x28 -> upscale to 56x56 -> bbox crop/stretch -> augment -> network.
+        image = TF.to_tensor(image)
+        if self.preprocess:
+            image = upscale_bbox(image, self.global_size)
         return {
             "global": [self.global_one(image), self.global_two(image)],
             "local": [self.local(image) for _ in range(self.local_crops)],

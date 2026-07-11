@@ -209,7 +209,7 @@ class DINOHead(nn.Module):
 
 
 class StudentTeacher(nn.Module):
-    """Student and exponential-moving-average teacher used by DINOv2."""
+    """DINOv2 student and EMA teacher with independent CLS and patch heads."""
 
     def __init__(
         self,
@@ -239,23 +239,29 @@ class StudentTeacher(nn.Module):
             bottleneck_dim=bottleneck_dim,
         )
         self.student_backbone = VisionTransformer(**backbone_args)
-        self.student_head = DINOHead(**head_args)
+        self.student_dino_head = DINOHead(**head_args)
+        self.student_ibot_head = DINOHead(**head_args)
         self.teacher_backbone = VisionTransformer(**backbone_args)
-        self.teacher_head = DINOHead(**head_args)
+        self.teacher_dino_head = DINOHead(**head_args)
+        self.teacher_ibot_head = DINOHead(**head_args)
         self.teacher_backbone.load_state_dict(self.student_backbone.state_dict())
-        self.teacher_head.load_state_dict(self.student_head.state_dict())
+        self.teacher_dino_head.load_state_dict(self.student_dino_head.state_dict())
+        self.teacher_ibot_head.load_state_dict(self.student_ibot_head.state_dict())
         for parameter in self.teacher_parameters():
             parameter.requires_grad_(False)
         self.teacher_backbone.eval()
-        self.teacher_head.eval()
+        self.teacher_dino_head.eval()
+        self.teacher_ibot_head.eval()
 
     def student_parameters(self):
         yield from self.student_backbone.parameters()
-        yield from self.student_head.parameters()
+        yield from self.student_dino_head.parameters()
+        yield from self.student_ibot_head.parameters()
 
     def teacher_parameters(self):
         yield from self.teacher_backbone.parameters()
-        yield from self.teacher_head.parameters()
+        yield from self.teacher_dino_head.parameters()
+        yield from self.teacher_ibot_head.parameters()
 
     @torch.no_grad()
     def update_teacher(self, momentum: float) -> None:
@@ -266,7 +272,8 @@ class StudentTeacher(nn.Module):
         super().train(mode)
         # The teacher must remain deterministic even while the student uses DropPath.
         self.teacher_backbone.eval()
-        self.teacher_head.eval()
+        self.teacher_dino_head.eval()
+        self.teacher_ibot_head.eval()
         return self
 
     @torch.no_grad()
