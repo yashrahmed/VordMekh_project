@@ -24,11 +24,12 @@ algorithm implementation is imported.
 
 The original recipe targets hundreds of millions of RGB images and very large
 ViTs. For MNIST, global crops are 56x56 and local crops 28x28, with 7x7 patches
-(8x8 and 4x4 token grids). The default encoder has dimension 192, six blocks,
-six heads, and 1,024 prototypes. Four local crops replace the paper's eight to
-avoid excessive duplicate content and compute on tiny digits. Brightness and
-contrast replace RGB color jitter, and horizontal flips are disabled because
-they are not label-preserving for digits. The iBOT mask interval (10%-50%),
+(8x8 and 4x4 token grids). The default encoder matches the custom I-JEPA scale:
+dimension 128, four blocks, four heads, and 1,024 prototypes. Four local crops
+replace the paper's eight to avoid excessive duplicate content and compute on
+tiny digits. Brightness and contrast replace RGB color jitter, and horizontal
+flips are disabled because they are not label-preserving for digits. The iBOT
+mask interval (10%-50%),
 masking probability (50%), loss weights, temperatures, KoLeo weight, and the
 0.994-to-1.0 teacher momentum schedule follow the paper/repository recipe.
 

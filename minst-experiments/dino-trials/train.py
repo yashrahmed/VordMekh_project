@@ -37,9 +37,9 @@ class Config:
     global_size: int = 56
     local_size: int = 28
     patch_size: int = 7
-    dim: int = 192
-    depth: int = 6
-    heads: int = 6
+    dim: int = 128
+    depth: int = 4
+    heads: int = 4
     prototypes: int = 1024
     head_hidden_dim: int = 512
     bottleneck_dim: int = 128
@@ -489,9 +489,9 @@ def parse_args() -> tuple:
     parser.add_argument("--workers", type=int, default=2)
     parser.add_argument("--seed", type=int, default=0)
     parser.add_argument("--lr", type=float, default=5e-4)
-    parser.add_argument("--dim", type=int, default=192)
-    parser.add_argument("--depth", type=int, default=6)
-    parser.add_argument("--heads", type=int, default=6)
+    parser.add_argument("--dim", type=int, default=128)
+    parser.add_argument("--depth", type=int, default=4)
+    parser.add_argument("--heads", type=int, default=4)
     parser.add_argument("--prototypes", type=int, default=1024)
     parser.add_argument("--local-crops", type=int, default=4)
     parser.add_argument(

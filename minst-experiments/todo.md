@@ -65,14 +65,14 @@ external DINO/iBOT package.
   crops. Views are resampled whenever an image is loaded.
 - **Patches:** non-overlapping `7x7` patches. A global crop gives an `8x8 = 64`
   patch grid; a local crop gives a `4x4 = 16` patch grid.
-- **Backbone:** embedding width 192, six Transformer blocks, six attention
-  heads (32 dimensions per head), SwiGLU hidden width 512, LayerScale, and
+- **Backbone:** embedding width 128, four Transformer blocks, four attention
+  heads (32 dimensions per head), SwiGLU hidden width 344, LayerScale, and
   stochastic depth.
 - **Projection heads:** independent DINO CLS and iBOT patch heads, each
-  `192 -> 512 -> 512 -> 128 -> 1024 prototypes`. Student and teacher have
+  `128 -> 512 -> 512 -> 128 -> 1024 prototypes`. Student and teacher have
   separate copies of both heads; each teacher head is the EMA of its matching
   student head.
-- **Student size:** 3,812,288 trainable parameters. Teacher parameters receive
+- **Student size:** 1,865,024 trainable parameters. Teacher parameters receive
   no gradients and follow the student by EMA.
 
 ### End-to-end tensor and loss flow
@@ -88,28 +88,28 @@ flowchart TD
     P --> G
     P --> L
 
-    G --> TG["Teacher backbone, unmasked<br/>sequence B x 65 x 192"]
+    G --> TG["Teacher backbone, unmasked<br/>sequence B x 65 x 128"]
     G --> M["Replace selected patch embeddings<br/>with learned mask tokens"]
-    M --> SG["Student global backbone<br/>sequence B x 65 x 192"]
-    L --> SL["Student local backbone<br/>sequence B x 17 x 192"]
+    M --> SG["Student global backbone<br/>sequence B x 65 x 128"]
+    L --> SL["Student local backbone<br/>sequence B x 17 x 128"]
 
-    TG --> TC["Teacher global CLS<br/>2 tensors: B x 192"]
-    TG --> TP["Teacher global patches<br/>2 tensors: B x 64 x 192"]
-    SG --> SGC["Student global CLS<br/>2 tensors: B x 192"]
-    SG --> SGP["Student global patches<br/>2 tensors: B x 64 x 192"]
-    SL --> SLC["Student local CLS<br/>4 tensors: B x 192"]
+    TG --> TC["Teacher global CLS<br/>2 tensors: B x 128"]
+    TG --> TP["Teacher global patches<br/>2 tensors: B x 64 x 128"]
+    SG --> SGC["Student global CLS<br/>2 tensors: B x 128"]
+    SG --> SGP["Student global patches<br/>2 tensors: B x 64 x 128"]
+    SL --> SLC["Student local CLS<br/>4 tensors: B x 128"]
 
-    TC --> TDH["Teacher DINO head<br/>192 -> 1024"]
-    SGC --> SDH["Student DINO head<br/>192 -> 1024"]
+    TC --> TDH["Teacher DINO head<br/>128 -> 1024"]
+    SGC --> SDH["Student DINO head<br/>128 -> 1024"]
     SLC --> SDH
-    TP --> TIH["Teacher iBOT head<br/>192 -> 1024 per patch"]
-    SGP --> SIH["Student iBOT head<br/>192 -> 1024 per patch"]
+    TP --> TIH["Teacher iBOT head<br/>128 -> 1024 per patch"]
+    SGP --> SIH["Student iBOT head<br/>128 -> 1024 per patch"]
 
     TDH --> DINO["DINO cross-view CLS loss"]
     SDH --> DINO
     TIH --> IBOT["iBOT same-view masked-patch loss"]
     SIH --> IBOT
-    SGC --> KOLEO["KoLeo on raw normalized<br/>192-d global CLS embeddings"]
+    SGC --> KOLEO["KoLeo on raw normalized<br/>128-d global CLS embeddings"]
 
     DINO --> TOTAL["Total loss<br/>DINO + iBOT + 0.1 KoLeo"]
     IBOT --> TOTAL
@@ -122,10 +122,10 @@ dimension:
 
 | view | image tensor | patch output | + CLS Transformer sequence | final outputs |
 |---|---|---|---|---|
-| one global crop | `B x 1 x 56 x 56` | `B x 64 x 192` | `B x 65 x 192` | CLS `B x 192`; patches `B x 64 x 192` |
-| one local crop | `B x 1 x 28 x 28` | `B x 16 x 192` | `B x 17 x 192` | CLS `B x 192`; patches `B x 16 x 192` |
+| one global crop | `B x 1 x 56 x 56` | `B x 64 x 128` | `B x 65 x 128` | CLS `B x 128`; patches `B x 64 x 128` |
+| one local crop | `B x 1 x 28 x 28` | `B x 16 x 128` | `B x 17 x 128` | CLS `B x 128`; patches `B x 16 x 128` |
 
-A mask token is a learned 192-dimensional vector, not a black image patch. At a
+A mask token is a learned 128-dimensional vector, not a black image patch. At a
 masked global position `i`, the student replaces the pixel-derived embedding
 while retaining position:
 
@@ -167,7 +167,7 @@ L_iBOT = (1/2) * [
 ```
 
 KoLeo operates before the projection head. For each student global crop, it
-L2-normalizes every `B x 192` CLS vector, finds each sample's nearest different
+L2-normalizes every `B x 128` CLS vector, finds each sample's nearest different
 sample in the batch, and minimizes the negative log of that distance. This
 spreads global image representations apart and discourages collapse. It is not
 a patch-level loss.
@@ -192,8 +192,8 @@ uv run python dino-trials/eval_knn.py \
 ```
 
 Downstream evaluation discards both projection heads and uses the EMA teacher
-backbone. Available features are CLS (`192` dimensions), mean patch pooling
-(`192`), or their concatenation (`384`).
+backbone. Available features are CLS (`128` dimensions), mean patch pooling
+(`128`), or their concatenation (`256`).
 
 ### Validation and next work
 
