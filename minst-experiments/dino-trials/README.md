@@ -14,7 +14,8 @@ algorithm implementation is imported.
 - Cross-view DINO class-token loss with teacher centering and sharpening.
 - Same-view iBOT loss on block-masked student patch tokens; the teacher sees the
   corresponding unmasked global image.
-- A shared normalized prototype head for the class and patch objectives.
+- Independent normalized prototype heads for the DINO class-token and iBOT
+  patch-token objectives, matching the final paper recipe.
 - KoLeo entropy regularization on each global view's student class tokens.
 - AdamW, gradient clipping, last-layer freezing, and cosine learning-rate,
   weight-decay, and teacher-momentum schedules.
@@ -31,6 +32,12 @@ they are not label-preserving for digits. The iBOT mask interval (10%-50%),
 masking probability (50%), loss weights, temperatures, KoLeo weight, and the
 0.994-to-1.0 teacher momentum schedule follow the paper/repository recipe.
 
+The custom-I-JEPA preprocessing pipeline is enabled by default. Each raw MNIST
+image is converted to a tensor, upscaled from 28x28 to 56x56, cropped to the
+tight nonzero digit bounding box, and stretched back to 56x56. DINO global and
+local views are sampled only after this common preprocessing step. Use
+`--no-preprocess` for a raw-image ablation.
+
 Registers are deliberately absent: they were introduced in the later *Vision
 Transformers Need Registers* work and are not part of the original DINOv2
 paper's training architecture.
@@ -42,6 +49,10 @@ From `minst-experiments`:
 ```bash
 uv sync
 uv run python dino-trials/train.py --epochs 100
+
+# Frozen-teacher weighted k-NN evaluation; preprocessing is read from checkpoint
+uv run python dino-trials/eval_knn.py \
+  --model models/dinov2_mnist_preproc.pt --k 5
 ```
 
 A quick end-to-end verification run is:
@@ -52,10 +63,15 @@ uv run python dino-trials/train.py \
   --output models/dinov2_mnist_smoke.pt
 ```
 
-The checkpoint contains both networks, the full configuration, and epoch
-metrics; the adjacent JSON file contains the configuration and metrics without
-model weights. For downstream features, instantiate `StudentTeacher` from the
-stored configuration, load `teacher_backbone`, and use `encode`.
+The checkpoint contains both networks, separate DINO/iBOT head weights, the
+full configuration, and epoch metrics; the adjacent JSON file contains the
+configuration and metrics without model weights. For downstream features,
+instantiate `StudentTeacher` from the stored configuration, load
+`teacher_backbone`, and use `encode`.
+
+`eval_knn.py` applies the same deterministic preprocessing to both the MNIST
+reference and test splits. It follows the checkpoint's saved `preprocess` value
+by default and warns when `--preprocess` or `--no-preprocess` overrides it.
 
 ### Verified smoke run
 

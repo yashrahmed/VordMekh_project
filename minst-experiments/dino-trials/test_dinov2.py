@@ -6,10 +6,12 @@ import sys
 from pathlib import Path
 
 import torch
+from PIL import Image
 
 sys.path.insert(0, str(Path(__file__).parent))
 
-from data import make_masks
+from data import EvaluationTransform, MultiCropMNIST, make_masks, upscale_bbox
+from eval_knn import weighted_knn_accuracy
 from losses import CenteredTeacher, dino_loss, ibot_loss, koleo_loss
 from model import StudentTeacher, VisionTransformer
 
@@ -64,3 +66,75 @@ def test_teacher_is_ema_only_and_updates():
         next(model.student_parameters()).add_(1.0)
     model.update_teacher(0.5)
     assert not torch.equal(before[0], next(model.teacher_parameters()))
+
+
+def test_dino_and_ibot_heads_are_independent_ema_pairs():
+    model = StudentTeacher(
+        image_size=28,
+        patch_size=7,
+        dim=48,
+        depth=2,
+        heads=3,
+        prototypes=32,
+        head_hidden_dim=64,
+        bottleneck_dim=16,
+    )
+    assert (
+        model.student_dino_head.prototype_weight.data_ptr()
+        != model.student_ibot_head.prototype_weight.data_ptr()
+    )
+    assert torch.equal(
+        model.student_dino_head.prototype_weight,
+        model.teacher_dino_head.prototype_weight,
+    )
+    assert torch.equal(
+        model.student_ibot_head.prototype_weight,
+        model.teacher_ibot_head.prototype_weight,
+    )
+    before_ibot = model.student_ibot_head.prototype_weight.detach().clone()
+    with torch.no_grad():
+        model.student_dino_head.prototype_weight.add_(1.0)
+    assert torch.equal(model.student_ibot_head.prototype_weight, before_ibot)
+    model.update_teacher(0.5)
+    assert not torch.equal(
+        model.student_dino_head.prototype_weight,
+        model.teacher_dino_head.prototype_weight,
+    )
+    assert torch.equal(
+        model.student_ibot_head.prototype_weight,
+        model.teacher_ibot_head.prototype_weight,
+    )
+
+
+def test_preprocessing_matches_custom_ijepa_upscale_bbox_pipeline():
+    image = torch.zeros(1, 28, 28)
+    image[:, 8:20, 10:17] = 1.0
+    processed = upscale_bbox(image)
+    assert processed.shape == (1, 56, 56)
+    # The tight rectangular digit is stretched to fill the complete frame.
+    assert processed[:, 0].max() > 0
+    assert processed[:, -1].max() > 0
+    assert processed[:, :, 0].max() > 0
+    assert processed[:, :, -1].max() > 0
+
+
+def test_preprocessing_is_default_for_training_and_eval_transforms():
+    pil_image = Image.fromarray(torch.zeros(28, 28, dtype=torch.uint8).numpy())
+    training = MultiCropMNIST(local_crops=2)
+    views = training(pil_image)
+    assert training.preprocess is True
+    assert [tuple(view.shape) for view in views["global"]] == [(1, 56, 56)] * 2
+    assert [tuple(view.shape) for view in views["local"]] == [(1, 28, 28)] * 2
+    evaluation = EvaluationTransform()
+    assert evaluation.preprocess is True
+    assert evaluation(pil_image).shape == (1, 56, 56)
+
+
+def test_weighted_knn_evaluation():
+    train_features = torch.tensor([[1.0, 0.0], [0.9, 0.1], [0.0, 1.0], [0.1, 0.9]])
+    train_features = torch.nn.functional.normalize(train_features, dim=-1)
+    labels = torch.tensor([0, 0, 1, 1])
+    accuracy = weighted_knn_accuracy(
+        train_features, labels, train_features, labels, k=1, query_batch_size=2
+    )
+    assert accuracy == 1.0

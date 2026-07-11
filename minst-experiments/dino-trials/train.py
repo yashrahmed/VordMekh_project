@@ -44,6 +44,8 @@ class Config:
     bottleneck_dim: int = 128
     drop_path_rate: float = 0.1
     local_crops: int = 4
+    # Match the best custom-I-JEPA input pipeline by default.
+    preprocess: bool = True
     # Loss and teacher settings follow the DINOv2 recipe.
     dino_weight: float = 1.0
     ibot_weight: float = 1.0
@@ -107,9 +109,12 @@ def scheduled_value(
 
 def parameter_groups(model: StudentTeacher, weight_decay: float):
     decay, no_decay = [], []
-    for name, parameter in list(model.student_backbone.named_parameters()) + list(
-        model.student_head.named_parameters()
-    ):
+    named_parameters = (
+        [(f"backbone.{name}", parameter) for name, parameter in model.student_backbone.named_parameters()]
+        + [(f"dino_head.{name}", parameter) for name, parameter in model.student_dino_head.named_parameters()]
+        + [(f"ibot_head.{name}", parameter) for name, parameter in model.student_ibot_head.named_parameters()]
+    )
+    for name, parameter in named_parameters:
         if not parameter.requires_grad:
             continue
         if parameter.ndim <= 1 or any(
@@ -129,6 +134,7 @@ def make_loader(config: Config) -> DataLoader:
         global_size=config.global_size,
         local_size=config.local_size,
         local_crops=config.local_crops,
+        preprocess=config.preprocess,
     )
     dataset = datasets.MNIST(str(DATASET_DIR), train=True, download=True, transform=transform)
     if config.subset:
@@ -178,7 +184,7 @@ def train(config: Config, output: Path, device: torch.device | None = None) -> d
     print(
         f"device={device} samples={len(loader.dataset)} batches={len(loader)} "
         f"model=ViT-{config.depth}x{config.dim} patches={config.global_size // config.patch_size}x"
-        f"{config.global_size // config.patch_size}",
+        f"{config.global_size // config.patch_size} preprocess={config.preprocess}",
         flush=True,
     )
 
@@ -233,9 +239,11 @@ def train(config: Config, output: Path, device: torch.device | None = None) -> d
                 teacher_features = [
                     model.teacher_backbone.forward_features(crop) for crop in global_crops
                 ]
-                teacher_cls_logits = [model.teacher_head(cls) for cls, _ in teacher_features]
+                teacher_cls_logits = [
+                    model.teacher_dino_head(cls) for cls, _ in teacher_features
+                ]
                 teacher_patch_logits = [
-                    model.teacher_head(patches) for _, patches in teacher_features
+                    model.teacher_ibot_head(patches) for _, patches in teacher_features
                 ]
                 teacher_cls_probs = [
                     class_center.probabilities(logits, teacher_temp)
@@ -254,12 +262,14 @@ def train(config: Config, output: Path, device: torch.device | None = None) -> d
                 model.student_backbone.forward_features(crop) for crop in local_crops
             ]
             student_global_cls = [cls for cls, _ in student_global_features]
-            student_global_cls_logits = [model.student_head(cls) for cls in student_global_cls]
+            student_global_cls_logits = [
+                model.student_dino_head(cls) for cls in student_global_cls
+            ]
             student_local_cls_logits = [
-                model.student_head(cls) for cls, _ in student_local_features
+                model.student_dino_head(cls) for cls, _ in student_local_features
             ]
             student_patch_logits = [
-                model.student_head(patches) for _, patches in student_global_features
+                model.student_ibot_head(patches) for _, patches in student_global_features
             ]
 
             loss_dino = dino_loss(
@@ -285,7 +295,8 @@ def train(config: Config, output: Path, device: torch.device | None = None) -> d
             optimizer.zero_grad(set_to_none=True)
             loss.backward()
             if epoch < config.freeze_last_layer_epochs:
-                model.student_head.prototype_weight.grad = None
+                model.student_dino_head.prototype_weight.grad = None
+                model.student_ibot_head.prototype_weight.grad = None
             clip_grad_norm_(list(model.student_parameters()), config.gradient_clip)
             optimizer.step()
             model.update_teacher(momentum)
@@ -319,9 +330,11 @@ def train(config: Config, output: Path, device: torch.device | None = None) -> d
         {
             **result,
             "teacher_backbone": model.teacher_backbone.state_dict(),
-            "teacher_head": model.teacher_head.state_dict(),
+            "teacher_dino_head": model.teacher_dino_head.state_dict(),
+            "teacher_ibot_head": model.teacher_ibot_head.state_dict(),
             "student_backbone": model.student_backbone.state_dict(),
-            "student_head": model.student_head.state_dict(),
+            "student_dino_head": model.student_dino_head.state_dict(),
+            "student_ibot_head": model.student_ibot_head.state_dict(),
         },
         output,
     )
@@ -344,8 +357,19 @@ def parse_args() -> tuple[Config, Path, torch.device | None]:
     parser.add_argument("--heads", type=int, default=6)
     parser.add_argument("--prototypes", type=int, default=1024)
     parser.add_argument("--local-crops", type=int, default=4)
+    parser.add_argument(
+        "--preprocess",
+        action=argparse.BooleanOptionalAction,
+        default=True,
+        help=(
+            "Upscale to 56x56, bbox-crop the digit, and stretch it back before "
+            "multi-crop augmentation (default: enabled)."
+        ),
+    )
     parser.add_argument("--device", choices=("cpu", "cuda", "mps"))
-    parser.add_argument("--output", type=Path, default=MODELS_DIR / "dinov2_mnist.pt")
+    parser.add_argument(
+        "--output", type=Path, default=MODELS_DIR / "dinov2_mnist_preproc.pt"
+    )
     args = parser.parse_args()
     config = Config(
         epochs=args.epochs,
@@ -359,6 +383,7 @@ def parse_args() -> tuple[Config, Path, torch.device | None]:
         heads=args.heads,
         prototypes=args.prototypes,
         local_crops=args.local_crops,
+        preprocess=args.preprocess,
     )
     return config, args.output, torch.device(args.device) if args.device else None
 

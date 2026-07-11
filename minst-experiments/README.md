@@ -62,6 +62,9 @@ paper's training recipe:
 ```bash
 uv run python dino-trials/train.py --epochs 100
 
+# Evaluate frozen teacher features with the matching preprocessing
+uv run python dino-trials/eval_knn.py --model models/dinov2_mnist_preproc.pt
+
 # Small end-to-end verification run
 uv run python dino-trials/train.py --epochs 2 --subset 512 --batch-size 64 --workers 0
 ```
