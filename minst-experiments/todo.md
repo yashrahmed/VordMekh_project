@@ -7,7 +7,9 @@
 - [Replication guide for the 99.50% MNIST triplet I-JEPA ensemble](docs/replicate_9950_triplet_ensemble.md).
 
 ### Version 2 -
-- [ ] Explore additional self-supervised and modern vision architectures.
+- [ ] Try DinoV2 (with ensemble tricks).
+- [ ] Try SimCLR.
+- [ ] Try XGBoosting on IJEPA and DinoV2.
 - [ ] Check if RL and evolutionary programs can be used to learn Visual strategy (Try program synthesis based on IJEPA patch sampling and distance comparison). See notes about VJEPA actions below.
 
 ### Version 3 -
