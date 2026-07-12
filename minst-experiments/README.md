@@ -87,6 +87,16 @@ support, L2 regularization, and learning rate. This exploratory grid explicitly
 selects on MNIST test accuracy, so its winning score is test-tuned and should
 not be treated as an unbiased generalization estimate.
 
+For a validation-selected Random Forest grid over the same frozen backbone:
+
+```bash
+uv run python -m trials.random_forest_grid_search
+```
+
+This staged search uses a temporary feature cache, screens structure and
+sampling with 250 trees, refits the top three candidates with 1,000 trees, and
+evaluates the test split only once on the validation-selected winner.
+
 ## DINOv2 (`dino-trials`)
 
 [`dino-trials`](dino-trials/README.md) implements the DINOv2 ViT, EMA teacher,

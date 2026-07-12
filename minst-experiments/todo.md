@@ -9,7 +9,8 @@
 ### Version 2 -
 - [ ] Try DinoV2 (with ensemble tricks).
 - [ ] Try SimCLR.
-- [ ] Try XGBoosting on IJEPA and DinoV2.
+- [ ] Try ConvNext.
+- [x] Try XGBoosting and Random Forests on IJEPA.
 - [ ] Check if RL and evolutionary programs can be used to learn Visual strategy (Try program synthesis based on IJEPA patch sampling and distance comparison). See notes about VJEPA actions below.
 
 ### Version 3 -
@@ -716,6 +717,27 @@ head edges past every fine-tuned model.
    linear probe, much less reach 99.5%. The near-perfect fit and flat held-out
    scores strongly suggest that tuning boosted-tree capacity over the 128-d
    mean embedding is exhausted; a different representation/readout is needed.
+
+22. **Random Forest grid reaches 99.27%, also below the linear probe.** Ran a
+   validation-selected staged grid on the best frozen 300-epoch custom I-JEPA's
+   mean-pooled 128-d embeddings (seed 0, the same balanced 55K fit / 5K
+   validation split). The runner built its 35 MB feature cache in a temporary
+   directory and removed it after completion.
+
+   - Structure (18 x 250 trees): depth `{None,24}` x min leaf `{1,2,4}` x
+     features per split `{sqrt,.25,.5}`.
+   - Sampling/criterion refinement (14 new x 250 trees): top two structures x
+     Gini/entropy x bootstrap rows `{.5,.8,1.0}` or no bootstrap.
+   - Finalists: the top three were independently refit with 1,000 trees;
+     validation accuracy selected the winner and OOB accuracy broke ties.
+
+   The winner was **1,000 trees, depth 24, min leaf 1, 50% features per split,
+   Gini, 80% bootstrap rows**: **99.98% fit, 99.31% OOB, 99.20% validation,
+   99.27% test**. The test set was evaluated once after selection. Total forest
+   fitting time was about 48 minutes and the compressed winner is 44 MB. This
+   improves the initial 500-tree `sqrt` baseline by 0.02 pt, but trails XGBoost
+   (99.29%) and the flattened linear probe (99.36%). More classifier capacity
+   continues to fit the training embeddings without closing the held-out gap.
 
 **Caveat now flips to the task.** With the epoch confound removed, MNIST's ~97%
 pixel floor leaves little room to separate these pretexts, but the explicit goal
