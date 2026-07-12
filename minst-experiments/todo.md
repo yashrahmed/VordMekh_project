@@ -8,6 +8,9 @@
 
 ### Version 2 -
 - [ ] Try DinoV2 (with ensemble tricks).
+- [ ] Run a DINOv2 ablation with non-crop augmentations disabled: retain the
+  global/local crop fan-out and iBOT masking, but remove brightness/contrast
+  jitter, Gaussian blur, and solarization.
 - [ ] Try SimCLR.
 - [ ] Try ConvNext.
 - [x] Try XGBoosting and Random Forests on IJEPA.
@@ -200,7 +203,7 @@ backbone. Available features are CLS (`128` dimensions), mean patch pooling
 
 ### Validation and next work
 
-The current integration passed seven focused tests. A two-epoch smoke run on a
+The current integration passed ten focused tests. A two-epoch smoke run on a
 512-image subset with batch size 64 completed on MPS with preprocessing and
 untied heads enabled; all six student/teacher backbone/head state dictionaries
 were finite. iBOT decreased `3.4150 -> 3.3235`, and KoLeo decreased
@@ -213,11 +216,36 @@ were finite. iBOT decreased `3.4150 -> 3.3235`, and KoLeo decreased
 - [x] Untie DINO and iBOT heads to match the final paper recipe.
 - [x] Add frozen-teacher weighted k-NN evaluation with checkpoint-aware
   preprocessing.
-- [ ] Run the full pretraining schedule and record frozen 5-NN results for CLS,
-  mean-patch, and concatenated features.
+- [x] Run the full 100-epoch pretraining schedule and record frozen mean-patch
+  5-NN and linear-probe results at epochs 50, 75, and 100.
+- [ ] Evaluate the saved checkpoints with the official DINO CLS readout and the
+  CLS-plus-mean diagnostic; the completed result below is mean-patch only.
+- [ ] Ablate non-crop augmentations while retaining crop fan-out and iBOT masks:
+  disable brightness/contrast jitter, Gaussian blur, and solarization.
 - [ ] Compare preprocessed vs raw inputs at matched seeds and budgets.
 - [ ] Sweep prototype count, local-crop count/scale, and mask ratio after a
   stable full-run baseline exists.
+
+### Completed 100-epoch DINOv2 baseline
+
+The seed-0 MPS run used the configuration above and preserved full weights,
+optimizer state, teacher centers, RNG state, and metrics at epochs 50, 75, and
+100. Frozen downstream evaluation cached mean-pooled EMA-teacher patch features;
+no gradients reached the backbone, and its SHA-256 fingerprint matched before
+and after each 50-epoch linear probe.
+
+| encoder epoch | total pretext loss | DINO | iBOT | 5-NN test | linear train | linear test |
+|---:|---:|---:|---:|---:|---:|---:|
+| 50 | 3.3547 | 2.5280 | 0.8382 | 97.31% | 97.93% | 97.81% |
+| 75 | 2.9480 | 2.2300 | 0.7303 | 97.62% | 98.11% | 98.13% |
+| 100 | 2.8391 | 2.1370 | 0.7152 | 97.74% | 98.09% | 98.16% |
+
+The linear readout gained 0.32 points from 50 to 75 epochs but only 0.03 from
+75 to 100; linear train accuracy also plateaued near 98.1%. Weighted 5-NN kept
+improving, but its gain slowed from 0.31 to 0.12 points. This is evidence of
+strong diminishing returns for mean-pooled patch features, not yet for the
+official CLS token that the DINO image-level head directly trains. Evaluate CLS
+before deciding whether a 300-epoch backbone continuation is warranted.
 
 ## Results — frozen embedding (5-NN, no labels reach the encoder)
 
@@ -226,6 +254,7 @@ were finite. iBOT decreased `3.4150 -> 3.3235`, and KoLeo decreased
 | I-JEPA (preproc, 500 ep, flatten) | **99.01%** | new best — geometry-normalized (finding 11) |
 | I-JEPA (300 ep) | **98.18%** | best raw (ties ViT MAE) |
 | ViT MAE (300 ep) | **98.17%** | ties I-JEPA once epoch-matched |
+| DINOv2 (preproc, 100 ep, mean) | **97.74%** | frozen EMA teacher; CLS pending |
 | ViT MAE (50 ep) | 97.16% | the earlier gap was epochs, not pretext |
 | **raw pixels** | **96.88%** | floor — any learned embedding should beat this |
 | BRIEF, random (512 bits) | 93.77% | best random budget |
@@ -240,6 +269,7 @@ were finite. iBOT decreased `3.4150 -> 3.3235`, and KoLeo decreased
 | I-JEPA | 98.40% | **99.11%** | 98.69% |
 | I-JEPA (preproc, 500 ep) | — | **99.15%** | — |
 | CNN-stem I-JEPA (preproc, old stem, best) | — | **99.06%** | — |
+| DINOv2 (preproc, 100 ep) | 98.16% | — | — |
 | ViT MAE (300 ep) | 98.13% | 98.87% | 98.7% |
 | ViT MAE (50 ep) | 97.4% | — | — |
 | conv MAE | — | — | **99.0%** |
