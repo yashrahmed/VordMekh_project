@@ -9,7 +9,8 @@
 ### Version 2 -
 - [ ] Try DinoV2 (with ensemble tricks).
 - [ ] Try SimCLR.
-- [ ] Try XGBoosting on IJEPA and DinoV2.
+- [ ] Try ConvNext.
+- [x] Try XGBoosting and Random Forests on IJEPA.
 - [ ] Check if RL and evolutionary programs can be used to learn Visual strategy (Try program synthesis based on IJEPA patch sampling and distance comparison). See notes about VJEPA actions below.
 
 ### Version 3 -
