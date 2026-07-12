@@ -52,6 +52,20 @@ uv run python -m trials.knn --arch no-enc
 
 `dataset/`, `models/`, and `*.png` are gitignored.
 
+## Best custom I-JEPA frozen MLP probe
+
+The two-layer MLP experiment uses the best saved custom I-JEPA backbone
+(56x56 bbox preprocessing, 7px patches, 48 target / 16 context tokens, 300
+pretraining epochs), freezes it, and trains one head continuously to the 50,
+75, and 100-epoch evaluation milestones with seed 0:
+
+```bash
+uv run python -m ijepa_trials.mlp_probe
+```
+
+The head is `Linear(8192, 256) -> GELU -> Dropout(0.1) -> Linear(256, 10)`.
+Milestone checkpoints and a JSON result summary are written under `models/`.
+
 ## DINOv2 (`dino-trials`)
 
 [`dino-trials`](dino-trials/README.md) implements the DINOv2 ViT, EMA teacher,

@@ -57,6 +57,24 @@ FAMILY = "ijepa-probe"
 ENCODERS = {"custom_ijepa": custom_ijepa, "cnn_stem_ijepa": cnn_stem_ijepa}
 
 
+class TwoLayerMLP(nn.Sequential):
+    """Two affine layers with a GELU non-linearity and optional dropout."""
+
+    def __init__(
+        self,
+        in_dim: int,
+        hidden_dim: int,
+        n_classes: int = N_CLASSES,
+        dropout: float = 0.1,
+    ) -> None:
+        super().__init__(
+            nn.Linear(in_dim, hidden_dim),
+            nn.GELU(),
+            nn.Dropout(dropout),
+            nn.Linear(hidden_dim, n_classes),
+        )
+
+
 def ckpt_stem(encoder: str, mode: str, pool: str = DEFAULT_POOL) -> str:
     """Partial/final filename stem (namespaced by encoder so runs don't collide)."""
     return f"ijepa_clf_{encoder}_{mode}_{pool}"

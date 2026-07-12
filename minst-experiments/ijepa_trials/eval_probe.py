@@ -18,7 +18,7 @@ import argparse
 import torch
 import torch.nn as nn
 
-from ijepa_trials.train_probe import DEFAULT_POOL, ENCODERS, N_CLASSES
+from ijepa_trials.train_probe import DEFAULT_POOL, ENCODERS, N_CLASSES, TwoLayerMLP
 from trials.eval_classifier import mnist_loader
 from trials.mae import pick_device
 
@@ -39,7 +39,15 @@ def test_error(model: nn.Module, head: nn.Module, device, pool: str) -> float:
 def evaluate(ckpt: dict, device: torch.device) -> float:
     """Rebuild the (frozen-probe or fine-tuned) encoder + head and score the test set."""
     pool = ckpt.get("pool", DEFAULT_POOL)
-    head = nn.Linear(ckpt["in_dim"], ckpt.get("n_classes", N_CLASSES)).to(device)
+    if ckpt.get("head_type", "linear") == "mlp-2layer":
+        head = TwoLayerMLP(
+            ckpt["in_dim"],
+            ckpt["hidden_dim"],
+            ckpt.get("n_classes", N_CLASSES),
+            ckpt.get("dropout", 0.1),
+        ).to(device)
+    else:
+        head = nn.Linear(ckpt["in_dim"], ckpt.get("n_classes", N_CLASSES)).to(device)
     head.load_state_dict(ckpt["head_state_dict"])
 
     # Rebuild the matching encoder. Map pre-rename checkpoint labels to the new names.

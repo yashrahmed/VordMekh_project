@@ -650,6 +650,25 @@ head edges past every fine-tuned model.
    100-ep sweep alone: for this 48-16 / 64-token geometry, more encoder training
    past ~300 ep and more probe training past 50 ep are not the path to 99.5%.
 
+19. **A two-layer MLP does not improve on the best frozen linear probe.** Froze
+   the best available custom I-JEPA backbone (56x56 upscaled-bbox, 7px patches,
+   8x8 grid, 48 targets / 16 context, enc_dim 128, 300 encoder epochs) and
+   cached its flattened 8192-d token grid. Trained a
+   `8192 -> 256 -> 10` MLP (`GELU`, dropout 0.1, AdamW lr 1e-3 / wd 0.05,
+   batch 256) in one continuous seed-0 run, evaluating the same head trajectory
+   at the requested milestones.
+
+   | MLP epoch | train acc | test acc |
+   |---:|---:|---:|
+   | 50 | 99.86% | 99.14% |
+   | **75** | **99.95%** | **99.28%** |
+   | 100 | 99.91% | 99.21% |
+
+   The best MLP point is 75 epochs. It trails the same backbone's 50-epoch
+   flattened linear probe (99.36%) by 0.08 pt, and the 75 -> 100 regression is
+   consistent with mild head overfitting. Nonlinearity/capacity in this simple
+   head is therefore not the missing ingredient for reaching 99.5%.
+
 **Caveat now flips to the task.** With the epoch confound removed, MNIST's ~97%
 pixel floor leaves little room to separate these pretexts, but the explicit goal
 is still to push the unsupervised MNIST pipeline past **99.5%**. Future work
