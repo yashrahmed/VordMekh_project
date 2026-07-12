@@ -50,7 +50,7 @@ From `minst-experiments`:
 ```bash
 uv sync
 uv run python dino-trials/train.py \
-  --epochs 100 --checkpoint-epochs 50,75,100 --checkpoint-every 50
+  --epochs 100 --checkpoint-epochs 50,75,100 --checkpoint-every 10
 
 # Frozen-teacher weighted k-NN evaluation; preprocessing is read from checkpoint
 uv run python dino-trials/eval_knn.py \
@@ -68,14 +68,27 @@ uv run python dino-trials/train.py \
 The 100-epoch command is one continuous run. It preserves
 `dinov2_mnist_preproc_epoch0050.pt`, `..._epoch0075.pt`, and
 `..._epoch0100.pt`, as well as the final `dinov2_mnist_preproc.pt`. A rolling
-`..._resume.pt` is replaced every 50 epochs and removed only after successful
+`..._resume.pt` is replaced every 10 epochs and removed only after successful
 completion. If a run is interrupted after a rolling save, resume the same
 schedule and output with:
 
 ```bash
 uv run python dino-trials/train.py \
-  --epochs 100 --checkpoint-epochs 50,75,100 --checkpoint-every 50 \
+  --epochs 100 --checkpoint-epochs 50,75,100 --checkpoint-every 10 \
   --resume models/dinov2_mnist_preproc_resume.pt
+```
+
+A complete 100-epoch checkpoint may also seed a longer schedule while every
+other saved configuration field remains fixed. Use different outputs to fork
+independent continuations:
+
+```bash
+uv run python dino-trials/train.py --epochs 300 --checkpoint-every 10 \
+  --resume models/dinov2_mnist_preproc_epoch0100.pt \
+  --output models/dinov2_mnist_preproc_from100_to300.pt
+uv run python dino-trials/train.py --epochs 500 --checkpoint-every 10 \
+  --resume models/dinov2_mnist_preproc_epoch0100.pt \
+  --output models/dinov2_mnist_preproc_from100_to500.pt
 ```
 
 Every `.pt` checkpoint contains both networks, separate DINO/iBOT head weights,
@@ -90,10 +103,38 @@ use `encode`.
 reference and test splits. It follows the checkpoint's saved `preprocess` value
 by default and warns when `--preprocess` or `--no-preprocess` overrides it.
 
+`eval_frozen.py` caches frozen EMA-teacher features, evaluates weighted 5-NN,
+trains a resumable linear probe, and fingerprints the backbone before and after
+probe training. It supports `--pool cls`, `--pool mean`, and `--pool concat`:
+
+```bash
+uv run python dino-trials/eval_frozen.py \
+  --model models/dinov2_mnist_preproc_epoch0100.pt \
+  --pool cls --output models/dinov2_cls_base100ep_linear50ep.pt
+```
+
+## 100-epoch MNIST result
+
+One continuous seed-0 MPS run saved full training-state checkpoints at epochs
+50, 75, and 100. The frozen evaluation below used mean-pooled EMA-teacher patch
+tokens and a 50-epoch linear head; the backbone fingerprint was identical
+before and after every evaluation.
+
+| pretrain epoch | pretext loss | weighted 5-NN | linear train | linear test |
+|---:|---:|---:|---:|---:|
+| 50 | 3.3547 | 97.31% | 97.93% | 97.81% |
+| 75 | 2.9480 | 97.62% | 98.11% | 98.13% |
+| 100 | 2.8391 | 97.74% | 98.09% | 98.16% |
+
+The downstream gains flattened between epochs 75 and 100 even though the
+self-supervised loss continued to fall. These are mean-patch results, not the
+official DINO CLS readout; CLS and CLS-plus-mean evaluation remain follow-ups.
+
 ### Verified smoke run
 
-The command above was run on a 512-image subset (8 batches per epoch) using the
-default 3,254,080-parameter student. It completed two epochs with finite losses
+The two-epoch smoke command was run on a 512-image subset (8 batches per epoch)
+using the default 3,254,080-parameter student. It completed two epochs with
+finite losses
 and finite student/teacher checkpoint weights. The iBOT term changed from
 3.4010 to 3.3017 and KoLeo from 8.1622 to 4.2933. The DINO term changed from
 6.2564 to 6.8687 while the teacher temperature warmed from 0.04 to 0.07; these

@@ -14,6 +14,7 @@ from data import EvaluationTransform, MultiCropMNIST, make_masks, upscale_bbox
 from eval_knn import weighted_knn_accuracy
 from losses import CenteredTeacher, dino_loss, ibot_loss, koleo_loss
 from model import StudentTeacher, VisionTransformer
+from train import Config, checkpoint_payload, parameter_groups, resume_config_mismatches
 
 
 def test_default_backbone_matches_custom_ijepa_scale():
@@ -146,3 +147,47 @@ def test_weighted_knn_evaluation():
         train_features, labels, train_features, labels, k=1, query_batch_size=2
     )
     assert accuracy == 1.0
+
+
+def test_100_epoch_checkpoint_can_extend_to_300_or_500_only():
+    saved = Config(epochs=100).__dict__
+    assert resume_config_mismatches(saved, Config(epochs=300).__dict__, 100) == []
+    assert resume_config_mismatches(saved, Config(epochs=500).__dict__, 100) == []
+    assert resume_config_mismatches(saved, Config(epochs=75).__dict__, 100) == ["epochs"]
+
+    changed = Config(epochs=300, dim=256).__dict__
+    assert resume_config_mismatches(saved, changed, 100) == ["dim"]
+
+
+def test_checkpoint_payload_contains_full_training_state():
+    config = Config(dim=48, depth=2, heads=3, prototypes=32)
+    model = StudentTeacher(
+        dim=config.dim,
+        depth=config.depth,
+        heads=config.heads,
+        prototypes=config.prototypes,
+        head_hidden_dim=64,
+        bottleneck_dim=16,
+    )
+    optimizer = torch.optim.AdamW(parameter_groups(model, config.weight_decay))
+    class_center = CenteredTeacher(config.prototypes)
+    patch_center = CenteredTeacher(config.prototypes)
+    payload = checkpoint_payload(
+        config, model, optimizer, class_center, patch_center, [], torch.device("cpu"), 0
+    )
+    required = {
+        "teacher_backbone",
+        "teacher_dino_head",
+        "teacher_ibot_head",
+        "student_backbone",
+        "student_dino_head",
+        "student_ibot_head",
+        "class_center",
+        "patch_center",
+        "optimizer",
+        "rng_state",
+        "config",
+        "completed_epoch",
+        "global_step",
+    }
+    assert required <= payload.keys()

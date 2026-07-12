@@ -239,6 +239,27 @@ def save_checkpoint(path: Path, payload: dict, write_metrics: bool = True) -> No
     print(f"checkpoint={path} epoch={payload['completed_epoch']}", flush=True)
 
 
+def resume_config_mismatches(
+    saved_config: dict,
+    current_config: dict,
+    completed_epoch: int,
+) -> list[str]:
+    """Return incompatible configuration fields for a resumed run.
+
+    ``epochs`` is the one field that may grow. This permits a completed
+    100-epoch checkpoint to seed independent 300- and 500-epoch continuations
+    while keeping every architecture, data, optimizer, and seed setting fixed.
+    """
+    mismatches = [
+        key
+        for key, value in current_config.items()
+        if key != "epochs" and saved_config.get(key) != value
+    ]
+    if current_config["epochs"] < completed_epoch:
+        mismatches.append("epochs")
+    return mismatches
+
+
 def restore_checkpoint(
     path: Path,
     config: Config,
@@ -253,12 +274,17 @@ def restore_checkpoint(
         raise ValueError(f"{path} is not a resumable version-{CHECKPOINT_VERSION} checkpoint")
     saved_config = checkpoint["config"]
     current_config = asdict(config)
-    mismatches = [
-        key for key, value in current_config.items()
-        if saved_config.get(key) != value
-    ]
+    mismatches = resume_config_mismatches(
+        saved_config, current_config, checkpoint["completed_epoch"]
+    )
     if mismatches:
         raise ValueError(f"resume configuration differs for: {', '.join(mismatches)}")
+    if saved_config.get("epochs") != current_config["epochs"]:
+        print(
+            f"extending_schedule={saved_config.get('epochs')}->{current_config['epochs']} "
+            f"from_epoch={checkpoint['completed_epoch']}",
+            flush=True,
+        )
     for name in (
         "teacher_backbone", "teacher_dino_head", "teacher_ibot_head",
         "student_backbone", "student_dino_head", "student_ibot_head",
