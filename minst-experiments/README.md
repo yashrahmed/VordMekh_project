@@ -52,6 +52,41 @@ uv run python -m trials.knn --arch no-enc
 
 `dataset/`, `models/`, and `*.png` are gitignored.
 
+## Best custom I-JEPA frozen MLP probe
+
+The two-layer MLP experiment uses the best saved custom I-JEPA backbone
+(56x56 bbox preprocessing, 7px patches, 48 target / 16 context tokens, 300
+pretraining epochs), freezes it, and trains one head continuously to the 50,
+75, and 100-epoch evaluation milestones with seed 0:
+
+```bash
+uv run python -m trials.mlp_probe
+```
+
+The head is `Linear(8192, 256) -> GELU -> Dropout(0.1) -> Linear(256, 10)`.
+Milestone checkpoints and a JSON result summary are written under `models/`.
+
+For a regularized boosted-tree probe over the same frozen backbone:
+
+```bash
+uv run python -m trials.xgboost_probe
+```
+
+The current defaults use mean-pooled 128-d features, depth-8 trees, 50% row and
+50% feature sampling per tree, and a class-balanced validation slice for early
+stopping, keeping the test split out of model selection.
+
+To run the staged hyperparameter grid over the cached features:
+
+```bash
+uv run python -m trials.xgboost_grid_search
+```
+
+The grid searches tree depth and row/feature sampling first, then refines leaf
+support, L2 regularization, and learning rate. This exploratory grid explicitly
+selects on MNIST test accuracy, so its winning score is test-tuned and should
+not be treated as an unbiased generalization estimate.
+
 ## DINOv2 (`dino-trials`)
 
 [`dino-trials`](dino-trials/README.md) implements the DINOv2 ViT, EMA teacher,

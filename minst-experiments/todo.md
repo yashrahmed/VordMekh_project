@@ -650,6 +650,73 @@ head edges past every fine-tuned model.
    100-ep sweep alone: for this 48-16 / 64-token geometry, more encoder training
    past ~300 ep and more probe training past 50 ep are not the path to 99.5%.
 
+19. **A two-layer MLP does not improve on the best frozen linear probe.** Froze
+   the best available custom I-JEPA backbone (56x56 upscaled-bbox, 7px patches,
+   8x8 grid, 48 targets / 16 context, enc_dim 128, 300 encoder epochs) and
+   cached its flattened 8192-d token grid. Trained a
+   `8192 -> 256 -> 10` MLP (`GELU`, dropout 0.1, AdamW lr 1e-3 / wd 0.05,
+   batch 256) in one continuous seed-0 run, evaluating the same head trajectory
+   at the requested milestones.
+
+   | MLP epoch | train acc | test acc |
+   |---:|---:|---:|
+   | 50 | 99.86% | 99.14% |
+   | **75** | **99.95%** | **99.28%** |
+   | 100 | 99.91% | 99.21% |
+
+   The best MLP point is 75 epochs. It trails the same backbone's 50-epoch
+   flattened linear probe (99.36%) by 0.08 pt, and the 75 -> 100 regression is
+   consistent with mild head overfitting. Nonlinearity/capacity in this simple
+   head is therefore not the missing ingredient for reaching 99.5%.
+
+20. **Regularized XGBoost matches the MLP but not the linear probe.** Froze the
+   same best 300-epoch custom I-JEPA backbone and trained XGBoost on its
+   mean-pooled 128-d embeddings. The seed-0 first pass used histogram trees,
+   max depth 5, learning rate 0.05, **20% row sampling per round**, 80% column
+   sampling, L1 0.05 / L2 5, and a 5,000-example class-balanced validation
+   slice. Early stopping selected iteration 375 (training stopped after round
+   424).
+
+   | classifier | fit acc | validation acc | test acc |
+   |---|---:|---:|---:|
+   | depth 5, rows 20%, cols 80% | 99.63% | 99.22% | **99.29%** |
+   | depth 8, rows 50%, cols 50% | 99.89% | 99.22% | 99.24% |
+
+   This is effectively tied with the two-layer MLP's 99.28% and trails the
+   reproduced flattened linear probe's 99.36% by 0.07 pt. The modest
+   fit/validation gap suggests regularization is doing its job; boosted-tree
+   capacity alone does not improve the current representation. The experiment
+   keeps validation model selection separate from the MNIST test split.
+
+   **Deeper-tree follow-up.** Increasing row sampling to 50%, reducing column
+   sampling to 50%, and raising max depth to 8 selected iteration 285 and
+   lowered test accuracy by 0.05 pt. Fit accuracy rose by 0.26 pt while
+   validation accuracy did not move, direct evidence that the added depth
+   increased overfitting rather than useful capacity.
+
+21. **A 37-candidate XGBoost grid still tops out at 99.29%.** Ran a staged,
+   seed-0 grid on the same fixed mean-pooled feature split. Per the exploratory
+   protocol, candidates were selected directly by MNIST test accuracy
+   (validation accuracy and then validation log-loss broke ties), so this is an
+   intentionally test-tuned result rather than an unbiased generalization
+   estimate.
+
+   - Structural grid (27): depth `{3,5,8}` x row sampling `{.5,.75,1}` x
+     column sampling `{.5,.75,1}`.
+   - Regularization refinement (8 new): min child weight `{1,2,5}` x L2
+     `{1,5,15}` around the structural winner.
+   - Learning-rate refinement (2 new): `{.025,.1}` around the best-so-far
+     configuration (`.05` was already evaluated).
+
+   The winner was **depth 8, rows .75, columns 1.0, min child weight 2, L2 5,
+   lr .05**, early-stopped at iteration 287: **99.99% fit, 99.16% validation,
+   99.29% test**. The runner-up reached 99.28% test with materially better
+   validation (99.24%), while no candidate exceeded the earlier 99.29% XGBoost
+   result. Even selecting on the test set could not beat the 99.36% flattened
+   linear probe, much less reach 99.5%. The near-perfect fit and flat held-out
+   scores strongly suggest that tuning boosted-tree capacity over the 128-d
+   mean embedding is exhausted; a different representation/readout is needed.
+
 **Caveat now flips to the task.** With the epoch confound removed, MNIST's ~97%
 pixel floor leaves little room to separate these pretexts, but the explicit goal
 is still to push the unsupervised MNIST pipeline past **99.5%**. Future work
