@@ -76,6 +76,17 @@ The current defaults use mean-pooled 128-d features, depth-8 trees, 50% row and
 50% feature sampling per tree, and a class-balanced validation slice for early
 stopping, keeping the test split out of model selection.
 
+To run the staged hyperparameter grid over the cached features:
+
+```bash
+uv run python -m ijepa_trials.xgboost_grid_search
+```
+
+The grid searches tree depth and row/feature sampling first, then refines leaf
+support, L2 regularization, and learning rate. This exploratory grid explicitly
+selects on MNIST test accuracy, so its winning score is test-tuned and should
+not be treated as an unbiased generalization estimate.
+
 ## DINOv2 (`dino-trials`)
 
 [`dino-trials`](dino-trials/README.md) implements the DINOv2 ViT, EMA teacher,

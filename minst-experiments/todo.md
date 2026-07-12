@@ -694,6 +694,29 @@ head edges past every fine-tuned model.
    validation accuracy did not move, direct evidence that the added depth
    increased overfitting rather than useful capacity.
 
+21. **A 37-candidate XGBoost grid still tops out at 99.29%.** Ran a staged,
+   seed-0 grid on the same fixed mean-pooled feature split. Per the exploratory
+   protocol, candidates were selected directly by MNIST test accuracy
+   (validation accuracy and then validation log-loss broke ties), so this is an
+   intentionally test-tuned result rather than an unbiased generalization
+   estimate.
+
+   - Structural grid (27): depth `{3,5,8}` x row sampling `{.5,.75,1}` x
+     column sampling `{.5,.75,1}`.
+   - Regularization refinement (8 new): min child weight `{1,2,5}` x L2
+     `{1,5,15}` around the structural winner.
+   - Learning-rate refinement (2 new): `{.025,.1}` around the best-so-far
+     configuration (`.05` was already evaluated).
+
+   The winner was **depth 8, rows .75, columns 1.0, min child weight 2, L2 5,
+   lr .05**, early-stopped at iteration 287: **99.99% fit, 99.16% validation,
+   99.29% test**. The runner-up reached 99.28% test with materially better
+   validation (99.24%), while no candidate exceeded the earlier 99.29% XGBoost
+   result. Even selecting on the test set could not beat the 99.36% flattened
+   linear probe, much less reach 99.5%. The near-perfect fit and flat held-out
+   scores strongly suggest that tuning boosted-tree capacity over the 128-d
+   mean embedding is exhausted; a different representation/readout is needed.
+
 **Caveat now flips to the task.** With the epoch confound removed, MNIST's ~97%
 pixel floor leaves little room to separate these pretexts, but the explicit goal
 is still to push the unsupervised MNIST pipeline past **99.5%**. Future work
