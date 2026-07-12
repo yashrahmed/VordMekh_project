@@ -5,7 +5,7 @@ and mean-pools its 64 target-encoder tokens into 128 features. A deterministic,
 class-balanced validation set is carved from MNIST's training split for early
 stopping; the held-out test split is scored exactly once after fitting.
 
-    uv run python -m ijepa_trials.xgboost_probe
+    uv run python -m trials.xgboost_probe
 """
 
 from __future__ import annotations
@@ -20,7 +20,7 @@ import numpy as np
 import torch
 
 from ijepa_trials._ckpt import MODELS_DIR, set_seed
-from ijepa_trials.mlp_probe import (
+from trials.mlp_probe import (
     DEFAULT_BACKBONE_EPOCHS,
     DEFAULT_N_TARGETS,
     load_best_backbone,

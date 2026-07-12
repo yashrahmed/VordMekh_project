@@ -4,7 +4,7 @@ import pytest
 import torch
 import torch.nn as nn
 
-from ijepa_trials.mlp_probe import parse_milestones
+from trials.mlp_probe import parse_milestones
 from ijepa_trials.train_probe import TwoLayerMLP
 
 

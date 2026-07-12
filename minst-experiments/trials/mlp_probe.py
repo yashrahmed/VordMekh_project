@@ -12,7 +12,7 @@ One continuous, seed-0 run is evaluated at head epochs 50, 75, and 100. This is
 important: the three measurements differ only by training duration, rather than
 independent initialization or data-order noise.
 
-    uv run python -m ijepa_trials.mlp_probe
+    uv run python -m trials.mlp_probe
 """
 
 from __future__ import annotations

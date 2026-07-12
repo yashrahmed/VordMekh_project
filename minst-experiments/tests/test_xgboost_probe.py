@@ -3,7 +3,7 @@ import argparse
 import pytest
 import torch
 
-from ijepa_trials.xgboost_probe import classifier_params, stratified_validation_indices
+from trials.xgboost_probe import classifier_params, stratified_validation_indices
 
 
 def test_stratified_validation_indices_are_balanced_disjoint_and_reproducible():

@@ -1,11 +1,11 @@
 """Test-tuned staged grid search for the frozen I-JEPA XGBoost probe.
 
 This runner intentionally imports neither torch nor project model code. It uses
-the cached feature split produced by :mod:`ijepa_trials.xgboost_probe`. Per the
+the cached feature split produced by :mod:`trials.xgboost_probe`. Per the
 experiment's explicit protocol, candidates are ranked directly by MNIST test
 accuracy; validation metrics remain diagnostics rather than the selection rule.
 
-    uv run python -m ijepa_trials.xgboost_grid_search
+    uv run python -m trials.xgboost_grid_search
 """
 
 from __future__ import annotations
@@ -131,7 +131,7 @@ def run(args: argparse.Namespace) -> dict[str, Any]:
     if not args.features.exists():
         raise FileNotFoundError(
             f"Feature cache not found: {args.features}. Run "
-            "`python -m ijepa_trials.xgboost_probe` first."
+            "`python -m trials.xgboost_probe` first."
         )
     arrays = np.load(args.features)
     X_fit, y_fit = arrays["X_fit"], arrays["y_fit"]

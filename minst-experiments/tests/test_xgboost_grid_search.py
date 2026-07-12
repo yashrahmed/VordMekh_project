@@ -1,6 +1,6 @@
 import pytest
 
-from ijepa_trials.xgboost_grid_search import (
+from trials.xgboost_grid_search import (
     base_params,
     best_trial,
     learning_rate_grid,
