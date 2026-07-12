@@ -107,7 +107,10 @@ def run(args: argparse.Namespace) -> dict:
     # macOS environment. Persist the embeddings and fit XGBoost in a clean child
     # process that never imports torch.
     args.output_dir.mkdir(parents=True, exist_ok=True)
-    tag = f"{args.pool}_subsample{round(args.subsample * 100)}_seed{args.seed}"
+    tag = (
+        f"{args.pool}_rows{round(args.subsample * 100)}_"
+        f"cols{round(args.colsample_bytree * 100)}_depth{args.max_depth}_seed{args.seed}"
+    )
     features_path = args.output_dir / f"ijepa_xgboost_{tag}_features.npz"
     job_path = args.output_dir / f"ijepa_xgboost_{tag}_job.json"
     model_path = args.output_dir / f"ijepa_xgboost_{tag}.json"
@@ -167,10 +170,10 @@ def main() -> None:
     parser.add_argument("--validation-per-class", type=int, default=500)
     parser.add_argument("--n-estimators", type=int, default=1000)
     parser.add_argument("--learning-rate", type=float, default=0.05)
-    parser.add_argument("--max-depth", type=int, default=5)
+    parser.add_argument("--max-depth", type=int, default=8)
     parser.add_argument("--min-child-weight", type=float, default=2.0)
-    parser.add_argument("--subsample", type=float, default=0.2)
-    parser.add_argument("--colsample-bytree", type=float, default=0.8)
+    parser.add_argument("--subsample", type=float, default=0.5)
+    parser.add_argument("--colsample-bytree", type=float, default=0.5)
     parser.add_argument("--reg-alpha", type=float, default=0.05)
     parser.add_argument("--reg-lambda", type=float, default=5.0)
     parser.add_argument("--max-bin", type=int, default=256)

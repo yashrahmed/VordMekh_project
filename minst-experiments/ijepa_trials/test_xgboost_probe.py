@@ -28,10 +28,10 @@ def test_classifier_defaults_are_regularized_and_early_stopped():
     args = argparse.Namespace(
         n_estimators=1000,
         learning_rate=0.05,
-        max_depth=5,
+        max_depth=8,
         min_child_weight=2.0,
-        subsample=0.2,
-        colsample_bytree=0.8,
+        subsample=0.5,
+        colsample_bytree=0.5,
         reg_alpha=0.05,
         reg_lambda=5.0,
         max_bin=256,
@@ -43,8 +43,9 @@ def test_classifier_defaults_are_regularized_and_early_stopped():
     params = classifier_params(args)
 
     assert params["tree_method"] == "hist"
-    assert params["subsample"] == 0.2
-    assert params["colsample_bytree"] < 1
+    assert params["max_depth"] == 8
+    assert params["subsample"] == 0.5
+    assert params["colsample_bytree"] == 0.5
     assert params["reg_lambda"] > 1
     assert params["early_stopping_rounds"] == 50
     assert params["n_jobs"] == 8

@@ -72,9 +72,9 @@ For a regularized boosted-tree probe over the same frozen backbone:
 uv run python -m ijepa_trials.xgboost_probe
 ```
 
-This uses mean-pooled 128-d features, 20% row sampling per boosting round, and
-a class-balanced validation slice for early stopping, keeping the test split
-out of model selection.
+The current defaults use mean-pooled 128-d features, depth-8 trees, 50% row and
+50% feature sampling per tree, and a class-balanced validation slice for early
+stopping, keeping the test split out of model selection.
 
 ## DINOv2 (`dino-trials`)
 

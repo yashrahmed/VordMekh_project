@@ -679,13 +679,20 @@ head edges past every fine-tuned model.
 
    | classifier | fit acc | validation acc | test acc |
    |---|---:|---:|---:|
-   | XGBoost, mean features | 99.63% | 99.22% | **99.29%** |
+   | depth 5, rows 20%, cols 80% | 99.63% | 99.22% | **99.29%** |
+   | depth 8, rows 50%, cols 50% | 99.89% | 99.22% | 99.24% |
 
    This is effectively tied with the two-layer MLP's 99.28% and trails the
    reproduced flattened linear probe's 99.36% by 0.07 pt. The modest
    fit/validation gap suggests regularization is doing its job; boosted-tree
    capacity alone does not improve the current representation. The experiment
    keeps validation model selection separate from the MNIST test split.
+
+   **Deeper-tree follow-up.** Increasing row sampling to 50%, reducing column
+   sampling to 50%, and raising max depth to 8 selected iteration 285 and
+   lowered test accuracy by 0.05 pt. Fit accuracy rose by 0.26 pt while
+   validation accuracy did not move, direct evidence that the added depth
+   increased overfitting rather than useful capacity.
 
 **Caveat now flips to the task.** With the epoch confound removed, MNIST's ~97%
 pixel floor leaves little room to separate these pretexts, but the explicit goal
