@@ -66,6 +66,16 @@ uv run python -m ijepa_trials.mlp_probe
 The head is `Linear(8192, 256) -> GELU -> Dropout(0.1) -> Linear(256, 10)`.
 Milestone checkpoints and a JSON result summary are written under `models/`.
 
+For a regularized boosted-tree probe over the same frozen backbone:
+
+```bash
+uv run python -m ijepa_trials.xgboost_probe
+```
+
+This uses mean-pooled 128-d features, 20% row sampling per boosting round, and
+a class-balanced validation slice for early stopping, keeping the test split
+out of model selection.
+
 ## DINOv2 (`dino-trials`)
 
 [`dino-trials`](dino-trials/README.md) implements the DINOv2 ViT, EMA teacher,

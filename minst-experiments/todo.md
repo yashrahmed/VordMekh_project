@@ -669,6 +669,24 @@ head edges past every fine-tuned model.
    consistent with mild head overfitting. Nonlinearity/capacity in this simple
    head is therefore not the missing ingredient for reaching 99.5%.
 
+20. **Regularized XGBoost matches the MLP but not the linear probe.** Froze the
+   same best 300-epoch custom I-JEPA backbone and trained XGBoost on its
+   mean-pooled 128-d embeddings. The seed-0 first pass used histogram trees,
+   max depth 5, learning rate 0.05, **20% row sampling per round**, 80% column
+   sampling, L1 0.05 / L2 5, and a 5,000-example class-balanced validation
+   slice. Early stopping selected iteration 375 (training stopped after round
+   424).
+
+   | classifier | fit acc | validation acc | test acc |
+   |---|---:|---:|---:|
+   | XGBoost, mean features | 99.63% | 99.22% | **99.29%** |
+
+   This is effectively tied with the two-layer MLP's 99.28% and trails the
+   reproduced flattened linear probe's 99.36% by 0.07 pt. The modest
+   fit/validation gap suggests regularization is doing its job; boosted-tree
+   capacity alone does not improve the current representation. The experiment
+   keeps validation model selection separate from the MNIST test split.
+
 **Caveat now flips to the task.** With the epoch confound removed, MNIST's ~97%
 pixel floor leaves little room to separate these pretexts, but the explicit goal
 is still to push the unsupervised MNIST pipeline past **99.5%**. Future work
