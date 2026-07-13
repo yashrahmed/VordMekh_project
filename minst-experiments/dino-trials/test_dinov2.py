@@ -7,6 +7,7 @@ from pathlib import Path
 
 import torch
 from PIL import Image
+from torchvision import transforms
 
 sys.path.insert(0, str(Path(__file__).parent))
 
@@ -132,6 +133,12 @@ def test_preprocessing_is_default_for_training_and_eval_transforms():
     training = MultiCropMNIST(local_crops=2)
     views = training(pil_image)
     assert training.preprocess is True
+    assert training.photometric_augmentations is False
+    for transform in (training.global_one, training.global_two, training.local):
+        assert [type(item) for item in transform.transforms] == [
+            transforms.RandomResizedCrop,
+            transforms.Normalize,
+        ]
     assert [tuple(view.shape) for view in views["global"]] == [(1, 56, 56)] * 2
     assert [tuple(view.shape) for view in views["local"]] == [(1, 28, 28)] * 2
     evaluation = EvaluationTransform()
@@ -157,6 +164,17 @@ def test_100_epoch_checkpoint_can_extend_to_300_or_500_only():
 
     changed = Config(epochs=300, dim=256).__dict__
     assert resume_config_mismatches(saved, changed, 100) == ["dim"]
+
+
+def test_legacy_checkpoint_requires_old_photometric_pipeline_to_resume():
+    legacy = Config(epochs=100, photometric_augmentations=True).__dict__
+    del legacy["photometric_augmentations"]
+    augmented = Config(epochs=300, photometric_augmentations=True).__dict__
+    crop_only = Config(epochs=300, photometric_augmentations=False).__dict__
+    assert resume_config_mismatches(legacy, augmented, 100) == []
+    assert resume_config_mismatches(legacy, crop_only, 100) == [
+        "photometric_augmentations"
+    ]
 
 
 def test_checkpoint_payload_contains_full_training_state():

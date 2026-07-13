@@ -47,6 +47,8 @@ class Config:
     local_crops: int = 4
     # Match the best custom-I-JEPA input pipeline by default.
     preprocess: bool = True
+    # Crop-only ablation: brightness/contrast, blur, and solarization are off.
+    photometric_augmentations: bool = False
     # Loss and teacher settings follow the DINOv2 recipe.
     dino_weight: float = 1.0
     ibot_weight: float = 1.0
@@ -177,6 +179,7 @@ def make_loader(config: Config) -> DataLoader:
         local_size=config.local_size,
         local_crops=config.local_crops,
         preprocess=config.preprocess,
+        photometric_augmentations=config.photometric_augmentations,
     )
     dataset = datasets.MNIST(str(DATASET_DIR), train=True, download=True, transform=transform)
     if config.subset:
@@ -250,6 +253,8 @@ def resume_config_mismatches(
     100-epoch checkpoint to seed independent 300- and 500-epoch continuations
     while keeping every architecture, data, optimizer, and seed setting fixed.
     """
+    # Checkpoints written before this field existed used the augmented pipeline.
+    saved_config = {"photometric_augmentations": True, **saved_config}
     mismatches = [
         key
         for key, value in current_config.items()
@@ -346,7 +351,8 @@ def train(
     print(
         f"device={device} samples={len(loader.dataset)} batches={len(loader)} "
         f"model=ViT-{config.depth}x{config.dim} patches={config.global_size // config.patch_size}x"
-        f"{config.global_size // config.patch_size} preprocess={config.preprocess}",
+        f"{config.global_size // config.patch_size} preprocess={config.preprocess} "
+        f"photometric_augmentations={config.photometric_augmentations}",
         flush=True,
     )
 
@@ -529,6 +535,15 @@ def parse_args() -> tuple:
             "multi-crop augmentation (default: enabled)."
         ),
     )
+    parser.add_argument(
+        "--photometric-augmentations",
+        action=argparse.BooleanOptionalAction,
+        default=False,
+        help=(
+            "Apply brightness/contrast jitter, blur, and solarization after cropping "
+            "(default: disabled; random resized crops remain enabled)."
+        ),
+    )
     parser.add_argument("--device", choices=("cpu", "cuda", "mps"))
     parser.add_argument(
         "--output", type=Path, default=MODELS_DIR / "dinov2_mnist_preproc.pt"
@@ -559,6 +574,7 @@ def parse_args() -> tuple:
         prototypes=args.prototypes,
         local_crops=args.local_crops,
         preprocess=args.preprocess,
+        photometric_augmentations=args.photometric_augmentations,
     )
     return (
         config,
