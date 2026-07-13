@@ -218,10 +218,18 @@ were finite. iBOT decreased `3.4150 -> 3.3235`, and KoLeo decreased
   preprocessing.
 - [x] Run the full 100-epoch pretraining schedule and record frozen mean-patch
   5-NN and linear-probe results at epochs 50, 75, and 100.
-- [ ] Evaluate the saved checkpoints with the official DINO CLS readout and the
-  CLS-plus-mean diagnostic; the completed result below is mean-patch only.
-- [ ] Ablate non-crop augmentations while retaining crop fan-out and iBOT masks:
-  disable brightness/contrast jitter, Gaussian blur, and solarization.
+- [x] Evaluate the saved augmented checkpoints with the official DINO CLS
+  readout at epochs 50, 75, and 100.
+- [ ] Evaluate the CLS-plus-mean diagnostic.
+- [x] Run the initial 10-epoch crop-only ablation while retaining crop fan-out
+  and iBOT masks. The seed-0 MPS run completed 4,680 steps with finite weights;
+  loss fell from `10.2730` to `6.8937` (`DINO=4.9252`, `iBOT=1.9835`).
+- [x] Extend the crop-only ablation to 100 epochs and evaluate frozen CLS
+  features at epochs 50, 75, and 100. Weighted 5-NN reached `98.83%`, `99.01%`,
+  and `99.09%`; linear-test accuracy reached `99.19%`, `99.25%`, and `99.32%`.
+- [x] Complete the controlled augmented-versus-crop-only matrix using both CLS
+  and mean-patch readouts. CLS performance is effectively tied; augmentation
+  improves mean-patch 5-NN by `1.19-1.43pp` and linear test by `0.73-0.99pp`.
 - [ ] Compare preprocessed vs raw inputs at matched seeds and budgets.
 - [ ] Sweep prototype count, local-crop count/scale, and mask ratio after a
   stable full-run baseline exists.

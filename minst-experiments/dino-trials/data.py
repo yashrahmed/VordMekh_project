@@ -1,4 +1,4 @@
-"""MNIST-specific multi-crop augmentation and iBOT block masking."""
+"""MNIST-specific multi-crop views and iBOT block masking."""
 
 from __future__ import annotations
 
@@ -51,11 +51,12 @@ class EvaluationTransform:
 
 
 class MultiCropMNIST:
-    """Two global and several local views, adapted to grayscale digits.
+    """Two global and several local random crops of grayscale digits.
 
-    DINOv2's color augmentation becomes brightness/contrast jitter. Horizontal
-    flips are intentionally omitted because mirrored digits are not reliably
-    label-preserving.
+    Photometric augmentation is disabled by default for the crop-only ablation.
+    It can be enabled to recover the previous DINOv2-inspired brightness,
+    contrast, blur, and solarization pipeline. Horizontal flips are always
+    omitted because mirrored digits are not reliably label-preserving.
     """
 
     def __init__(
@@ -66,10 +67,12 @@ class MultiCropMNIST:
         global_scale: tuple[float, float] = (0.5, 1.0),
         local_scale: tuple[float, float] = (0.2, 0.5),
         preprocess: bool = True,
+        photometric_augmentations: bool = False,
     ):
         self.local_crops = local_crops
         self.global_size = global_size
         self.preprocess = preprocess
+        self.photometric_augmentations = photometric_augmentations
         color = transforms.RandomApply(
             [transforms.ColorJitter(brightness=0.4, contrast=0.4)], p=0.8
         )
@@ -80,36 +83,40 @@ class MultiCropMNIST:
                 size, scale=scale, ratio=(0.75, 1.3333), interpolation=InterpolationMode.BICUBIC
             )
 
-        self.global_one = transforms.Compose(
-            [
-                geometric(global_size, global_scale),
+        if photometric_augmentations:
+            global_one_photometric = [color, transforms.GaussianBlur(5, (0.1, 2.0))]
+            global_two_photometric = [
                 color,
-                transforms.GaussianBlur(5, (0.1, 2.0)),
-                normalize,
-            ]
-        )
-        self.global_two = transforms.Compose(
-            [
-                geometric(global_size, global_scale),
-                color,
-                transforms.RandomApply([transforms.GaussianBlur(5, (0.1, 2.0))], p=0.1),
+                transforms.RandomApply(
+                    [transforms.GaussianBlur(5, (0.1, 2.0))], p=0.1
+                ),
                 # Views are tensors in [0, 1] after the common preprocessing.
                 transforms.RandomSolarize(0.5, p=0.2),
-                normalize,
             ]
+            local_photometric = [
+                color,
+                transforms.RandomApply(
+                    [transforms.GaussianBlur(3, (0.1, 2.0))], p=0.5
+                ),
+            ]
+        else:
+            global_one_photometric = []
+            global_two_photometric = []
+            local_photometric = []
+
+        self.global_one = transforms.Compose(
+            [geometric(global_size, global_scale), *global_one_photometric, normalize]
+        )
+        self.global_two = transforms.Compose(
+            [geometric(global_size, global_scale), *global_two_photometric, normalize]
         )
         self.local = transforms.Compose(
-            [
-                geometric(local_size, local_scale),
-                color,
-                transforms.RandomApply([transforms.GaussianBlur(3, (0.1, 2.0))], p=0.5),
-                normalize,
-            ]
+            [geometric(local_size, local_scale), *local_photometric, normalize]
         )
 
     def __call__(self, image):
         # Match custom I-JEPA before drawing DINO views:
-        # 28x28 -> upscale to 56x56 -> bbox crop/stretch -> augment -> network.
+        # 28x28 -> upscale to 56x56 -> bbox crop/stretch -> random crops -> network.
         image = TF.to_tensor(image)
         if self.preprocess:
             image = upscale_bbox(image, self.global_size)
