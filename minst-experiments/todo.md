@@ -230,9 +230,60 @@ were finite. iBOT decreased `3.4150 -> 3.3235`, and KoLeo decreased
 - [x] Complete the controlled augmented-versus-crop-only matrix using both CLS
   and mean-patch readouts. CLS performance is effectively tied; augmentation
   improves mean-patch 5-NN by `1.19-1.43pp` and linear test by `0.73-0.99pp`.
+- [x] Run fresh long-horizon CLS experiments with fixed schedules: augmented to
+  150 epochs and crop-only to 500 epochs. Preserve every requested full-state
+  milestone and evaluate frozen EMA-teacher CLS features with weighted 5-NN and
+  50-epoch linear probes; see the tables below.
 - [ ] Compare preprocessed vs raw inputs at matched seeds and budgets.
 - [ ] Sweep prototype count, local-crop count/scale, and mask ratio after a
   stable full-run baseline exists.
+
+### Long-horizon DINOv2 CLS results
+
+Both seed-0 MPS experiments were continuous runs from scratch with their final
+target horizon fixed at launch. The augmented and crop-only artifact stems were
+separate, so their full backbone/head weights, AdamW state, teacher centers,
+RNG state, and milestone metrics could not overwrite one another. Every
+downstream run used the frozen EMA teacher's CLS token, weighted 5-NN with
+`k=5`, and a 50-epoch linear probe. All 12 backbone SHA-256 fingerprints were
+identical before and after probe training.
+
+#### Augmented, fixed 150-epoch schedule
+
+| encoder epoch | total pretext loss | DINO | iBOT | 5-NN test | linear train | linear test |
+|---:|---:|---:|---:|---:|---:|---:|
+| 50 | 3.3633 | 2.5037 | 0.8710 | **99.24%** | 99.57% | 99.34% |
+| 75 | 2.9081 | 2.1783 | 0.7413 | 99.08% | 99.64% | **99.42%** |
+| 100 | 2.6698 | 2.0067 | 0.6747 | 99.19% | 99.67% | 99.40% |
+| 125 | 2.5271 | 1.8955 | 0.6441 | 99.16% | 99.67% | 99.31% |
+| 150 | 2.4782 | 1.8532 | 0.6382 | 99.16% | 99.66% | 99.34% |
+
+The suspected test-accuracy decline is **partly confirmed, but it is not
+monotonic**. Linear test peaks at 75 epochs, slips by 0.11 points through epoch
+125, then recovers 0.03 points at epoch 150; it still finishes 0.08 points below
+the peak. Weighted 5-NN is also non-monotonic and is highest at epoch 50. The
+continued pretext-loss improvement and near-flat 99.6%-plus probe-train accuracy
+do not translate into better held-out CLS geometry after epoch 75.
+
+#### Crop-only, fixed 500-epoch schedule
+
+| encoder epoch | total pretext loss | DINO | iBOT | 5-NN test | linear train | linear test |
+|---:|---:|---:|---:|---:|---:|---:|
+| 50 | 2.7300 | 1.9578 | 0.7821 | 98.92% | 99.48% | 99.29% |
+| 75 | 2.4618 | 1.7012 | 0.7712 | 99.03% | 99.62% | **99.34%** |
+| 100 | 2.3839 | 1.5784 | 0.8160 | 98.96% | 99.66% | 99.29% |
+| 125 | 2.2408 | 1.5012 | 0.7504 | 99.02% | 99.70% | **99.34%** |
+| 150 | 2.0062 | 1.4512 | 0.5657 | **99.15%** | 99.70% | 99.25% |
+| 300 | 1.7665 | 1.2550 | 0.5213 | 99.00% | 99.69% | 99.18% |
+| 500 | 1.5582 | 0.9556 | 0.6146 | 98.77% | 99.65% | 99.02% |
+
+Crop-only CLS quality is effectively flat through epoch 125, after which longer
+training hurts held-out performance despite steadily improving pretext loss.
+The best linear test is tied at epochs 75 and 125; by epoch 500 it has fallen
+0.32 points. Weighted 5-NN peaks later at epoch 150, then falls 0.38 points by
+epoch 500. The probe continues to fit the frozen training features at roughly
+99.7%, so extending this exact crop-only recipe beyond 150 epochs is not a good
+use of compute for either requested CLS metric.
 
 ### Completed 100-epoch DINOv2 baseline
 
