@@ -5,6 +5,7 @@ from __future__ import annotations
 import sys
 from pathlib import Path
 
+import pytest
 import torch
 from PIL import Image
 from torchvision import transforms
@@ -15,7 +16,16 @@ from data import EvaluationTransform, MultiCropMNIST, make_masks, upscale_bbox
 from eval_knn import weighted_knn_accuracy
 from losses import CenteredTeacher, dino_loss, ibot_loss, koleo_loss
 from model import StudentTeacher, VisionTransformer
-from train import Config, checkpoint_payload, parameter_groups, resume_config_mismatches
+from train import (
+    Config,
+    checkpoint_payload,
+    make_schedule_state,
+    parameter_groups,
+    recover_schedule_state,
+    resume_config_mismatches,
+    schedule_values,
+    training_end_epoch,
+)
 
 
 def test_default_backbone_matches_custom_ijepa_scale():
@@ -156,21 +166,22 @@ def test_weighted_knn_evaluation():
     assert accuracy == 1.0
 
 
-def test_100_epoch_checkpoint_can_extend_to_300_or_500_only():
+def test_exact_resume_requires_the_same_target_horizon():
     saved = Config(epochs=100).__dict__
-    assert resume_config_mismatches(saved, Config(epochs=300).__dict__, 100) == []
-    assert resume_config_mismatches(saved, Config(epochs=500).__dict__, 100) == []
+    assert resume_config_mismatches(saved, Config(epochs=100).__dict__, 100) == []
+    assert resume_config_mismatches(saved, Config(epochs=300).__dict__, 100) == ["epochs"]
+    assert resume_config_mismatches(saved, Config(epochs=500).__dict__, 100) == ["epochs"]
     assert resume_config_mismatches(saved, Config(epochs=75).__dict__, 100) == ["epochs"]
 
     changed = Config(epochs=300, dim=256).__dict__
-    assert resume_config_mismatches(saved, changed, 100) == ["dim"]
+    assert resume_config_mismatches(saved, changed, 100) == ["dim", "epochs"]
 
 
 def test_legacy_checkpoint_requires_old_photometric_pipeline_to_resume():
     legacy = Config(epochs=100, photometric_augmentations=True).__dict__
     del legacy["photometric_augmentations"]
-    augmented = Config(epochs=300, photometric_augmentations=True).__dict__
-    crop_only = Config(epochs=300, photometric_augmentations=False).__dict__
+    augmented = Config(epochs=100, photometric_augmentations=True).__dict__
+    crop_only = Config(epochs=100, photometric_augmentations=False).__dict__
     assert resume_config_mismatches(legacy, augmented, 100) == []
     assert resume_config_mismatches(legacy, crop_only, 100) == [
         "photometric_augmentations"
@@ -190,8 +201,9 @@ def test_checkpoint_payload_contains_full_training_state():
     optimizer = torch.optim.AdamW(parameter_groups(model, config.weight_decay))
     class_center = CenteredTeacher(config.prototypes)
     patch_center = CenteredTeacher(config.prototypes)
+    schedule = make_schedule_state(config, steps_per_epoch=8)
     payload = checkpoint_payload(
-        config, model, optimizer, class_center, patch_center, [], torch.device("cpu"), 0
+        config, model, optimizer, class_center, patch_center, [], torch.device("cpu"), schedule
     )
     required = {
         "teacher_backbone",
@@ -207,5 +219,51 @@ def test_checkpoint_payload_contains_full_training_state():
         "config",
         "completed_epoch",
         "global_step",
+        "schedule",
     }
     assert required <= payload.keys()
+    assert payload["global_step"] == payload["schedule"]["next_step"] == 0
+
+
+def test_schedule_state_recovers_the_exact_next_lr():
+    config = Config(epochs=500)
+    steps_per_epoch = 468
+    next_step = 57 * steps_per_epoch
+    uninterrupted = make_schedule_state(config, steps_per_epoch, next_step)
+    checkpoint = {
+        "config": config.__dict__,
+        "global_step": next_step,
+        "schedule": dict(uninterrupted),
+    }
+
+    recovered = recover_schedule_state(checkpoint, config, steps_per_epoch)
+
+    assert recovered == uninterrupted
+    assert schedule_values(config, recovered) == schedule_values(config, uninterrupted)
+
+
+def test_version_2_schedule_can_only_be_inferred_for_the_same_horizon():
+    config = Config(epochs=500)
+    steps_per_epoch = 468
+    next_step = 50 * steps_per_epoch
+    legacy_checkpoint = {
+        "config": config.__dict__,
+        "global_step": next_step,
+    }
+
+    recovered = recover_schedule_state(legacy_checkpoint, config, steps_per_epoch)
+    assert recovered == make_schedule_state(config, steps_per_epoch, next_step)
+
+    with pytest.raises(ValueError, match="cannot change the schedule horizon"):
+        recover_schedule_state(legacy_checkpoint, Config(epochs=600), steps_per_epoch)
+
+
+def test_planned_pause_keeps_the_fixed_target_horizon():
+    assert training_end_epoch(500, 0, None) == 500
+    assert training_end_epoch(500, 0, 300) == 300
+    assert training_end_epoch(500, 300, None) == 500
+
+    with pytest.raises(ValueError, match="between 1 and the target 500"):
+        training_end_epoch(500, 0, 501)
+    with pytest.raises(ValueError, match="must exceed the resumed epoch"):
+        training_end_epoch(500, 300, 300)

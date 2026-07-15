@@ -78,7 +78,9 @@ class Config:
     seed: int = 0
 
 
-CHECKPOINT_VERSION = 2
+CHECKPOINT_VERSION = 3
+MIN_RESUMABLE_CHECKPOINT_VERSION = 2
+SCHEDULE_VERSION = 1
 
 
 def milestone_path(output: Path, epoch: int) -> Path:
@@ -151,6 +153,93 @@ def scheduled_value(
     return cosine(start, end, min(1.0, max(0.0, progress)))
 
 
+def make_schedule_state(
+    config: Config,
+    steps_per_epoch: int,
+    next_step: int = 0,
+) -> dict:
+    """Build the serializable state for all step-based training schedules."""
+    if steps_per_epoch < 1:
+        raise ValueError("steps_per_epoch must be positive")
+    total_steps = config.epochs * steps_per_epoch
+    if not 0 <= next_step <= total_steps:
+        raise ValueError("schedule next_step is outside the configured horizon")
+    return {
+        "schedule_version": SCHEDULE_VERSION,
+        "target_epochs": config.epochs,
+        "steps_per_epoch": steps_per_epoch,
+        "total_steps": total_steps,
+        "warmup_steps": min(config.warmup_epochs, config.epochs // 2) * steps_per_epoch,
+        "teacher_warmup_steps": (
+            min(config.teacher_warmup_epochs, config.epochs // 2) * steps_per_epoch
+        ),
+        "next_step": next_step,
+    }
+
+
+def schedule_values(config: Config, schedule: dict) -> dict[str, float]:
+    """Return the values to apply at the schedule's next optimizer step."""
+    step = schedule["next_step"]
+    total_steps = schedule["total_steps"]
+    return {
+        "lr": scheduled_value(
+            config.learning_rate,
+            config.min_learning_rate,
+            step,
+            total_steps,
+            schedule["warmup_steps"],
+            warmup_start=config.min_learning_rate,
+        ),
+        "weight_decay": scheduled_value(
+            config.weight_decay,
+            config.final_weight_decay,
+            step,
+            total_steps,
+        ),
+        "momentum": scheduled_value(
+            config.teacher_momentum,
+            config.final_teacher_momentum,
+            step,
+            total_steps,
+        ),
+        "teacher_temperature": scheduled_value(
+            config.teacher_temperature,
+            config.teacher_temperature,
+            step,
+            total_steps,
+            schedule["teacher_warmup_steps"],
+            warmup_start=config.teacher_temperature_start,
+        ),
+    }
+
+
+def recover_schedule_state(checkpoint: dict, config: Config, steps_per_epoch: int) -> dict:
+    """Recover and validate the exact next schedule step from a checkpoint."""
+    expected = make_schedule_state(config, steps_per_epoch, checkpoint["global_step"])
+    saved = checkpoint.get("schedule")
+    if saved is None:
+        # Version-2 checkpoints predate explicit schedule state. They are safe
+        # to infer only when resuming the same fixed target horizon.
+        if checkpoint["config"].get("epochs") != config.epochs:
+            raise ValueError("legacy checkpoint cannot change the schedule horizon")
+        return expected
+
+    required = set(expected)
+    missing = sorted(required - set(saved))
+    if missing:
+        raise ValueError(f"checkpoint schedule is missing: {', '.join(missing)}")
+    mismatches = sorted(
+        key for key in required if key != "next_step" and saved[key] != expected[key]
+    )
+    if mismatches:
+        raise ValueError(f"checkpoint schedule differs for: {', '.join(mismatches)}")
+    if saved["next_step"] != checkpoint["global_step"]:
+        raise ValueError("checkpoint schedule next_step differs from global_step")
+    if saved["next_step"] != expected["next_step"]:
+        raise ValueError("checkpoint schedule next_step is outside the current run")
+    return {key: saved[key] for key in expected}
+
+
 def parameter_groups(model: StudentTeacher, weight_decay: float):
     decay, no_decay = [], []
     named_parameters = (
@@ -205,7 +294,7 @@ def checkpoint_payload(
     patch_center: CenteredTeacher,
     history: list[dict],
     device: torch.device,
-    global_step: int,
+    schedule: dict,
 ) -> dict:
     return {
         "checkpoint_version": CHECKPOINT_VERSION,
@@ -214,7 +303,8 @@ def checkpoint_payload(
         "device": str(device),
         "parameters": sum(p.numel() for p in model.student_parameters()),
         "completed_epoch": len(history),
-        "global_step": global_step,
+        "global_step": schedule["next_step"],
+        "schedule": dict(schedule),
         "teacher_backbone": model.teacher_backbone.state_dict(),
         "teacher_dino_head": model.teacher_dino_head.state_dict(),
         "teacher_ibot_head": model.teacher_ibot_head.state_dict(),
@@ -236,7 +326,10 @@ def save_checkpoint(path: Path, payload: dict, write_metrics: bool = True) -> No
     if write_metrics:
         result = {
             key: payload[key]
-            for key in ("config", "history", "device", "parameters", "completed_epoch", "global_step")
+            for key in (
+                "config", "history", "device", "parameters", "completed_epoch",
+                "global_step", "schedule",
+            )
         }
         path.with_suffix(".json").write_text(json.dumps(result, indent=2) + "\n")
     print(f"checkpoint={path} epoch={payload['completed_epoch']}", flush=True)
@@ -249,19 +342,16 @@ def resume_config_mismatches(
 ) -> list[str]:
     """Return incompatible configuration fields for a resumed run.
 
-    ``epochs`` is the one field that may grow. This permits a completed
-    100-epoch checkpoint to seed independent 300- and 500-epoch continuations
-    while keeping every architecture, data, optimizer, and seed setting fixed.
+    Exact schedule recovery requires the target epoch horizon and every other
+    architecture, data, optimizer, and seed setting to remain fixed.
     """
     # Checkpoints written before this field existed used the augmented pipeline.
     saved_config = {"photometric_augmentations": True, **saved_config}
     mismatches = [
         key
         for key, value in current_config.items()
-        if key != "epochs" and saved_config.get(key) != value
+        if saved_config.get(key) != value
     ]
-    if current_config["epochs"] < completed_epoch:
-        mismatches.append("epochs")
     return mismatches
 
 
@@ -273,10 +363,13 @@ def restore_checkpoint(
     class_center: CenteredTeacher,
     patch_center: CenteredTeacher,
     device: torch.device,
-) -> tuple[list[dict], int, int]:
+    steps_per_epoch: int,
+) -> tuple[list[dict], int, dict]:
     checkpoint = torch.load(path, map_location=device, weights_only=False)
-    if checkpoint.get("checkpoint_version", 0) < CHECKPOINT_VERSION:
-        raise ValueError(f"{path} is not a resumable version-{CHECKPOINT_VERSION} checkpoint")
+    if checkpoint.get("checkpoint_version", 0) < MIN_RESUMABLE_CHECKPOINT_VERSION:
+        raise ValueError(
+            f"{path} predates resumable version-{MIN_RESUMABLE_CHECKPOINT_VERSION} checkpoints"
+        )
     saved_config = checkpoint["config"]
     current_config = asdict(config)
     mismatches = resume_config_mismatches(
@@ -284,12 +377,7 @@ def restore_checkpoint(
     )
     if mismatches:
         raise ValueError(f"resume configuration differs for: {', '.join(mismatches)}")
-    if saved_config.get("epochs") != current_config["epochs"]:
-        print(
-            f"extending_schedule={saved_config.get('epochs')}->{current_config['epochs']} "
-            f"from_epoch={checkpoint['completed_epoch']}",
-            flush=True,
-        )
+    schedule = recover_schedule_state(checkpoint, config, steps_per_epoch)
     for name in (
         "teacher_backbone", "teacher_dino_head", "teacher_ibot_head",
         "student_backbone", "student_dino_head", "student_ibot_head",
@@ -300,9 +388,27 @@ def restore_checkpoint(
     optimizer.load_state_dict(checkpoint["optimizer"])
     set_rng_state(checkpoint["rng_state"], device)
     start_epoch = checkpoint["completed_epoch"]
-    global_step = checkpoint["global_step"]
-    print(f"resumed={path} completed_epoch={start_epoch} global_step={global_step}", flush=True)
-    return checkpoint["history"], start_epoch, global_step
+    print(
+        f"resumed={path} completed_epoch={start_epoch} "
+        f"next_schedule_step={schedule['next_step']}/{schedule['total_steps']}",
+        flush=True,
+    )
+    return checkpoint["history"], start_epoch, schedule
+
+
+def training_end_epoch(
+    target_epochs: int, start_epoch: int, stop_after_epoch: int | None
+) -> int:
+    end_epoch = target_epochs if stop_after_epoch is None else stop_after_epoch
+    if not 1 <= end_epoch <= target_epochs:
+        raise ValueError(
+            f"--stop-after-epoch must be between 1 and the target {target_epochs} epochs"
+        )
+    if end_epoch <= start_epoch:
+        raise ValueError(
+            f"--stop-after-epoch ({end_epoch}) must exceed the resumed epoch ({start_epoch})"
+        )
+    return end_epoch
 
 
 def train(
@@ -312,6 +418,7 @@ def train(
     checkpoint_epochs: tuple[int, ...] = (50, 75, 100),
     checkpoint_every: int = 50,
     resume: Path | None = None,
+    stop_after_epoch: int | None = None,
 ) -> dict:
     seed_everything(config.seed)
     device = device or pick_device()
@@ -336,18 +443,16 @@ def train(
         lr=config.learning_rate,
         betas=(0.9, 0.999),
     )
-    total_steps = config.epochs * len(loader)
-    warmup_steps = min(config.warmup_epochs, config.epochs // 2) * len(loader)
-    teacher_warmup_steps = min(config.teacher_warmup_epochs, config.epochs // 2) * len(loader)
+    schedule = make_schedule_state(config, len(loader))
     history: list[dict] = []
-    global_step = 0
     start_epoch = 0
     if checkpoint_every < 0:
         raise ValueError("--checkpoint-every cannot be negative")
     if resume is not None:
-        history, start_epoch, global_step = restore_checkpoint(
-            resume, config, model, optimizer, class_center, patch_center, device
+        history, start_epoch, schedule = restore_checkpoint(
+            resume, config, model, optimizer, class_center, patch_center, device, len(loader)
         )
+    end_epoch = training_end_epoch(config.epochs, start_epoch, stop_after_epoch)
     print(
         f"device={device} samples={len(loader.dataset)} batches={len(loader)} "
         f"model=ViT-{config.depth}x{config.dim} patches={config.global_size // config.patch_size}x"
@@ -357,7 +462,7 @@ def train(
     )
 
     model.train()
-    for epoch in range(start_epoch, config.epochs):
+    for epoch in range(start_epoch, end_epoch):
         totals = {"loss": 0.0, "dino": 0.0, "ibot": 0.0, "koleo": 0.0}
         for views, _ in loader:
             global_crops = [crop.to(device) for crop in views["global"]]
@@ -373,31 +478,11 @@ def train(
                 ).to(device)
                 for _ in global_crops
             ]
-            lr = scheduled_value(
-                config.learning_rate,
-                config.min_learning_rate,
-                global_step,
-                total_steps,
-                warmup_steps,
-                warmup_start=config.min_learning_rate,
-            )
-            wd = scheduled_value(
-                config.weight_decay, config.final_weight_decay, global_step, total_steps
-            )
-            momentum = scheduled_value(
-                config.teacher_momentum,
-                config.final_teacher_momentum,
-                global_step,
-                total_steps,
-            )
-            teacher_temp = scheduled_value(
-                config.teacher_temperature,
-                config.teacher_temperature,
-                global_step,
-                total_steps,
-                teacher_warmup_steps,
-                warmup_start=config.teacher_temperature_start,
-            )
+            values = schedule_values(config, schedule)
+            lr = values["lr"]
+            wd = values["weight_decay"]
+            momentum = values["momentum"]
+            teacher_temp = values["teacher_temperature"]
             for group in optimizer.param_groups:
                 group["lr"] = lr
                 if group["apply_weight_decay"]:
@@ -459,7 +544,9 @@ def train(
                 + config.koleo_weight * loss_koleo
             )
             if not torch.isfinite(loss):
-                raise RuntimeError(f"non-finite loss at step {global_step}: {loss.item()}")
+                raise RuntimeError(
+                    f"non-finite loss at step {schedule['next_step']}: {loss.item()}"
+                )
             optimizer.zero_grad(set_to_none=True)
             loss.backward()
             if epoch < config.freeze_last_layer_epochs:
@@ -475,7 +562,7 @@ def train(
                 ("loss", loss), ("dino", loss_dino), ("ibot", loss_ibot), ("koleo", loss_koleo)
             ):
                 totals[key] += value.item()
-            global_step += 1
+            schedule["next_step"] += 1
 
         metrics = {key: value / len(loader) for key, value in totals.items()}
         metrics.update({"epoch": epoch + 1, "lr": lr, "weight_decay": wd, "momentum": momentum})
@@ -489,7 +576,7 @@ def train(
 
         payload = checkpoint_payload(
             config, model, optimizer, class_center, patch_center,
-            history, device, global_step,
+            history, device, schedule,
         )
         completed_epoch = epoch + 1
         if completed_epoch in checkpoint_epochs:
@@ -499,16 +586,34 @@ def train(
 
     final_payload = checkpoint_payload(
         config, model, optimizer, class_center, patch_center,
-        history, device, global_step,
+        history, device, schedule,
     )
-    save_checkpoint(output, final_payload)
     temporary = rolling_path(output)
+    if end_epoch < config.epochs:
+        save_checkpoint(temporary, final_payload, write_metrics=False)
+        print(
+            f"paused_after_epoch={end_epoch} target_epochs={config.epochs} "
+            f"resumable_checkpoint={temporary}",
+            flush=True,
+        )
+        return {
+            key: final_payload[key]
+            for key in (
+                "config", "history", "device", "parameters", "completed_epoch",
+                "global_step", "schedule",
+            )
+        }
+
+    save_checkpoint(output, final_payload)
     temporary.unlink(missing_ok=True)
     temporary.with_suffix(".json").unlink(missing_ok=True)
     print(f"completed={output} temporary_checkpoint_cleaned={temporary}", flush=True)
     result = {
         key: final_payload[key]
-        for key in ("config", "history", "device", "parameters", "completed_epoch", "global_step")
+        for key in (
+            "config", "history", "device", "parameters", "completed_epoch",
+            "global_step", "schedule",
+        )
     }
     return result
 
@@ -560,6 +665,13 @@ def parse_args() -> tuple:
         "--resume", type=Path,
         help="Resume from a full training-state checkpoint.",
     )
+    parser.add_argument(
+        "--stop-after-epoch", type=int,
+        help=(
+            "Pause after this epoch while retaining the --epochs schedule horizon; "
+            "the rolling checkpoint can be resumed with the same target."
+        ),
+    )
     args = parser.parse_args()
     config = Config(
         epochs=args.epochs,
@@ -583,6 +695,7 @@ def parse_args() -> tuple:
         args.checkpoint_epochs,
         args.checkpoint_every,
         args.resume,
+        args.stop_after_epoch,
     )
 
 

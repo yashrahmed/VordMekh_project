@@ -234,6 +234,9 @@ were finite. iBOT decreased `3.4150 -> 3.3235`, and KoLeo decreased
   150 epochs and crop-only to 500 epochs. Preserve every requested full-state
   milestone and evaluate frozen EMA-teacher CLS features with weighted 5-NN and
   50-epoch linear probes; see the tables below.
+- [x] Run augmented CLS with a fixed 500-epoch schedule through an epoch-300
+  gate. Both epoch-300 frozen metrics fell below their epoch-150 values, so the
+  planned gate stopped training and no epoch-500 result was produced.
 - [ ] Compare preprocessed vs raw inputs at matched seeds and budgets.
 - [ ] Sweep prototype count, local-crop count/scale, and mask ratio after a
   stable full-run baseline exists.
@@ -264,6 +267,38 @@ monotonic**. Linear test peaks at 75 epochs, slips by 0.11 points through epoch
 the peak. Weighted 5-NN is also non-monotonic and is highest at epoch 50. The
 continued pretext-loss improvement and near-flat 99.6%-plus probe-train accuracy
 do not translate into better held-out CLS geometry after epoch 75.
+
+#### Augmented, fixed 500-epoch schedule with epoch-300 gate
+
+This was a fresh seed-0 MPS run whose cosine schedules were fixed to 500 epochs
+from launch. Training intentionally paused at epoch 300 without changing that
+horizon, then all six preserved milestones were evaluated with the frozen EMA
+teacher's CLS token, weighted 5-NN (`k=5`), and 50-epoch linear probes. Every
+evaluation reported `backbone_frozen=true`, used the augmented preprocessing
+pipeline, and retained an identical backbone SHA-256 before and after probe
+training.
+
+| encoder epoch | total pretext loss | DINO | iBOT | 5-NN test | linear train | linear test |
+|---:|---:|---:|---:|---:|---:|---:|
+| 50 | 3.5653 | 2.6140 | 0.9635 | 99.01% | 99.57% | 99.31% |
+| 75 | 3.2449 | 2.3582 | 0.8991 | 99.09% | 99.62% | 99.27% |
+| 100 | 3.2324 | 2.2195 | 1.0253 | 99.23% | 99.61% | 99.29% |
+| 125 | 2.9351 | 2.0950 | 0.8522 | 99.24% | 99.63% | 99.30% |
+| **150** | **2.7291** | **2.0186** | **0.7225** | **99.33%** | 99.67% | **99.37%** |
+| 300 | 2.2876 | 1.7867 | 0.5124 | 99.12% | **99.69%** | 99.29% |
+
+The gate decision was **stop**. From epoch 150 to 300, weighted 5-NN fell by
+0.21 points (`99.33% -> 99.12%`) and linear-test accuracy fell by 0.08 points
+(`99.37% -> 99.29%`), even though pretext loss improved by 0.4415 and probe
+training accuracy rose slightly. Because the rule required both epoch-300
+metrics to be at least their epoch-150 values, the workflow did not resume to
+epoch 500 and deliberately produced no 500-epoch checkpoint or evaluation.
+The early values differ from the separate fixed-150 experiment because their
+learning-rate, weight-decay, and teacher-momentum schedules were defined over
+different target horizons. The **best available DINO result remains 99.42%
+linear test accuracy** from the separate fixed-150 schedule's epoch-75 frozen
+CLS checkpoint (`dinov2_mnist_augmented_cls_150ep_epoch0075.pt`); its saved
+50-epoch linear probe and evaluation JSON are also retained.
 
 #### Crop-only, fixed 500-epoch schedule
 

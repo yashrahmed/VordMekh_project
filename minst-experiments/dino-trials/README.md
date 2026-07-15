@@ -85,24 +85,37 @@ uv run python dino-trials/train.py \
   --resume models/dinov2_mnist_preproc_resume.pt
 ```
 
-A complete 100-epoch checkpoint may also seed a longer schedule while every
-other saved configuration field remains fixed. Use different outputs to fork
-independent continuations:
+The target epoch horizon is part of the saved schedule and must match on
+resume. Extending a completed 100-epoch checkpoint by changing `--epochs` would
+reinterpret its cosine progress and is therefore rejected. Start a fresh run
+with the final horizon fixed at launch, or implement an explicit second-phase
+schedule instead.
+
+To make a planned evaluation decision partway through a fixed schedule, use
+`--stop-after-epoch` without changing `--epochs`. For example, this pauses at
+epoch 300 while retaining the exact 500-epoch cosine schedule:
 
 ```bash
-uv run python dino-trials/train.py --epochs 300 --checkpoint-every 10 \
-  --resume models/dinov2_mnist_preproc_epoch0100.pt \
-  --output models/dinov2_mnist_preproc_from100_to300.pt
-uv run python dino-trials/train.py --epochs 500 --checkpoint-every 10 \
-  --resume models/dinov2_mnist_preproc_epoch0100.pt \
-  --output models/dinov2_mnist_preproc_from100_to500.pt
+uv run python dino-trials/train.py \
+  --epochs 500 --stop-after-epoch 300 \
+  --checkpoint-epochs 50,75,100,125,150,300,500 --checkpoint-every 10 \
+  --output models/dinov2_mnist_fixed500.pt
 ```
+
+After evaluating the epoch-300 milestone, continue with the same `--epochs 500`
+configuration and `--resume models/dinov2_mnist_fixed500_epoch0300.pt`. A
+planned pause writes the rolling checkpoint and does not create the final model
+or remove resumable state.
 
 Every `.pt` checkpoint contains both networks, separate DINO/iBOT head weights,
 teacher centers, AdamW optimizer state, completed epoch/global step, RNG state,
-the full configuration, and epoch metrics. This makes both milestone and
-rolling checkpoints resumable. The adjacent JSON files contain configuration
-and metrics without tensors. For downstream features, instantiate
+the full configuration, explicit LR/weight-decay/teacher schedule state, and
+epoch metrics. Resume validates the saved target, steps per epoch, warmups, and
+next schedule step before continuing. Version-2 checkpoints are supported by
+inferring this state only for the same target horizon. This makes both milestone
+and rolling checkpoints resumable. The adjacent JSON files contain
+configuration, schedule state, and metrics without tensors. For downstream
+features, instantiate
 `StudentTeacher` from the stored configuration, load `teacher_backbone`, and
 use `encode`.
 
