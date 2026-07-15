@@ -7,14 +7,14 @@
 - [Replication guide for the 99.50% MNIST triplet I-JEPA ensemble](docs/replicate_9950_triplet_ensemble.md).
 
 ### Version 2 -
-- [ ] Try DinoV2 (with ensemble tricks).
-- [ ] Run a DINOv2 ablation with non-crop augmentations disabled: retain the
-  global/local crop fan-out and iBOT masking, but remove brightness/contrast
-  jitter, Gaussian blur, and solarization.
+- [x] Try DinoV2 (with ensemble tricks).
 - [ ] Try SimCLR.
 - [ ] Try ConvNext.
 - [x] Try XGBoosting and Random Forests on IJEPA.
-- [ ] Check if RL and evolutionary programs can be used to learn Visual strategy (Try program synthesis based on IJEPA patch sampling and distance comparison). See notes about VJEPA actions below.
+- [ ] Try training a Vanilla ViT.
+- [ ] Try ViT on top of IJEPA/DinoV2/ensembles? Is this the equivalent of learning a visual strategy?
+- [ ] Check if RL and evolutionary programs can be used to learn Visual strategy (Try program synthesis based on IJEPA patch sampling and distance comparison).
+- [ ] Learn about VJEPA actions below.
 
 ### Version 3 -
 - [ ] Run an experiment with Decision tree + Neural net hybrids.
