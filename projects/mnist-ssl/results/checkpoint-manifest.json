@@ -1,0 +1,50 @@
+{
+  "schema_version": 1,
+  "project": "mnist-ssl",
+  "artifact_root": "models",
+  "artifacts": [
+    {
+      "id": "dinov2-augmented-fixed150-epoch75-backbone",
+      "path": "models/dinov2_mnist_augmented_cls_150ep_epoch0075.pt",
+      "role": "DINOv2 full-state backbone checkpoint",
+      "bytes": 30013175,
+      "file_sha256": "265d5f6bce3432b7de6475fb7533c0ca3fd2234f9148fced1a9d7cb30df7f849",
+      "frozen_backbone_sha256": "518aca8f613af6c3a4e255b9b9dc80f6a9d15120b6a50658d6d374debd3495e7",
+      "required_for": ["dinov2-best-individual", "dino-ijepa-best-triplet"]
+    },
+    {
+      "id": "dinov2-augmented-fixed150-epoch75-cls-linear50",
+      "path": "models/dinov2_mnist_augmented_cls_150ep_epoch0075_cls_linear50ep.pt",
+      "role": "DINOv2 frozen CLS linear probe",
+      "bytes": 10357,
+      "file_sha256": "4a94504135f34f452a08c441e3e550e53ddbac516b9cc6871934c9c0dc74daab",
+      "required_for": ["dinov2-best-individual", "dino-ijepa-best-triplet"]
+    },
+    {
+      "id": "ijepa-56-epoch300-flatten-linear50",
+      "path": "models/ijepa_clf_custom_ijepa_upscale_bbox_p7_flatten_t48_base300ep_probe50ep.pt",
+      "role": "I-JEPA frozen flatten probe with embedded target encoder",
+      "bytes": 7338453,
+      "file_sha256": "d68673c454b286f4205a94e47d610a52af1cabd13a44ff2901f6d054945c1f1a",
+      "frozen_backbone_sha256": "4f944247839d3853b0ccc35f8410bc377d5fb2d9ae4693ee204560a15f7f0da0",
+      "required_for": ["ijepa-best-individual", "ijepa-9950-triplet", "dino-ijepa-best-triplet"]
+    },
+    {
+      "id": "ijepa-56-epoch500-flatten-linear50",
+      "path": "models/ijepa_clf_custom_ijepa_upscale_bbox_p7_flatten_t48_base500ep_probe50ep.pt",
+      "role": "I-JEPA frozen flatten probe with embedded target encoder",
+      "bytes": 7338453,
+      "file_sha256": "8dc389ae4be991510cef0421b681326ad3d57d845c233e606b783a94a7307715",
+      "frozen_backbone_sha256": "3b1039ac74af65f0b2d2da75ec6627eaa4c26bfa06d4c0e2b337b5e3b63eb99d",
+      "required_for": ["ijepa-9950-triplet", "dino-ijepa-best-triplet"]
+    },
+    {
+      "id": "ijepa-28-epoch500-flatten-linear50",
+      "path": "models/ijepa_clf_custom_ijepa_t10_probe_flatten_base500ep_probe50ep_rerender.pt",
+      "role": "Historical 28x28 I-JEPA frozen flatten probe with embedded target encoder",
+      "bytes": 7028547,
+      "file_sha256": "d49f4c5f5b72d81fc2f56c7f7111bc7cce740f4fa8fb28d51f89ec5d1058f1a9",
+      "required_for": ["ijepa-9950-triplet"]
+    }
+  ]
+}
