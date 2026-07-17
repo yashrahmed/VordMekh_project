@@ -1,0 +1,15 @@
+# Canonical experiment configurations
+
+`best/` records the exact recipes behind the curated leaderboard. These files
+are small, reviewable provenance records; datasets and checkpoints remain under
+ignored artifact directories.
+
+- `dinov2_augmented_fixed150.json`: training recipe for the best individual
+  DINOv2 trajectory.
+- `ijepa_56_t48_fixed500.json`: training/probe recipe that produces the two
+  56x56 I-JEPA ensemble members.
+- `dino_ijepa_triplet.json`: consumed directly by
+  `scripts/reproduce/best_ensemble.py`.
+
+Changing a fixed training horizon creates a different schedule and therefore a
+different experiment. Add a new config rather than editing a completed recipe.

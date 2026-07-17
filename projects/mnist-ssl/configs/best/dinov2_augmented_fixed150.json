@@ -1,0 +1,24 @@
+{
+  "schema_version": 1,
+  "name": "dinov2-augmented-fixed150",
+  "entrypoint": "scripts/train/dinov2.py",
+  "arguments": {
+    "epochs": 150,
+    "seed": 0,
+    "checkpoint_epochs": [50, 75, 100, 125, 150],
+    "checkpoint_every": 10,
+    "photometric_augmentations": true,
+    "preprocess": true,
+    "output": "models/dinov2_mnist_augmented_cls_150ep.pt"
+  },
+  "best_milestone": {
+    "epoch": 75,
+    "pool": "cls",
+    "linear_probe_epochs": 50,
+    "test_accuracy_percent": 99.42,
+    "errors": 58,
+    "backbone_artifact_id": "dinov2-augmented-fixed150-epoch75-backbone",
+    "probe_artifact_id": "dinov2-augmented-fixed150-epoch75-cls-linear50"
+  },
+  "schedule_note": "The cosine schedule is fixed to 150 epochs at launch; do not recreate this by extending a shorter run."
+}

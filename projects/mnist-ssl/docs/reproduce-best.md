@@ -25,15 +25,16 @@ cd projects/mnist-ssl
 uv sync
 ```
 
-Verify that the five required local artifacts match
+Verify that the four required local files (the two I-JEPA probe files embed
+their backbones) match
 [`results/checkpoint-manifest.json`](../results/checkpoint-manifest.json):
 
 ```bash
-shasum -a 256 \
-  models/dinov2_mnist_augmented_cls_150ep_epoch0075.pt \
-  models/dinov2_mnist_augmented_cls_150ep_epoch0075_cls_linear50ep.pt \
-  models/ijepa_clf_custom_ijepa_upscale_bbox_p7_flatten_t48_base300ep_probe50ep.pt \
-  models/ijepa_clf_custom_ijepa_upscale_bbox_p7_flatten_t48_base500ep_probe50ep.pt
+uv run python scripts/reproduce/verify_artifacts.py \
+  dinov2-augmented-fixed150-epoch75-backbone \
+  dinov2-augmented-fixed150-epoch75-cls-linear50 \
+  ijepa-56-epoch300-flatten-linear50 \
+  ijepa-56-epoch500-flatten-linear50
 ```
 
 Run the frozen evaluation and weight grid:
@@ -41,6 +42,12 @@ Run the frozen evaluation and weight grid:
 ```bash
 uv run python scripts/reproduce/best_ensemble.py --workers 0
 ```
+
+This command loads [`configs/best/dino_ijepa_triplet.json`](../configs/best/dino_ijepa_triplet.json),
+verifies the referenced checkpoint hashes automatically, and fails if the
+individual errors, winning weights, ensemble score, or shared-error count drift
+from the recorded result. Use `--no-check-expected` only for deliberate
+exploratory overrides.
 
 Expected summary:
 

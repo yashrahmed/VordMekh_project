@@ -1,0 +1,36 @@
+{
+  "schema_version": 1,
+  "name": "ijepa-56-t48-fixed500",
+  "entrypoint": "scripts/reproduce/ijepa_members.py",
+  "pretraining": {
+    "epochs": 500,
+    "save_epochs": [300],
+    "seed": 0,
+    "image_size": 56,
+    "preprocess": "upscale-bbox",
+    "patch_size": 7,
+    "target_tokens": 48,
+    "context_tokens": 16
+  },
+  "probe": {
+    "epochs": 50,
+    "pools": ["mean", "flatten"],
+    "backbone_frozen": true
+  },
+  "ensemble_members": [
+    {
+      "backbone_epoch": 300,
+      "pool": "flatten",
+      "test_accuracy_percent": 99.36,
+      "errors": 64,
+      "artifact_id": "ijepa-56-epoch300-flatten-linear50"
+    },
+    {
+      "backbone_epoch": 500,
+      "pool": "flatten",
+      "test_accuracy_percent": 99.34,
+      "errors": 66,
+      "artifact_id": "ijepa-56-epoch500-flatten-linear50"
+    }
+  ]
+}

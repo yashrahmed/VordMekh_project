@@ -9,7 +9,7 @@ held-out model-selection result.
 
 Run from ``projects/mnist-ssl``::
 
-    uv run python -m mnist_ssl.dinov2.ensemble_ijepa
+    uv run python -m mnist_ssl.ensembles.dino_ijepa
 """
 
 from __future__ import annotations
@@ -31,9 +31,8 @@ from mnist_ssl.baselines.mae import pick_device
 from mnist_ssl.ijepa import custom_ijepa
 from mnist_ssl.ijepa.ensemble_probes import load_probe
 from mnist_ssl.paths import DATASET_DIR, MODELS_DIR
-
-from .data import EvaluationTransform
-from .eval_knn import build_teacher
+from mnist_ssl.dinov2.data import EvaluationTransform
+from mnist_ssl.dinov2.eval_knn import build_teacher
 
 
 DEFAULT_DINO_BACKBONE = (
