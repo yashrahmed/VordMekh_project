@@ -43,7 +43,7 @@ mkdir -p models out
 
 ## 2. Recreate the old 28x28 probe checkpoint
 
-The current `master` version of `ijepa_trials.custom_ijepa` is the 56x56 /
+The current `master` implementation in `src/mnist_ssl/ijepa/custom_ijepa.py` is the 56x56 /
 64-token architecture. The old 28x28 / 16-token architecture is available at the
 pre-56x56 master commit `f9a184c`, so recreate it from a temporary worktree:
 
@@ -104,7 +104,7 @@ Run the 500-epoch 56x56 training trajectory. This also saves a normal
 probe-loadable 300-epoch checkpoint during the same run:
 
 ```bash
-caffeinate -i uv run python -m ijepa_trials.custom_ijepa \
+caffeinate -i uv run python scripts/train/ijepa.py \
   --epochs 500 \
   --n-targets 48 \
   --save-epoch 300 \
@@ -123,7 +123,7 @@ models/ijepa_mnist_custom_ijepa_p7_56_t48_500ep.pt
 Train/evaluate the 300ep and 500ep 56x56 probes:
 
 ```bash
-caffeinate -i uv run python -m ijepa_trials.run_best_t48_500
+caffeinate -i uv run python scripts/reproduce/ijepa_members.py
 ```
 
 Expected key probe files:
@@ -145,7 +145,7 @@ Expected sanity-check results:
 Run:
 
 ```bash
-uv run python -m ijepa_trials.ensemble_triplets
+uv run python scripts/reproduce/ijepa_9950.py
 ```
 
 Expected best line:
@@ -165,13 +165,13 @@ out/ensemble_triplet_results.csv
 Pairwise logit ensemble:
 
 ```bash
-uv run python -m ijepa_trials.ensemble_probes
+uv run python -m mnist_ssl.ijepa.ensemble_probes
 ```
 
 Feature-concat linear probe:
 
 ```bash
-caffeinate -i uv run python -m ijepa_trials.concat_probe --epochs 50
+caffeinate -i uv run python -m mnist_ssl.ijepa.concat_probe --epochs 50
 ```
 
 These did not beat the triplet logit ensemble. Best pairwise logit ensemble was

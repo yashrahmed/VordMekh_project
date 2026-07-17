@@ -39,7 +39,7 @@ shasum -a 256 \
 Run the frozen evaluation and weight grid:
 
 ```bash
-uv run python dino-trials/ensemble_ijepa_triplet.py --workers 0
+uv run python scripts/reproduce/best_ensemble.py --workers 0
 ```
 
 Expected summary:
@@ -63,7 +63,7 @@ This single seed-0 trajectory saves both the 300- and 500-epoch target encoder
 milestones and then trains the corresponding frozen probes:
 
 ```bash
-caffeinate -i uv run python -m ijepa_trials.run_best_t48_500
+caffeinate -i uv run python scripts/reproduce/ijepa_members.py
 ```
 
 The runner uses 56x56 bbox-normalized MNIST, 7x7 patches, 48 target tokens, 16
@@ -76,7 +76,7 @@ Launch the final horizon as 150 epochs from the start; the cosine schedules are
 defined by this horizon and cannot be reproduced by extending a shorter run:
 
 ```bash
-caffeinate -i uv run python dino-trials/train.py \
+caffeinate -i uv run python scripts/train/dinov2.py \
   --epochs 150 \
   --seed 0 \
   --checkpoint-epochs 50,75,100,125,150 \
@@ -88,7 +88,7 @@ caffeinate -i uv run python dino-trials/train.py \
 Train the frozen epoch-75 CLS probe:
 
 ```bash
-caffeinate -i uv run python dino-trials/eval_frozen.py \
+caffeinate -i uv run python scripts/evaluate/dinov2_frozen.py \
   --model models/dinov2_mnist_augmented_cls_150ep_epoch0075.pt \
   --pool cls \
   --linear-epochs 50 \
