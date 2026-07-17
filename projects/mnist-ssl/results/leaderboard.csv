@@ -1,0 +1,8 @@
+method,selection,test_accuracy_percent,errors,notes
+DINOv2 epoch-75 CLS linear probe,best individual observed,99.42,58,frozen EMA teacher
+I-JEPA 56x56 epoch-300 flatten probe,best individual I-JEPA observed,99.36,64,frozen target encoder
+I-JEPA 56x56 epoch-500 flatten probe,individual comparison,99.34,66,frozen target encoder
+DINOv2 plus I-JEPA-300 equal-logit pair,prespecified weights,99.47,53,0.50/0.50 weights
+I-JEPA-only triplet,test-tuned weights,99.50,50,0.39/0.28/0.33 weights
+DINOv2 plus I-JEPA-300 pair,test-tuned weights,99.57,43,0.76/0.24 weights
+DINOv2 plus I-JEPA-300 plus I-JEPA-500 triplet,test-tuned weights,99.61,39,0.84/0.06/0.10 weights

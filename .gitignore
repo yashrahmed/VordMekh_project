@@ -33,7 +33,7 @@ MANIFEST
 *.spec
 
 # Node Modules
-*/node_modules/*
+**/node_modules/
 
 # Installer logs
 pip-log.txt
@@ -176,7 +176,7 @@ cython_debug/
 # PyPI configuration file
 .pypirc
 
-keys-config.yml
+**/keys-config.yml
 
 # Next JS
-*/.next
+**/.next/
