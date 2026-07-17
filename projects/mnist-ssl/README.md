@@ -18,6 +18,7 @@ triplet reaches **99.61%**; see the selection caveat in the results document.
 - [DINOv2 implementation notes](docs/dinov2.md)
 - [Best-run configurations](configs/best/)
 - [Checkpoint manifest](results/checkpoint-manifest.json)
+- [Artifact and checkpoint policy](docs/artifact-policy.md)
 
 ## Install
 
@@ -30,7 +31,8 @@ uv sync
 
 Datasets, checkpoints, plots, and run logs are stored under `dataset/`,
 `models/`, `images/`, and `out/`. They are intentionally ignored by Git.
-Tracked result summaries and hashes live under `results/`.
+Tracked result summaries and hashes live under `results/`; the
+[artifact policy](docs/artifact-policy.md) explains promotion and cleanup.
 
 ## Canonical commands
 

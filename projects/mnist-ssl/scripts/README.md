@@ -41,3 +41,7 @@ files, and fails if the recorded metrics drift.
 post-training inspection and visualization tools. New one-off commands should
 go into one of these categories rather than `out/`, which is reserved for
 generated artifacts.
+
+Do not add a second implementation to `scripts/`: put reusable code in
+`src/mnist_ssl/` and expose it through a thin entry point here. Checkpoint and
+output retention is defined in [`docs/artifact-policy.md`](../docs/artifact-policy.md).
