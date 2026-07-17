@@ -26,9 +26,14 @@ mixing orchestration into model modules.
 
 | Script | Purpose |
 |---|---|
-| `reproduce/best_ensemble.py` | Verify the current 99.61% DINO/I-JEPA triplet grid |
+| `reproduce/verify_artifacts.py` | Verify manifest-pinned checkpoint file hashes |
+| `reproduce/best_ensemble.py` | Reproduce and assert the current 99.61% DINO/I-JEPA triplet grid |
 | `reproduce/ijepa_members.py` | Rebuild the 300/500-epoch 56x56 I-JEPA members |
 | `reproduce/ijepa_9950.py` | Verify the historical 99.50% I-JEPA-only triplet |
+
+The best-ensemble command reads `configs/best/dino_ijepa_triplet.json`, resolves
+its checkpoint IDs through `results/checkpoint-manifest.json`, verifies the
+files, and fails if the recorded metrics drift.
 
 ## Sweeps and analysis
 

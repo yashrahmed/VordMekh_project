@@ -16,6 +16,7 @@ triplet reaches **99.61%**; see the selection caveat in the results document.
 - [Active roadmap](ROADMAP.md)
 - [Full experiment log](docs/experiment-log.md)
 - [DINOv2 implementation notes](docs/dinov2.md)
+- [Best-run configurations](configs/best/)
 - [Checkpoint manifest](results/checkpoint-manifest.json)
 
 ## Install
@@ -64,6 +65,7 @@ uv run python scripts/evaluate/dinov2_frozen.py \
 Re-run the current best three-model grid:
 
 ```bash
+uv run python scripts/reproduce/verify_artifacts.py
 uv run python scripts/reproduce/best_ensemble.py --workers 0
 ```
 
@@ -71,10 +73,12 @@ uv run python scripts/reproduce/best_ensemble.py --workers 0
 
 | Path | Responsibility |
 |---|---|
-| `src/mnist_ssl/dinov2/` | DINOv2 model, losses, training, frozen evaluation, and DINO/I-JEPA ensembles |
+| `src/mnist_ssl/dinov2/` | DINOv2 model, losses, training, and frozen evaluation |
 | `src/mnist_ssl/ijepa/` | Custom and CNN-stem I-JEPA training, frozen probes, sweeps, and I-JEPA ensembles |
 | `src/mnist_ssl/baselines/` | MAE baselines, handcrafted descriptors, retrieval, k-NN, and alternative probe heads |
+| `src/mnist_ssl/ensembles/` | Cross-family ensemble evaluation and grid searches |
 | `scripts/` | Thin, discoverable entry points grouped by train, evaluate, reproduce, sweeps, and analysis |
+| `configs/best/` | Machine-readable settings and expected metrics for canonical results |
 | `docs/` | Results, reproduction instructions, and the historical lab notebook |
 | `results/` | Tracked metrics and checkpoint provenance |
 

@@ -1,0 +1,36 @@
+{
+  "schema_version": 1,
+  "name": "dino-ijepa-test-tuned-triplet",
+  "selection": "one-percent weighted-logit grid scored on MNIST test labels",
+  "grid_step_percent": 1,
+  "output": "out/dino_ijepa_triplet_grid_results.json",
+  "members": {
+    "dino": {
+      "backbone_artifact_id": "dinov2-augmented-fixed150-epoch75-backbone",
+      "probe_artifact_id": "dinov2-augmented-fixed150-epoch75-cls-linear50"
+    },
+    "ijepa_300": {
+      "probe_artifact_id": "ijepa-56-epoch300-flatten-linear50"
+    },
+    "ijepa_500": {
+      "probe_artifact_id": "ijepa-56-epoch500-flatten-linear50"
+    }
+  },
+  "expected": {
+    "individual_errors": {
+      "dino": 58,
+      "ijepa_300": 64,
+      "ijepa_500": 66
+    },
+    "best": {
+      "dino_weight": 0.84,
+      "ijepa_300_weight": 0.06,
+      "ijepa_500_weight": 0.10,
+      "errors": 39,
+      "test_accuracy_percent": 99.61
+    },
+    "all_three_shared_errors": 21,
+    "oracle_accuracy_percent": 99.79
+  },
+  "caveat": "The winning weights use MNIST test labels and are exploratory, not validation-clean model selection."
+}

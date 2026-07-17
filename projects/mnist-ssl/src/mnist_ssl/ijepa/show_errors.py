@@ -1,13 +1,10 @@
 """Show test digits a saved I-JEPA flatten probe gets wrong.
 
-The ``ijepa_trials`` counterpart to :mod:`trials.show_errors`. Loads a probe
-checkpoint written by :mod:`ijepa_trials.train_probe`, rebuilds the head plus its
-encoder via the ``ENCODERS`` registry (exactly as :mod:`ijepa_trials.eval_probe`
-does), scores the held-out MNIST **test** split, and renders a grid of the first
-``--n`` misclassified digits annotated with their true / predicted labels. The
-plotting is reused verbatim from ``trials.show_errors`` so the figure matches.
+Loads a probe checkpoint written by :mod:`mnist_ssl.ijepa.train_probe`,
+rebuilds its encoder and head, scores the held-out MNIST test split, and renders
+the first ``--n`` misclassified inputs with true and predicted labels.
 
-    python -m ijepa_trials.show_errors \
+    python -m mnist_ssl.ijepa.show_errors \
         --model models/ijepa_clf_custom_ijepa_probe_flatten_50ep.pt --n 30
 
 Each tile shows the *raw* MNIST digit titled ``T:<true> P:<pred>``; the encoder
@@ -25,7 +22,8 @@ import torch.nn as nn
 from torch.utils.data import DataLoader
 from torchvision import datasets
 
-from mnist_ssl.baselines.mae import DATASET_DIR, PROJECT_ROOT, make_transform, pick_device
+from mnist_ssl.baselines.mae import make_transform, pick_device
+from mnist_ssl.paths import DATASET_DIR, PROJECT_ROOT
 
 from .train_probe import DEFAULT_POOL, ENCODERS, N_CLASSES
 
@@ -36,10 +34,8 @@ OUT_DIR = PROJECT_ROOT / "out"
 def find_errors(model: nn.Module, head: nn.Module, device, pool: str, preproc: bool):
     """Return (indices, true, pred) for every misclassified test image, in order.
 
-    Mirrors :func:`trials.show_errors.find_errors` but drives the I-JEPA encoder
-    through its ``.encode(imgs, pool)`` method instead of the ``trials`` free
-    function. ``shuffle=False`` keeps the running counter equal to the dataset
-    index used for display.
+    ``shuffle=False`` keeps the running counter equal to the dataset index used
+    for display.
     """
     model.eval()
     head.eval()
@@ -66,9 +62,8 @@ def find_errors(model: nn.Module, head: nn.Module, device, pool: str, preproc: b
 def plot_errors(idx, true, pred, n: int, preproc: bool, out_path) -> None:
     """Render the first ``n`` errors as a grid of the *preprocessed* inputs.
 
-    Unlike :func:`trials.show_errors.plot_errors` (which shows the raw,
-    human-readable digit), this displays the exact bbox-cropped-and-stretched
-    image the encoder was fed -- index-aligned to the test split.
+    This displays the exact bbox-cropped-and-stretched image the encoder was
+    fed, index-aligned to the test split.
     """
     ds = datasets.MNIST(
         root=str(DATASET_DIR), train=False, download=True,
@@ -102,7 +97,7 @@ def main() -> None:
     parser.add_argument(
         "--model",
         default="models/ijepa_clf_custom_ijepa_probe_flatten_50ep.pt",
-        help="Path to a probe checkpoint saved by ijepa_trials.train_probe.",
+        help="Path to a probe checkpoint saved by mnist_ssl.ijepa.train_probe.",
     )
     parser.add_argument("--n", type=int, default=30, help="how many errors to show")
     parser.add_argument(
@@ -113,7 +108,9 @@ def main() -> None:
     device = pick_device()
     ckpt = torch.load(args.model, map_location=device)
     if ckpt.get("family") != "ijepa-flatten-probe":
-        parser.error("ijepa_trials.show_errors only supports ijepa-flatten-probe checkpoints.")
+        parser.error(
+            "mnist_ssl.ijepa.show_errors only supports ijepa-flatten-probe checkpoints."
+        )
     pool = ckpt.get("pool", DEFAULT_POOL)
     preproc = ckpt.get("preproc", True)
 
