@@ -18,7 +18,10 @@ dependencies = [
 ]
 
 [tool.setuptools]
-packages = ["trials", "ijepa_trials"]
+package-dir = {"" = "src"}
+
+[tool.setuptools.packages.find]
+where = ["src"]
 
 [dependency-groups]
 dev = ["pytest>=8"]
