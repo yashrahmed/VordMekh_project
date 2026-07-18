@@ -11,7 +11,7 @@ model and ensemble choices and to understand why the members fail differently.
   selection; evaluate the MNIST test set only after choices are locked.
 - [ ] Re-run the DINO/I-JEPA ensemble search using validation-selected weights.
 - [ ] Analyze the 21 test errors shared by DINOv2 and both 56x56 I-JEPA models.
-- [ ] Account for known MNIST label errors when interpreting the upper bound.
+- [x] Account for known MNIST label errors when interpreting the upper bound.
 - [ ] Train a vanilla ViT baseline from scratch.
 - [ ] Try ConvNeXt as a modern convolutional comparison.
 - [ ] Test whether a small transformer over frozen DINOv2/I-JEPA features can

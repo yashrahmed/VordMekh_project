@@ -28,6 +28,10 @@ from torchvision import datasets
 
 
 from mnist_ssl.baselines.mae import pick_device
+from mnist_ssl.evaluation_labels import (
+    DEFAULT_LABEL_POLICY,
+    apply_mnist_test_label_policy,
+)
 from mnist_ssl.ijepa import custom_ijepa
 from mnist_ssl.ijepa.ensemble_probes import load_probe
 from mnist_ssl.paths import DATASET_DIR, MODELS_DIR
@@ -171,6 +175,59 @@ def ensemble_rows(
     return rows
 
 
+def evaluate_logits(
+    dino_logits: torch.Tensor,
+    ijepa_logits: torch.Tensor,
+    labels: torch.Tensor,
+    step: int,
+) -> tuple[dict, list[dict]]:
+    """Score both members and their pairwise ensemble for one label view."""
+
+    total = len(labels)
+    dino_errors = errors(dino_logits, labels)
+    ijepa_errors = errors(ijepa_logits, labels)
+    dino_wrong = dino_logits.argmax(dim=1) != labels
+    ijepa_wrong = ijepa_logits.argmax(dim=1) != labels
+    shared_errors = int((dino_wrong & ijepa_wrong).sum().item())
+    disagreements = int(
+        (dino_logits.argmax(dim=1) != ijepa_logits.argmax(dim=1)).sum().item()
+    )
+    rows = ensemble_rows(dino_logits, ijepa_logits, labels, step)
+    equal_rows = [row for row in rows if row["dino_weight"] == 0.5]
+    for row in equal_rows:
+        row["selection"] = "prespecified equal weight"
+    best_by_method = {
+        method: min(
+            (row for row in rows if row["method"] == method),
+            key=lambda row: (row["errors"], abs(row["dino_weight"] - 0.5)),
+        )
+        for method in ("logit", "probability")
+    }
+    return (
+        {
+            "scored_examples": total,
+            "dino": {
+                "test_accuracy": accuracy(dino_errors, total),
+                "errors": dino_errors,
+            },
+            "ijepa": {
+                "test_accuracy": accuracy(ijepa_errors, total),
+                "errors": ijepa_errors,
+            },
+            "error_complementarity": {
+                "shared_errors": shared_errors,
+                "dino_wrong_ijepa_right": int((dino_wrong & ~ijepa_wrong).sum().item()),
+                "ijepa_wrong_dino_right": int((ijepa_wrong & ~dino_wrong).sum().item()),
+                "prediction_disagreements": disagreements,
+                "oracle_accuracy": accuracy(shared_errors, total),
+            },
+            "equal_weight": {row["method"]: row for row in equal_rows},
+            "best_test_tuned_diagnostic": best_by_method,
+        },
+        rows,
+    )
+
+
 def main() -> None:
     parser = argparse.ArgumentParser(description=__doc__)
     parser.add_argument("--dino-backbone", type=Path, default=DEFAULT_DINO_BACKBONE)
@@ -182,7 +239,19 @@ def main() -> None:
     parser.add_argument(
         "--output", type=Path, default=Path("out/dino_ijepa_ensemble_results.json")
     )
+    parser.add_argument(
+        "--apply-known-corrections",
+        action="store_true",
+        help="also score the manually reviewed MNIST labels and exclusions",
+    )
+    parser.add_argument(
+        "--label-policy",
+        type=Path,
+        help="override the reviewed-label policy used with --apply-known-corrections",
+    )
     args = parser.parse_args()
+    if args.label_policy is not None and not args.apply_known_corrections:
+        parser.error("--label-policy requires --apply-known-corrections")
     if args.step <= 0 or 100 % args.step:
         raise ValueError("--step must be a positive divisor of 100")
     for path in (args.dino_backbone, args.dino_probe, args.ijepa_probe):
@@ -223,62 +292,54 @@ def main() -> None:
     if dino_before != dino_after or ijepa_before != ijepa_after:
         raise RuntimeError("a frozen backbone changed during ensemble evaluation")
 
-    total = len(labels)
-    dino_errors = errors(dino_logits, labels)
-    ijepa_errors = errors(ijepa_logits, labels)
-    dino_wrong = dino_logits.argmax(dim=1) != labels
-    ijepa_wrong = ijepa_logits.argmax(dim=1) != labels
-    shared_errors = int((dino_wrong & ijepa_wrong).sum().item())
-    disagreements = int(
-        (dino_logits.argmax(dim=1) != ijepa_logits.argmax(dim=1)).sum().item()
-    )
+    original, rows = evaluate_logits(dino_logits, ijepa_logits, labels, args.step)
 
-    rows = ensemble_rows(dino_logits, ijepa_logits, labels, args.step)
-    equal_rows = [row for row in rows if row["dino_weight"] == 0.5]
-    for row in equal_rows:
-        row["selection"] = "prespecified equal weight"
-    best_by_method = {
-        method: min(
-            (row for row in rows if row["method"] == method),
-            key=lambda row: (row["errors"], abs(row["dino_weight"] - 0.5)),
-        )
-        for method in ("logit", "probability")
-    }
-
+    original_dino = original["dino"]
+    original_ijepa = original["ijepa"]
+    original_complementarity = original["error_complementarity"]
     result = {
         "evaluation_split": "MNIST test (10,000 examples, canonical order)",
         "backbones_frozen": True,
+        "known_corrections_applied": args.apply_known_corrections,
+        "scored_examples": original["scored_examples"],
         "dino": {
             "backbone": str(args.dino_backbone),
             "probe": str(args.dino_probe),
             "pool": dino_pool,
-            "test_accuracy": accuracy(dino_errors, total),
-            "errors": dino_errors,
+            **original_dino,
             "backbone_sha256_before": dino_before,
             "backbone_sha256_after": dino_after,
         },
         "ijepa": {
             "probe": str(args.ijepa_probe),
             "pool": ijepa_pool,
-            "test_accuracy": accuracy(ijepa_errors, total),
-            "errors": ijepa_errors,
+            **original_ijepa,
             "backbone_sha256_before": ijepa_before,
             "backbone_sha256_after": ijepa_after,
         },
-        "error_complementarity": {
-            "shared_errors": shared_errors,
-            "dino_wrong_ijepa_right": int((dino_wrong & ~ijepa_wrong).sum().item()),
-            "ijepa_wrong_dino_right": int((ijepa_wrong & ~dino_wrong).sum().item()),
-            "prediction_disagreements": disagreements,
-            "oracle_accuracy": accuracy(shared_errors, total),
-        },
-        "equal_weight": {row["method"]: row for row in equal_rows},
-        "best_test_tuned_diagnostic": best_by_method,
+        "error_complementarity": original_complementarity,
+        "equal_weight": original["equal_weight"],
+        "best_test_tuned_diagnostic": original["best_test_tuned_diagnostic"],
         "caveat": (
             "Equal weights were fixed before scoring. Best swept weights use test labels "
             "and are exploratory upper-bound diagnostics, not held-out model selection."
         ),
     }
+    reviewed_rows = None
+    if args.apply_known_corrections:
+        label_policy_path = args.label_policy or DEFAULT_LABEL_POLICY
+        applied_policy = apply_mnist_test_label_policy(labels, label_policy_path)
+        include = applied_policy.include_mask
+        reviewed, reviewed_rows = evaluate_logits(
+            dino_logits[include],
+            ijepa_logits[include],
+            applied_policy.labels[include],
+            args.step,
+        )
+        result["reviewed_label_evaluation"] = {
+            "label_policy": applied_policy.metadata,
+            **reviewed,
+        }
 
     args.output.parent.mkdir(parents=True, exist_ok=True)
     args.output.write_text(json.dumps(result, indent=2) + "\n")
@@ -287,27 +348,54 @@ def main() -> None:
         writer = csv.DictWriter(handle, fieldnames=list(rows[0]))
         writer.writeheader()
         writer.writerows(rows)
+    reviewed_csv_path = None
+    if reviewed_rows is not None:
+        reviewed_csv_path = args.output.with_name(
+            f"{args.output.stem}_reviewed_labels.csv"
+        )
+        with reviewed_csv_path.open("w", newline="") as handle:
+            writer = csv.DictWriter(handle, fieldnames=list(reviewed_rows[0]))
+            writer.writeheader()
+            writer.writerows(reviewed_rows)
 
     print(
-        f"DINO: {result['dino']['test_accuracy']:.2f}% ({dino_errors} errors)\n"
-        f"I-JEPA: {result['ijepa']['test_accuracy']:.2f}% ({ijepa_errors} errors)\n"
-        f"Shared errors: {shared_errors}; oracle: "
+        f"DINO: {result['dino']['test_accuracy']:.2f}% "
+        f"({result['dino']['errors']} errors)\n"
+        f"I-JEPA: {result['ijepa']['test_accuracy']:.2f}% "
+        f"({result['ijepa']['errors']} errors)\n"
+        f"Shared errors: {original_complementarity['shared_errors']}; oracle: "
         f"{result['error_complementarity']['oracle_accuracy']:.2f}%",
         flush=True,
     )
-    for row in equal_rows:
+    for row in original["equal_weight"].values():
         print(
             f"Equal {row['method']}: {row['test_accuracy']:.2f}% "
             f"({row['errors']} errors)",
             flush=True,
         )
-    for method, row in best_by_method.items():
+    for method, row in original["best_test_tuned_diagnostic"].items():
         print(
             f"Best test-tuned {method}: {row['test_accuracy']:.2f}% "
             f"({row['errors']} errors), DINO weight={row['dino_weight']:.2f}",
             flush=True,
         )
-    print(f"wrote={args.output} sweep={csv_path}", flush=True)
+    if args.apply_known_corrections:
+        reviewed = result["reviewed_label_evaluation"]
+        reviewed_complementarity = reviewed["error_complementarity"]
+        print(
+            f"Reviewed labels ({reviewed['scored_examples']} scored): "
+            f"DINO={reviewed['dino']['test_accuracy']:.2f}% "
+            f"({reviewed['dino']['errors']} errors), "
+            f"I-JEPA={reviewed['ijepa']['test_accuracy']:.2f}% "
+            f"({reviewed['ijepa']['errors']} errors), "
+            f"shared={reviewed_complementarity['shared_errors']}, "
+            f"oracle={reviewed_complementarity['oracle_accuracy']:.2f}%",
+            flush=True,
+        )
+    written = f"wrote={args.output} sweep={csv_path}"
+    if reviewed_csv_path is not None:
+        written += f" reviewed_sweep={reviewed_csv_path}"
+    print(written, flush=True)
 
 
 if __name__ == "__main__":

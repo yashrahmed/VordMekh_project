@@ -21,6 +21,28 @@ complementary errors. Their weights were selected on the MNIST test labels, so
 they are not unbiased held-out estimates. The next rigorous experiment must
 choose weights on a validation split and evaluate the test set once.
 
+## Manually reviewed label view
+
+The original benchmark scores above remain unchanged for comparability. A
+manual review of the 15 MNIST issues validated by Northcutt et al. adopted
+eight relabels, excluded two ambiguous examples, and retained five original
+labels. Applying that policy leaves 9,998 scored examples.
+Pass `--apply-known-corrections` to the ensemble evaluator to produce this
+additional view; without the flag, evaluation uses only the original labels.
+
+| Method | Reviewed-label accuracy | Errors |
+|---|---:|---:|
+| DINOv2 CLS | 99.43% | 57 |
+| I-JEPA 56x56 flatten, epoch 300 | 99.40% | 60 |
+| I-JEPA 56x56 flatten, epoch 500 | 99.38% | 62 |
+| **DINOv2 + I-JEPA-300 + I-JEPA-500** | **99.65%** | **35** |
+
+The same 0.84/0.06/0.10 weights win the reviewed-label grid. Nineteen reviewed
+errors are shared by all three members, so the label-oracle ceiling is
+**99.81%**. This is four fewer ensemble errors and two fewer shared errors than
+the original-label view; it does not turn the test-tuned weights into a
+validation-clean result.
+
 ## Best individual DINOv2
 
 - Augmented DINOv2, fixed 150-epoch cosine schedule.
@@ -60,10 +82,16 @@ The exploratory winning logit rule is:
 It makes 39 errors for **99.61%** accuracy. Only 21 errors are shared by all
 three members, giving a label-oracle ceiling of 99.79% for this triplet.
 
+Under the manually reviewed policy, the same weights make 35 errors among
+9,998 included examples for **99.65%** accuracy. Nineteen errors remain shared,
+giving a reviewed-label oracle ceiling of **99.81%**.
+
 The result was reproduced from the preserved checkpoints on 2026-07-16 at
 commit `6d79240c375285203c0892b6378d28f9b5c504cd`. Frozen-backbone fingerprints
 matched before and after evaluation. See the [reproduction record](../results/reproductions/2026-07-16-best-triplet.json)
-and [checkpoint manifest](../results/checkpoint-manifest.json).
+and [checkpoint manifest](../results/checkpoint-manifest.json). The reviewed
+view has its own
+[2026-07-18 reproduction record](../results/reproductions/2026-07-18-reviewed-label-triplet.json).
 
 Long-horizon DINOv2 tables, MAE baselines, probe alternatives, and negative
 results remain available in the [experiment log](experiment-log.md).

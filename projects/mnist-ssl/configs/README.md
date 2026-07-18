@@ -13,3 +13,10 @@ ignored artifact directories.
 
 Changing a fixed training horizon creates a different schedule and therefore a
 different experiment. Add a new config rather than editing a completed recipe.
+
+`evaluation/` contains tracked, non-training inputs for reproducible evaluation
+and audit workflows. `mnist_label_review_candidates.json` defines the exact
+manual-review queue of 15 issues validated in the original NeurIPS paper. It
+includes candidate provenance but no project-adopted label corrections.
+`mnist_label_corrections.json` records the completed project review: eight
+relabels, two exclusions, and five retained original labels.

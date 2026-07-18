@@ -7,7 +7,7 @@ diagnostic rather than clean held-out model selection.
 
 Run from ``projects/mnist-ssl``::
 
-    uv run python scripts/reproduce/best_ensemble.py
+    uv run python scripts/reproduce/best_ensemble.py --apply-known-corrections
 """
 
 from __future__ import annotations
@@ -25,6 +25,7 @@ from torchvision import datasets
 
 
 from mnist_ssl.baselines.mae import pick_device
+from mnist_ssl.evaluation_labels import apply_mnist_test_label_policy
 from mnist_ssl.ijepa.ensemble_probes import load_probe
 from mnist_ssl.paths import DATASET_DIR, PROJECT_ROOT
 from mnist_ssl.provenance import artifact_paths, verify_artifacts
@@ -63,6 +64,8 @@ def load_config(path: Path) -> dict:
         for field in fields:
             if field not in members[member]:
                 raise ValueError(f"missing members.{member}.{field} in {path}")
+    if "label_policy" not in config:
+        raise ValueError(f"missing label_policy in {path}")
     return config
 
 
@@ -112,6 +115,50 @@ def assert_expected_result(result: dict, expected: dict) -> None:
         abs_tol=1e-12,
     ):
         raise RuntimeError("oracle accuracy drifted")
+
+    if "reviewed_label_evaluation" not in result:
+        return
+    reviewed = result["reviewed_label_evaluation"]
+    expected_reviewed = expected["reviewed_label_evaluation"]
+    if reviewed["label_policy"]["policy_sha256"] != expected_reviewed["policy_sha256"]:
+        raise RuntimeError("reviewed-label policy drifted")
+    if (
+        reviewed["label_policy"]["decision_counts"]
+        != expected_reviewed["decision_counts"]
+    ):
+        raise RuntimeError("reviewed-label decision counts drifted")
+    if reviewed["scored_examples"] != expected_reviewed["scored_examples"]:
+        raise RuntimeError("reviewed-label denominator drifted")
+    for member, expected_errors in expected_reviewed["individual_errors"].items():
+        if reviewed["individual"][member]["errors"] != expected_errors:
+            raise RuntimeError(f"{member} reviewed-label errors drifted")
+
+    reviewed_best = reviewed["best_test_tuned_grid_row"]
+    expected_reviewed_best = expected_reviewed["best"]
+    for field in ("dino_weight", "ijepa_300_weight", "ijepa_500_weight"):
+        if not math.isclose(
+            reviewed_best[field], expected_reviewed_best[field], abs_tol=1e-12
+        ):
+            raise RuntimeError(f"best reviewed-label {field} drifted")
+    if reviewed_best["errors"] != expected_reviewed_best["errors"]:
+        raise RuntimeError("best reviewed-label ensemble drifted")
+    if not math.isclose(
+        reviewed_best["test_accuracy"],
+        expected_reviewed_best["test_accuracy_percent"],
+        abs_tol=1e-12,
+    ):
+        raise RuntimeError("best reviewed-label ensemble accuracy drifted")
+    if (
+        reviewed["all_three_shared_errors"]
+        != expected_reviewed["all_three_shared_errors"]
+    ):
+        raise RuntimeError("reviewed-label shared-error count drifted")
+    if not math.isclose(
+        reviewed["oracle_accuracy"],
+        expected_reviewed["oracle_accuracy_percent"],
+        abs_tol=1e-12,
+    ):
+        raise RuntimeError("reviewed-label oracle accuracy drifted")
 
 
 def display_path(path: Path) -> str:
@@ -221,6 +268,38 @@ def grid_search(
     return rows
 
 
+def evaluate_logits(
+    logits: dict[str, torch.Tensor],
+    labels: torch.Tensor,
+    step: int,
+) -> tuple[dict, list[dict]]:
+    """Score members, the weight grid, and the label oracle for one label view."""
+
+    rows = grid_search(logits, labels, step)
+    individual = {}
+    wrong = {}
+    for name, member_logits in logits.items():
+        error_count = errors(member_logits, labels)
+        individual[name] = {
+            "test_accuracy": accuracy(error_count, len(labels)),
+            "errors": error_count,
+        }
+        wrong[name] = member_logits.argmax(dim=1) != labels
+    all_shared_errors = int(
+        (wrong["dino"] & wrong["ijepa_300"] & wrong["ijepa_500"]).sum().item()
+    )
+    return (
+        {
+            "scored_examples": len(labels),
+            "individual": individual,
+            "best_test_tuned_grid_row": rows[0],
+            "all_three_shared_errors": all_shared_errors,
+            "oracle_accuracy": accuracy(all_shared_errors, len(labels)),
+        },
+        rows,
+    )
+
+
 def main() -> None:
     parser = argparse.ArgumentParser(description=__doc__)
     parser.add_argument("--config", type=Path, default=DEFAULT_CONFIG)
@@ -232,6 +311,16 @@ def main() -> None:
     parser.add_argument("--workers", type=int, default=2)
     parser.add_argument("--step", type=int)
     parser.add_argument("--output", type=Path)
+    parser.add_argument(
+        "--apply-known-corrections",
+        action="store_true",
+        help="also score the manually reviewed MNIST labels and exclusions",
+    )
+    parser.add_argument(
+        "--label-policy",
+        type=Path,
+        help="override the reviewed-label policy used with --apply-known-corrections",
+    )
     parser.add_argument(
         "--verify-artifacts",
         action=argparse.BooleanOptionalAction,
@@ -263,7 +352,16 @@ def main() -> None:
         paths[name] = project_path(override) if override else resolved[artifact_id]
     step = args.step if args.step is not None else config["grid_step_percent"]
     output = project_path(args.output or Path(config["output"]))
-    canonical_run = not any(overrides.values()) and step == config["grid_step_percent"]
+    label_policy_path = project_path(
+        args.label_policy or Path(config["label_policy"])
+    )
+    if args.label_policy is not None and not args.apply_known_corrections:
+        parser.error("--label-policy requires --apply-known-corrections")
+    canonical_run = (
+        not any(overrides.values())
+        and args.label_policy is None
+        and step == config["grid_step_percent"]
+    )
     if args.check_expected and not canonical_run:
         raise ValueError(
             "--check-expected requires the config artifacts and grid step; "
@@ -325,20 +423,8 @@ def main() -> None:
     if before != after:
         raise RuntimeError("a frozen backbone changed during triplet evaluation")
 
-    rows = grid_search(logits, labels, step)
-    best = rows[0]
-    individual = {}
-    wrong = {}
-    for name, member_logits in logits.items():
-        error_count = errors(member_logits, labels)
-        individual[name] = {
-            "test_accuracy": accuracy(error_count, len(labels)),
-            "errors": error_count,
-        }
-        wrong[name] = member_logits.argmax(dim=1) != labels
-    all_shared_errors = int(
-        (wrong["dino"] & wrong["ijepa_300"] & wrong["ijepa_500"]).sum().item()
-    )
+    original, rows = evaluate_logits(logits, labels, step)
+    best = original["best_test_tuned_grid_row"]
 
     result = {
         "reproduction_config": display_path(config_path),
@@ -349,16 +435,46 @@ def main() -> None:
         "evaluation_split": "MNIST test (10,000 examples, canonical order)",
         "selection": config["selection"],
         "backbones_frozen": True,
-        "individual": individual,
+        "known_corrections_applied": args.apply_known_corrections,
+        "scored_examples": original["scored_examples"],
+        "individual": original["individual"],
         "best_test_tuned_grid_row": best,
         "best_rows": rows[:20],
-        "all_three_shared_errors": all_shared_errors,
-        "oracle_accuracy": accuracy(all_shared_errors, len(labels)),
+        "all_three_shared_errors": original["all_three_shared_errors"],
+        "oracle_accuracy": original["oracle_accuracy"],
         "backbone_sha256_before": before,
         "backbone_sha256_after": after,
         "checkpoints": {name: display_path(path) for name, path in paths.items()},
         "caveat": config["caveat"],
     }
+    reviewed_rows = None
+    if args.apply_known_corrections:
+        applied_policy = apply_mnist_test_label_policy(labels, label_policy_path)
+        reviewed_logits = {
+            name: member_logits[applied_policy.include_mask]
+            for name, member_logits in logits.items()
+        }
+        reviewed_labels = applied_policy.labels[applied_policy.include_mask]
+        reviewed, reviewed_rows = evaluate_logits(
+            reviewed_logits, reviewed_labels, step
+        )
+        reviewed_original_winner = next(
+            row
+            for row in reviewed_rows
+            if all(
+                math.isclose(row[field], best[field], abs_tol=1e-12)
+                for field in ("dino_weight", "ijepa_300_weight", "ijepa_500_weight")
+            )
+        )
+        result["reviewed_label_evaluation"] = {
+            "label_policy": {
+                **applied_policy.metadata,
+                "path": display_path(label_policy_path),
+            },
+            **reviewed,
+            "original_label_winner_rescored": reviewed_original_winner,
+            "best_rows": reviewed_rows[:20],
+        }
     if args.check_expected:
         assert_expected_result(result, config["expected"])
         result["expected_result_verified"] = True
@@ -372,8 +488,15 @@ def main() -> None:
         writer = csv.DictWriter(handle, fieldnames=list(rows[0]))
         writer.writeheader()
         writer.writerows(rows)
+    reviewed_csv_path = None
+    if reviewed_rows is not None:
+        reviewed_csv_path = output.with_name(f"{output.stem}_reviewed_labels.csv")
+        with reviewed_csv_path.open("w", newline="") as handle:
+            writer = csv.DictWriter(handle, fieldnames=list(reviewed_rows[0]))
+            writer.writeheader()
+            writer.writerows(reviewed_rows)
 
-    for name, metrics in individual.items():
+    for name, metrics in original["individual"].items():
         print(
             f"{name}: {metrics['test_accuracy']:.2f}% ({metrics['errors']} errors)",
             flush=True,
@@ -387,13 +510,31 @@ def main() -> None:
         flush=True,
     )
     print(
-        f"all_three_shared_errors={all_shared_errors} "
+        f"all_three_shared_errors={original['all_three_shared_errors']} "
         f"oracle={result['oracle_accuracy']:.2f}%",
         flush=True,
     )
+    if args.apply_known_corrections:
+        reviewed = result["reviewed_label_evaluation"]
+        reviewed_best = reviewed["best_test_tuned_grid_row"]
+        print(
+            "reviewed_labels: "
+            f"{reviewed['scored_examples']} scored, "
+            f"best={reviewed_best['test_accuracy']:.2f}% "
+            f"({reviewed_best['errors']} errors), "
+            f"DINO={reviewed_best['dino_weight']:.2f}, "
+            f"I-JEPA-300={reviewed_best['ijepa_300_weight']:.2f}, "
+            f"I-JEPA-500={reviewed_best['ijepa_500_weight']:.2f}; "
+            f"all_three_shared_errors={reviewed['all_three_shared_errors']} "
+            f"oracle={reviewed['oracle_accuracy']:.2f}%",
+            flush=True,
+        )
     expected = "verified" if result["expected_result_verified"] else "not checked"
     print(f"expected_result={expected}", flush=True)
-    print(f"wrote={output} grid={csv_path}", flush=True)
+    written = f"wrote={output} grid={csv_path}"
+    if reviewed_csv_path is not None:
+        written += f" reviewed_grid={reviewed_csv_path}"
+    print(written, flush=True)
 
 
 if __name__ == "__main__":

@@ -27,7 +27,7 @@ mixing orchestration into model modules.
 | Script | Purpose |
 |---|---|
 | `reproduce/verify_artifacts.py` | Verify manifest-pinned checkpoint file hashes |
-| `reproduce/best_ensemble.py` | Reproduce and assert the current 99.61% DINO/I-JEPA triplet grid |
+| `reproduce/best_ensemble.py` | Reproduce the DINO/I-JEPA triplet; add `--apply-known-corrections` for reviewed labels |
 | `reproduce/ijepa_members.py` | Rebuild the 300/500-epoch 56x56 I-JEPA members |
 | `reproduce/ijepa_9950.py` | Verify the historical 99.50% I-JEPA-only triplet |
 
@@ -41,6 +41,12 @@ files, and fails if the recorded metrics drift.
 post-training inspection and visualization tools. New one-off commands should
 go into one of these categories rather than `out/`, which is reserved for
 generated artifacts.
+
+| Script | Purpose |
+|---|---|
+| `analysis/review_mnist_labels.py` | Build the standalone manual label reviewer |
+| `analysis/ijepa_errors.py` | Render errors for a saved I-JEPA probe |
+| `analysis/shift_subtract.py` | Inspect the shift/subtract image transform |
 
 Do not add a second implementation to `scripts/`: put reusable code in
 `src/mnist_ssl/` and expose it through a thin entry point here. Checkpoint and
