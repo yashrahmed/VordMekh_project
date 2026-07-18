@@ -1,0 +1,179 @@
+{
+  "schema_version": 1,
+  "name": "mnist-paper-validated-label-review",
+  "dataset": {
+    "name": "MNIST",
+    "split": "test",
+    "size": 10000,
+    "indexing": "zero-based canonical torchvision order"
+  },
+  "candidate_sets": [
+    {
+      "id": "northcutt-validated-label-issues",
+      "description": "The 15 MNIST test examples for which fewer than three of five MTurk reviewers accepted the original label in Northcutt et al.",
+      "count": 15,
+      "provenance": {
+        "paper": "https://openreview.net/forum?id=XccDXrDNLek",
+        "paper_pdf": "https://openreview.net/pdf?id=XccDXrDNLek",
+        "repository": "https://github.com/cleanlab/label-errors",
+        "commit": "6d5d6b31a13216290afc40e5c6319399c4d15c06",
+        "path": "mturk/mnist_mturk.json",
+        "source_sha256": "448bd00fc9df262c68d50d48709d7fa3d5dc966bc66580e5df20e0dcba6e5612",
+        "selection_rule": "mturk.given < 3",
+        "license": "Apache-2.0"
+      }
+    }
+  ],
+  "candidates": [
+    {
+      "index": 947,
+      "original_label": 8,
+      "reasons": ["northcutt-validated-label-issues"],
+      "published_audit": {
+        "suggested_label": 9,
+        "votes": {"original": 0, "suggested": 5, "neither": 0},
+        "category": "correctable"
+      }
+    },
+    {
+      "index": 1621,
+      "original_label": 0,
+      "reasons": ["northcutt-validated-label-issues"],
+      "published_audit": {
+        "suggested_label": 6,
+        "votes": {"original": 2, "suggested": 3, "neither": 0},
+        "category": "correctable"
+      }
+    },
+    {
+      "index": 1901,
+      "original_label": 9,
+      "reasons": ["northcutt-validated-label-issues"],
+      "published_audit": {
+        "suggested_label": 4,
+        "votes": {"original": 2, "suggested": 3, "neither": 0},
+        "category": "correctable"
+      }
+    },
+    {
+      "index": 2130,
+      "original_label": 4,
+      "reasons": ["northcutt-validated-label-issues"],
+      "published_audit": {
+        "suggested_label": 9,
+        "votes": {"original": 2, "suggested": 2, "neither": 1},
+        "category": "non_agreement"
+      }
+    },
+    {
+      "index": 2462,
+      "original_label": 2,
+      "reasons": ["northcutt-validated-label-issues"],
+      "published_audit": {
+        "suggested_label": 0,
+        "votes": {"original": 0, "suggested": 4, "neither": 1},
+        "category": "correctable"
+      }
+    },
+    {
+      "index": 2597,
+      "original_label": 5,
+      "reasons": ["northcutt-validated-label-issues"],
+      "published_audit": {
+        "suggested_label": 3,
+        "votes": {"original": 0, "suggested": 4, "neither": 1},
+        "category": "correctable"
+      }
+    },
+    {
+      "index": 2654,
+      "original_label": 6,
+      "reasons": ["northcutt-validated-label-issues"],
+      "published_audit": {
+        "suggested_label": 1,
+        "votes": {"original": 0, "suggested": 2, "neither": 3},
+        "category": "neither"
+      }
+    },
+    {
+      "index": 3520,
+      "original_label": 6,
+      "reasons": ["northcutt-validated-label-issues"],
+      "published_audit": {
+        "suggested_label": 4,
+        "votes": {"original": 2, "suggested": 0, "neither": 3},
+        "category": "neither"
+      }
+    },
+    {
+      "index": 3558,
+      "original_label": 5,
+      "reasons": ["northcutt-validated-label-issues"],
+      "published_audit": {
+        "suggested_label": 0,
+        "votes": {"original": 1, "suggested": 4, "neither": 0},
+        "category": "correctable"
+      }
+    },
+    {
+      "index": 5937,
+      "original_label": 5,
+      "reasons": ["northcutt-validated-label-issues"],
+      "published_audit": {
+        "suggested_label": 3,
+        "votes": {"original": 1, "suggested": 3, "neither": 1},
+        "category": "correctable"
+      }
+    },
+    {
+      "index": 6651,
+      "original_label": 0,
+      "reasons": ["northcutt-validated-label-issues"],
+      "published_audit": {
+        "suggested_label": 6,
+        "votes": {"original": 0, "suggested": 5, "neither": 0},
+        "category": "correctable"
+      }
+    },
+    {
+      "index": 6783,
+      "original_label": 1,
+      "reasons": ["northcutt-validated-label-issues"],
+      "published_audit": {
+        "suggested_label": 6,
+        "votes": {"original": 2, "suggested": 3, "neither": 0},
+        "category": "correctable"
+      }
+    },
+    {
+      "index": 8527,
+      "original_label": 4,
+      "reasons": ["northcutt-validated-label-issues"],
+      "published_audit": {
+        "suggested_label": 9,
+        "votes": {"original": 2, "suggested": 2, "neither": 1},
+        "category": "non_agreement"
+      }
+    },
+    {
+      "index": 9679,
+      "original_label": 6,
+      "reasons": ["northcutt-validated-label-issues"],
+      "published_audit": {
+        "suggested_label": 3,
+        "votes": {"original": 2, "suggested": 0, "neither": 3},
+        "category": "neither"
+      }
+    },
+    {
+      "index": 9729,
+      "original_label": 5,
+      "reasons": ["northcutt-validated-label-issues"],
+      "published_audit": {
+        "suggested_label": 6,
+        "votes": {"original": 2, "suggested": 3, "neither": 0},
+        "category": "correctable"
+      }
+    }
+  ]
+}

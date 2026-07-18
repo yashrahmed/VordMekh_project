@@ -12,6 +12,11 @@ and two I-JEPA probes:
 The weighted-logit triplet makes 39 errors on the 10,000-example MNIST test
 set: **99.61%**.
 
+The `--apply-known-corrections` flag applies the tracked manual-review policy.
+With eight relabels and two ambiguous examples excluded, the same weights make
+35 errors over 9,998 examples: **99.65%**. The reviewed-label oracle ceiling
+is **99.81%**. Omit the flag to run only the original-label benchmark.
+
 The weights were selected by a one-percent grid evaluated directly on test
 labels. This is an exploratory measurement of complementary signal, not a
 validation-clean model-selection result.
@@ -40,7 +45,9 @@ uv run python scripts/reproduce/verify_artifacts.py \
 Run the frozen evaluation and weight grid:
 
 ```bash
-uv run python scripts/reproduce/best_ensemble.py --workers 0
+uv run python scripts/reproduce/best_ensemble.py \
+  --workers 0 \
+  --apply-known-corrections
 ```
 
 This command loads [`configs/best/dino_ijepa_triplet.json`](../configs/best/dino_ijepa_triplet.json),
@@ -57,11 +64,14 @@ ijepa_300: 99.36% (64 errors)
 ijepa_500: 99.34% (66 errors)
 best: 99.61% (39 errors), DINO=0.84, I-JEPA-300=0.06, I-JEPA-500=0.10
 all_three_shared_errors=21 oracle=99.79%
+reviewed_labels: 9998 scored, best=99.65% (35 errors), DINO=0.84, I-JEPA-300=0.06, I-JEPA-500=0.10; all_three_shared_errors=19 oracle=99.81%
 ```
 
 The evaluator fingerprints every frozen backbone before and after inference and
-fails if any fingerprint changes. The full weight grid is written under
-`out/`; the compact audited reproduction is tracked under
+fails if any fingerprint changes. It also pins the completed review and fails
+if the decision set, denominator, original metrics, or reviewed metrics drift.
+The original-label and reviewed-label weight grids are written under `out/`;
+the compact audited reproduction is tracked under
 [`results/reproductions/`](../results/reproductions/).
 
 ## Rebuild the I-JEPA members

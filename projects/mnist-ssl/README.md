@@ -7,7 +7,9 @@ evaluation, and classifier ensembles.
 The project asks how far label-free representation learning can push MNIST
 classification once the learned backbone is frozen. The current best individual
 model is a DINOv2 frozen CLS probe at **99.42%**. A test-tuned DINO/I-JEPA
-triplet reaches **99.61%**; see the selection caveat in the results document.
+triplet reaches **99.61%** on the original labels and **99.65%** under the
+manually reviewed label policy; see the selection caveat in the results
+document.
 
 ## Start here
 
@@ -86,3 +88,7 @@ uv run python scripts/reproduce/best_ensemble.py --workers 0
 
 Implementations live in the importable `mnist_ssl` package. Scripts contain no
 model logic; they only expose stable commands for common workflows.
+
+To inspect the 15 paper-validated MNIST label issues relevant to the current
+label-aware upper-bound work, build the
+[manual MNIST label reviewer](docs/review-mnist-labels.md).
