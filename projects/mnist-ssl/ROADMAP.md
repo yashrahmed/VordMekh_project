@@ -8,8 +8,7 @@ model and ensemble choices and to understand why the members fail differently.
 ## Current priorities
 
 - [ ] Try out a resolver/corrector n/w to recover results from top-2 logits where feasible.
-- [x] Account for known MNIST label errors when interpreting the upper bound.
-- [ ] Train a vanilla ViT baseline from scratch.
+- [ ] Try a full stack Lora finetuning with a linear probe.
 - [ ] Try ConvNeXt as a modern convolutional comparison.
 - [ ] Test whether a small transformer over frozen DINOv2/I-JEPA features can
   learn a useful visual strategy without unfreezing the backbones.
@@ -32,6 +31,7 @@ model and ensemble choices and to understand why the members fail differently.
 - [x] Reach 99.42% with an individual frozen DINOv2 CLS probe.
 - [x] Reach 99.50% with a test-tuned I-JEPA triplet.
 - [x] Reach 99.61% with a test-tuned DINO/I-JEPA triplet.
+- [x] Account for known MNIST label errors when interpreting the upper bound.
 
 The detailed chronology, negative results, architecture notes, and historical
 task lists are preserved in the [experiment log](docs/experiment-log.md).
