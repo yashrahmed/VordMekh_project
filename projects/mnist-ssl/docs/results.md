@@ -14,6 +14,7 @@ historically observed individual milestones remain labeled as such.
 | I-JEPA 56x56 flatten, epoch 300 | Best individual I-JEPA observed | 99.36% | 64 |
 | I-JEPA 56x56 flatten, epoch 500 | Individual comparison | 99.34% | 66 |
 | I-JEPA-500 flatten nonlinear-64 probe | Best nonlinear milestone observed | 99.42% | 58 |
+| I-JEPA-only linear-probe triplet | Train-selected logits | 99.42% | 58 |
 | DINOv2 + I-JEPA-300 + I-JEPA-500 linear probes | Train-selected logits | 99.45% | 55 |
 | **DINOv2 + I-JEPA-300 + I-JEPA-500 nonlinear probes** | **Train-selected probabilities** | **99.63%** | **37** |
 
@@ -21,16 +22,24 @@ The train-selected nonlinear triplet is the reported best ensemble. Its
 probability score space and `0.556/0.222/0.222` weights were frozen before test
 prediction artifacts were loaded.
 
-## Historical pre-DINOv2 ensemble
+## Pre-DINOv2 I-JEPA ensemble
 
-| Method | Selection | Test accuracy | Errors |
-|---|---|---:|---:|
-| I-JEPA-only triplet | Test-selected weights | 99.50% | 50 |
+The old 28x28 epoch-500 and 56x56 epoch-300/500 linear-probe triplet has now
+been retuned on the 60,000 MNIST training examples. A full 1% raw-logit
+simplex grid followed by a local 0.1% refinement selected weights
+`0.278/0.472/0.250` in old-28/56-300/56-500 order. Those weights were frozen
+before test data was loaded.
 
-This is the one retained test-selected ensemble record from before DINOv2 was
-trained. Its weights were selected on MNIST test labels, so it is not reported
-model performance. See the dedicated
-[reproduction guide](reproduce-ijepa-9950.md).
+| Train errors | Canonical test | Reviewed test |
+|---:|---:|---:|
+| 20 / 60,000 | 99.42% (58 / 10,000) | 99.48% (52 / 9,998) |
+
+The former test-selected weights `0.39/0.28/0.33` made 26 training errors and
+50 canonical test errors. The eight-error difference is test-selection
+optimism, not a reproducible train-selected gain. Exact plateau counts and
+hashes are in the
+[reproduction record](../results/reproductions/2026-07-19-training-selected-ijepa-triplet.json)
+and [guide](reproduce-ijepa-9950.md).
 
 ## Training-selected ensemble weights
 
@@ -138,8 +147,8 @@ The nonlinear grid used the DINO 50-epoch nonlinear head and the I-JEPA-300
 and I-JEPA-500 75-epoch nonlinear heads. Exact training selection, plateau
 sizes, input hashes, and test metrics are in the
 [train-selected reproduction record](../results/reproductions/2026-07-18-training-selected-triplets.json).
-The older pre-DINOv2 I-JEPA-only test-selected result remains in its dedicated
-[reproduction guide](reproduce-ijepa-9950.md).
+The pre-DINOv2 I-JEPA-only triplet now also follows a train-selected protocol;
+see its dedicated [reproduction guide](reproduce-ijepa-9950.md).
 
 Long-horizon DINOv2 tables, MAE baselines, probe alternatives, and negative
 results remain available in the [experiment log](experiment-log.md).

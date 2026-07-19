@@ -108,5 +108,6 @@ the required sanity check is the individual metrics, frozen-backbone
 invariants, selected training weights, and final ensemble score, with
 environment differences recorded alongside the result.
 
-The older I-JEPA-only 99.50% triplet requires a historical 28x28 member and has
-its own [reproduction guide](reproduce-ijepa-9950.md).
+The older I-JEPA-only triplet requires a historical 28x28 member. Its
+train-selected weights reach 99.42%; see its
+[reproduction guide](reproduce-ijepa-9950.md).

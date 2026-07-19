@@ -1,35 +1,42 @@
-# Replicate the 99.50% MNIST triplet I-JEPA ensemble
+# Replicate the train-selected MNIST triplet I-JEPA ensemble
 
-This reproduces the best result reached so far:
+This reproduces the pre-DINOv2 three-member linear-probe ensemble using a
+test-clean selection protocol:
 
-| method | test errors | test accuracy |
-|---|---:|---:|
-| weighted triplet logit ensemble | 50 / 10,000 | 99.50% |
+| selection | train errors | canonical test | reviewed test |
+|---|---:|---:|---:|
+| train-selected raw-logit weights | 20 / 60,000 | 99.42% (58 / 10,000) | 99.48% (52 / 9,998) |
 
-The winning ensemble combines three frozen linear probes:
+The ensemble combines three frozen linear probes:
 
 | component | weight |
 |---|---:|
-| old 28x28 bbox-preproc custom I-JEPA, 10 targets / 6 context, 500ep encoder, flatten probe | 0.39 |
-| 56x56 upscaled-bbox custom I-JEPA, 48 targets / 16 context, 300ep encoder, flatten probe | 0.28 |
-| 56x56 upscaled-bbox custom I-JEPA, 48 targets / 16 context, 500ep encoder, flatten probe | 0.33 |
+| old 28x28 bbox-preproc custom I-JEPA, 10 targets / 6 context, 500ep encoder, flatten probe | 0.278 |
+| 56x56 upscaled-bbox custom I-JEPA, 48 targets / 16 context, 300ep encoder, flatten probe | 0.472 |
+| 56x56 upscaled-bbox custom I-JEPA, 48 targets / 16 context, 500ep encoder, flatten probe | 0.250 |
 
 The prediction rule is weighted logit averaging:
 
 ```python
 logits = (
-    0.39 * old28_500_flatten_logits
-  + 0.28 * new56_300_flatten_logits
-  + 0.33 * new56_500_flatten_logits
+    0.278 * old28_500_flatten_logits
+  + 0.472 * new56_300_flatten_logits
+  + 0.250 * new56_500_flatten_logits
 )
 pred = logits.argmax(dim=1)
 ```
 
-Important caveat: the weights above were selected by sweeping the MNIST test set.
-That establishes that the checkpoints contain complementary signal, but it is not
-a validation-clean model-selection protocol. For a publishable claim, tune weights
-on a held-out validation split from the training set and evaluate the test set
-once.
+The weights are selected on all 60,000 training examples with a complete 1%
+simplex grid and a local 0.1% refinement. When multiple weights have the same
+training error count, the representative closest to equal weights is selected.
+The test split is loaded only after this choice is frozen. This uses the probe
+training split rather than a separate validation split, but it does not use
+test labels for model selection.
+
+The historical test-selected weights `0.39/0.28/0.33` reached 99.50% on the
+canonical test set but made 26 training errors, versus 20 for the clean
+train-selected mix. They are retained only as evidence of test-selection
+optimism and are not reported model performance.
 
 ## 1. Prepare the current project
 
@@ -140,24 +147,27 @@ Expected sanity-check results:
 | 300 | flatten | 99.36% |
 | 500 | flatten | 99.34% |
 
-## 5. Run the triplet ensemble sweep
+## 5. Select the weights on train and evaluate test
 
 Run:
 
 ```bash
-uv run python scripts/reproduce/ijepa_9950.py
+uv run python scripts/reproduce/ijepa_train_selected_triplet.py
 ```
 
-Expected best line:
+Expected key lines:
 
 ```text
-99.50% (50 errors) old28_500_flatten:0.39 new56_300_flatten:0.28 new56_500_flatten:0.33
+selected_weights=0.278/0.472/0.250 train_errors=20
+canonical_errors=58 reviewed_errors=52
 ```
 
-The full sweep is written to:
+The cached training logits, full grid, and raw summary are written to:
 
 ```text
-out/ensemble_triplet_results.csv
+out/ijepa_train_selected_triplet_v1/training_logits.pt
+out/ijepa_train_selected_triplet_v1/grid.csv
+out/ijepa_train_selected_triplet_v1/summary.json
 ```
 
 ## 6. Optional supporting checks

@@ -28,7 +28,7 @@ mixing orchestration into model modules.
 |---|---|
 | `reproduce/verify_artifacts.py` | Verify manifest-pinned checkpoint file hashes |
 | `reproduce/ijepa_members.py` | Rebuild the 300/500-epoch 56x56 I-JEPA members |
-| `reproduce/ijepa_9950.py` | Verify the historical 99.50% I-JEPA-only triplet |
+| `reproduce/ijepa_train_selected_triplet.py` | Select the three-I-JEPA linear-probe mixture on MNIST train, then evaluate test once |
 
 The reported current ensemble is selected by
 `analysis/grid_train_selected_probe_triplets.py`.

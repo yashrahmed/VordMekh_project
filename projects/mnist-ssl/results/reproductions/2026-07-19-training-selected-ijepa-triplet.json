@@ -1,0 +1,72 @@
+{
+  "schema_version": 1,
+  "date": "2026-07-19",
+  "experiment": "Train-selected raw-logit mixture for the pre-DINOv2 three-I-JEPA linear-probe ensemble",
+  "protocol": {
+    "selection_split": "MNIST train, canonical labels",
+    "selection_examples": 60000,
+    "test_loaded_after_weight_selection": true,
+    "test_labels_used_for_selection": false,
+    "score_space": "raw logits",
+    "model_order": [
+      "old28_500_flatten",
+      "new56_300_flatten",
+      "new56_500_flatten"
+    ],
+    "coarse_step": 0.01,
+    "refined_step": 0.001,
+    "refinement_radius": 0.02,
+    "tie_breaker": "minimum squared distance from equal weights"
+  },
+  "sources": {
+    "old28_500_flatten_sha256": "d49f4c5f5b72d81fc2f56c7f7111bc7cce740f4fa8fb28d51f89ec5d1058f1a9",
+    "new56_300_flatten_sha256": "d68673c454b286f4205a94e47d610a52af1cabd13a44ff2901f6d054945c1f1a",
+    "new56_500_flatten_sha256": "8dc389ae4be991510cef0421b681326ad3d57d845c233e606b783a94a7307715"
+  },
+  "training": {
+    "individual_errors": {
+      "old28_500_flatten": 101,
+      "new56_300_flatten": 34,
+      "new56_500_flatten": 75
+    },
+    "all_three_shared_errors": 12,
+    "oracle_accuracy_percent": 99.98,
+    "historical_test_selected_weights_errors": 26
+  },
+  "selection": {
+    "coarse_best_errors": 21,
+    "coarse_exact_best_count": 14,
+    "refined_weights_evaluated": 5816,
+    "refined_exact_best_count": 82,
+    "selected_weights": {
+      "old28_500_flatten": 0.278,
+      "new56_300_flatten": 0.472,
+      "new56_500_flatten": 0.25
+    },
+    "training_errors": 20,
+    "training_accuracy_percent": 99.96666666666667
+  },
+  "evaluation": {
+    "canonical_test": {
+      "scored_examples": 10000,
+      "errors": 58,
+      "accuracy_percent": 99.42
+    },
+    "reviewed_test": {
+      "scored_examples": 9998,
+      "errors": 52,
+      "accuracy_percent": 99.47989597919585
+    },
+    "individual_canonical_errors": {
+      "old28_500_flatten": 80,
+      "new56_300_flatten": 64,
+      "new56_500_flatten": 66
+    }
+  },
+  "artifacts": {
+    "training_logits_sha256": "2b0f215910d07e934c4bc4e16391ef702b3323f3937d7ab41d63da52609922df",
+    "grid_sha256": "6beb2dc524c38d4dc3dce46f8ed95dcdbf4269e6492d32e91828d6d3261e87e0",
+    "raw_summary_sha256": "a86df0dc88ff7bd026f290cb0e0d36b2a936e874759019935462348b76010aef"
+  },
+  "conclusion": "The former 99.50% result was test-selection optimism. Train selection favors the stronger-on-train I-JEPA-300 member and transfers to 99.42% canonical and 99.48% reviewed accuracy."
+}
