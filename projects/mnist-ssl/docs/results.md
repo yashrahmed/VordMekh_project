@@ -1,10 +1,12 @@
 # Curated MNIST results
 
-All linear-probe and k-NN results use frozen self-supervised backbones. The
-tables below separate individual models and prespecified combinations from
-weights selected directly on the MNIST test labels.
+All linear-probe and k-NN results use frozen self-supervised backbones. Ensemble
+rows in the reported leaderboard use rules fixed without test labels;
+historically observed individual milestones remain labeled as such. Mixtures
+selected directly on test labels are separated into a diagnostic-ceiling
+table.
 
-## Leaderboard
+## Reported leaderboard
 
 | Method | Selection | Test accuracy | Errors |
 |---|---|---:|---:|
@@ -14,18 +16,44 @@ weights selected directly on the MNIST test labels.
 | I-JEPA 56x56 flatten, epoch 300 | Best individual I-JEPA observed | 99.36% | 64 |
 | I-JEPA 56x56 flatten, epoch 500 | Individual comparison | 99.34% | 66 |
 | I-JEPA-500 flatten nonlinear-64 probe | Best nonlinear milestone observed | 99.42% | 58 |
-| I-JEPA-only triplet | Test-tuned weights | 99.50% | 50 |
-| DINOv2 + I-JEPA-300 | Test-tuned weights | 99.57% | 43 |
-| DINOv2 + I-JEPA-300 + I-JEPA-500 linear probes | Test-tuned weights | 99.61% | 39 |
-| DINOv2 + I-JEPA-500 nonlinear probabilities | Test-tuned weights | 99.61% | 39 |
-| **DINOv2 + I-JEPA-300 + I-JEPA-500 nonlinear probabilities** | **Test-tuned weights** | **99.64%** | **36** |
+| DINOv2 + I-JEPA-300 + I-JEPA-500 linear probes | Train-selected logits | 99.45% | 55 |
+| **DINOv2 + I-JEPA-300 + I-JEPA-500 nonlinear probes** | **Train-selected probabilities** | **99.63%** | **37** |
 
-All rows marked test-tuned are diagnostics demonstrating complementary errors.
-Their weights were selected on the MNIST test labels, so they are not unbiased
-held-out estimates. The nonlinear triplet's canonical winner averages softmax
-probabilities with DINO/I-JEPA-300/I-JEPA-500 weights
-`0.547/0.270/0.183`. The next rigorous experiment must choose weights on a
-validation split and evaluate the test set once.
+The train-selected nonlinear triplet is the reported best ensemble. Its
+probability score space and `0.556/0.222/0.222` weights were frozen before test
+prediction artifacts were loaded.
+
+## Test-selected diagnostic ceilings
+
+| Method | Test-selected accuracy | Errors |
+|---|---:|---:|
+| I-JEPA-only triplet | 99.50% | 50 |
+| DINOv2 + I-JEPA-300 | 99.57% | 43 |
+| DINOv2 + I-JEPA-300 + I-JEPA-500 linear probes | 99.61% | 39 |
+| DINOv2 + I-JEPA-500 nonlinear probabilities | 99.61% | 39 |
+| DINOv2 + I-JEPA-300 + I-JEPA-500 nonlinear probabilities | 99.64% | 36 |
+
+These rows demonstrate complementary errors and upper-bound headroom. Because
+their weights were selected on MNIST test labels, they are not reported model
+performance.
+
+## Training-selected ensemble weights
+
+The scalar-mixture search was repeated using only the 60,000 MNIST training
+labels. Both raw logits and softmax probabilities used a full 1% simplex grid
+and a local 0.1% refinement. All method and weight choices were frozen before
+test prediction artifacts were loaded.
+
+| Probe group | Train-selected score/weights (DINO/300/500) | Train errors | Canonical test | Reviewed test |
+|---|---|---:|---:|---:|
+| Linear | logits, 0.248/0.541/0.211 | 22 | 99.45% (55) | 99.49% (51) |
+| **Nonlinear** | **probabilities, 0.556/0.222/0.222** | **3** | **99.63% (37)** | **99.66% (34)** |
+
+The nonlinear result is only one canonical and one reviewed error behind the
+canonical test-tuned mixture. The linear search transfers poorly: its member
+training errors are 219/34/75, so it places 54.1% of the weight on I-JEPA-300,
+whereas DINO is the stronger test model. Exact plateau sizes and hashes are in
+the [training-selected reproduction record](../results/reproductions/2026-07-18-training-selected-triplets.json).
 
 ## Manually reviewed label view
 
@@ -44,14 +72,14 @@ additional view; without the flag, evaluation uses only the original labels.
 | DINOv2 CLS nonlinear-64 probe | 99.55% | 45 |
 | I-JEPA-300 flatten nonlinear-64 probe | 99.41% | 59 |
 | I-JEPA-500 flatten nonlinear-64 probe | 99.46% | 54 |
-| Nonlinear probability triplet, canonical-selected weights | 99.67% | 33 |
-| **Nonlinear probability triplet, reviewed-selected weights** | **99.68%** | **32** |
+| Linear triplet, train-selected weights | 99.49% | 51 |
+| **Nonlinear probability triplet, train-selected weights** | **99.66%** | **34** |
 
-The reviewed-selected probability weights are `0.530/0.253/0.217`; they make
-37 errors on the canonical labels. The canonical-selected weights make 36
-canonical and 33 reviewed errors. Fourteen reviewed errors are shared by all
-three nonlinear members, so the reviewed-label oracle ceiling is **99.86%**.
-Direct reviewed-label selection does not make the result validation-clean.
+For diagnostic context, the canonical-test-selected nonlinear weights make 33
+reviewed errors, and weights selected directly on the reviewed labels make 32.
+Those are upper-bound measurements rather than reported ensemble results.
+Fourteen reviewed errors are shared by all three nonlinear members, giving a
+label-oracle ceiling of **99.86%**.
 
 ## Top-two reranking: negative result
 
@@ -102,29 +130,26 @@ negative result and is not a current research direction. See the
 
 ## Best current ensemble
 
-The exploratory canonical-label winner averages nonlinear-probe probabilities:
+The reported ensemble averages nonlinear-probe probabilities:
 
 ```text
-0.547 * softmax(DINOv2-75-CLS nonlinear logits)
-+ 0.270 * softmax(I-JEPA-300-flatten nonlinear logits)
-+ 0.183 * softmax(I-JEPA-500-flatten nonlinear logits)
+0.556 * softmax(DINOv2-75-CLS nonlinear logits)
++ 0.222 * softmax(I-JEPA-300-flatten nonlinear logits)
++ 0.222 * softmax(I-JEPA-500-flatten nonlinear logits)
 ```
 
-It makes 36 errors for **99.64%** accuracy. Only 18 canonical errors are shared
-by all three members, giving a label-oracle ceiling of **99.82%**.
+The score space and weights were selected on MNIST train. They make 37
+canonical errors for **99.63%** accuracy and 34 reviewed errors among 9,998
+examples for **99.66%**. Only 18 canonical and 14 reviewed errors are shared by
+all three members, giving oracle ceilings of **99.82%** and **99.86%**.
 
-Under the manually reviewed policy, the same weights make 33 errors among
-9,998 included examples for **99.67%** accuracy. Separately selecting on the
-reviewed labels changes the weights to `0.530/0.253/0.217` and reduces the
-reviewed count to 32, while increasing the canonical count to 37. Fourteen
-reviewed errors remain shared, giving a reviewed-label oracle ceiling of
-**99.86%**.
-
-The nonlinear grid used the DINO 50-epoch nonlinear head and the 75-epoch
-I-JEPA-300 and I-JEPA-500 nonlinear heads. Exact input hashes, checkpoint
-hashes, cross-view scores, and grid hashes are in the
-[nonlinear-ensemble reproduction record](../results/reproductions/2026-07-18-nonlinear-ensembles.json).
-The previous linear triplet remains preserved in its
+The nonlinear grid used the DINO 50-epoch nonlinear head and the I-JEPA-300
+and I-JEPA-500 75-epoch nonlinear heads. Exact training selection, plateau
+sizes, input hashes, and test metrics are in the
+[train-selected reproduction record](../results/reproductions/2026-07-18-training-selected-triplets.json).
+The test-selected nonlinear ceiling remains in a separate
+[diagnostic record](../results/reproductions/2026-07-18-nonlinear-ensembles.json),
+and the historical linear diagnostic remains in its
 [reproduction record](../results/reproductions/2026-07-16-best-triplet.json)
 and [checkpoint manifest](../results/checkpoint-manifest.json).
 

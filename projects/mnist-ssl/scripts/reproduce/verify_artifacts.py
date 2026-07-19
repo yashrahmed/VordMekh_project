@@ -12,7 +12,7 @@ def main() -> None:
     parser.add_argument(
         "artifact_ids",
         nargs="*",
-        help="artifact IDs to verify (default: current best ensemble)",
+        help="artifact IDs to verify (default: historical linear triplet)",
     )
     parser.add_argument(
         "--all",
@@ -31,7 +31,8 @@ def main() -> None:
         artifact_ids = [
             artifact_id
             for artifact_id, artifact in index.items()
-            if "dino-ijepa-best-triplet" in artifact.get("required_for", [])
+            if "dino-ijepa-linear-test-selected-diagnostic"
+            in artifact.get("required_for", [])
         ]
     paths = verify_artifacts(artifact_ids)
     for artifact_id, path in paths.items():

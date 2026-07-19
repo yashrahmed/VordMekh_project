@@ -1,0 +1,188 @@
+{
+  "schema_version": 1,
+  "date": "2026-07-18",
+  "experiment": "Training-fitted per-model temperatures plus class-specific diagonal weights over the three nonlinear probes",
+  "protocol": {
+    "members": [
+      {
+        "name": "dino",
+        "backbone_epoch": 75,
+        "nonlinear_probe_epoch": 50,
+        "backbone_sha256": "265d5f6bce3432b7de6475fb7533c0ca3fd2234f9148fced1a9d7cb30df7f849",
+        "probe_sha256": "dd4fead735e12c11cb3a5a0d29d49d7d02838ad46904fd2fd8f8d2b190319bad",
+        "test_predictions_sha256": "57b053ab0d3eeda6696db5fecd4f181f1b28e713da672bd6dcceeab3b39568d3"
+      },
+      {
+        "name": "ijepa_300",
+        "backbone_epoch": 300,
+        "nonlinear_probe_epoch": 75,
+        "backbone_checkpoint_sha256": "d68673c454b286f4205a94e47d610a52af1cabd13a44ff2901f6d054945c1f1a",
+        "frozen_backbone_sha256": "c49d42369d54e152718e7f791bdb23786396b038f5311295ca7ff370672b7b1d",
+        "probe_sha256": "2ceeac29cfbc80ae75dde715e70cde9abc5ea83e377d65ed8967c65c8a6f27e0",
+        "test_predictions_sha256": "b240a46bb09f3627c79b1934a7366b3072469ed88f9f2190b81d2293d407eec0"
+      },
+      {
+        "name": "ijepa_500",
+        "backbone_epoch": 500,
+        "nonlinear_probe_epoch": 75,
+        "backbone_checkpoint_sha256": "8dc389ae4be991510cef0421b681326ad3d57d845c233e606b783a94a7307715",
+        "frozen_backbone_sha256": "390e8ef1b1fd2c3ee75d1b95fb0814dce3f608be1b68c6d47790dc1e87fa907a",
+        "probe_sha256": "02993081ed12db47a945cc2321bdeb8ff843723fd41a58351c2c86b8620e2e4f",
+        "test_predictions_sha256": "faffe20038f0b5899dd2b6655bd8d3963f735c32a35e71c957050299a123729b"
+      }
+    ],
+    "training_examples": 60000,
+    "calibrator_fit_examples": 50000,
+    "calibrator_selection_examples": 10000,
+    "split": "deterministic class-stratified split",
+    "split_seed": 0,
+    "test_loaded_after_calibration_selection": true,
+    "test_labels_used_for_fitting": false,
+    "score": "sum_m weight[m,class] * centered_logit[m,class] / temperature[m]",
+    "logit_centering": "subtract each model's per-example class mean",
+    "temperature_parameterization": "positive exponential",
+    "class_weight_parameterization": "softmax across models for each class",
+    "optimizer": "Adam",
+    "learning_rate": 0.03,
+    "maximum_steps": 800,
+    "evaluation_interval_steps": 10,
+    "selection_rule": "minimum training-selection NLL; errors and regularization break ties",
+    "regularization_grid": [
+      0.0,
+      0.0001,
+      0.001,
+      0.01,
+      0.1
+    ],
+    "seed": 0
+  },
+  "selection_candidates": [
+    {
+      "regularization": 0.0,
+      "selected_step": 70,
+      "fit_errors": 0,
+      "selection_errors": 2,
+      "selection_nll": 0.00026797218015417457,
+      "canonical_test_errors_post_hoc": 48,
+      "reviewed_test_errors_post_hoc": 44
+    },
+    {
+      "regularization": 0.0001,
+      "selected_step": 60,
+      "fit_errors": 0,
+      "selection_errors": 2,
+      "selection_nll": 0.00028778365231119096,
+      "canonical_test_errors_post_hoc": 48,
+      "reviewed_test_errors_post_hoc": 44
+    },
+    {
+      "regularization": 0.001,
+      "selected_step": 30,
+      "fit_errors": 0,
+      "selection_errors": 1,
+      "selection_nll": 0.000398671836592257,
+      "canonical_test_errors_post_hoc": 49,
+      "reviewed_test_errors_post_hoc": 45
+    },
+    {
+      "regularization": 0.01,
+      "selected_step": 40,
+      "fit_errors": 2,
+      "selection_errors": 1,
+      "selection_nll": 0.0004665160086005926,
+      "canonical_test_errors_post_hoc": 48,
+      "reviewed_test_errors_post_hoc": 44
+    },
+    {
+      "regularization": 0.1,
+      "selected_step": 10,
+      "fit_errors": 4,
+      "selection_errors": 1,
+      "selection_nll": 0.0004927248228341341,
+      "canonical_test_errors_post_hoc": 49,
+      "reviewed_test_errors_post_hoc": 45
+    }
+  ],
+  "selected": {
+    "regularization": 0.0,
+    "selected_step": 70,
+    "temperatures": {
+      "dino": 0.3244154453277588,
+      "ijepa_300": 0.2863345146179199,
+      "ijepa_500": 0.3518664538860321
+    },
+    "class_weights_by_model_for_classes_0_through_9": {
+      "dino": [
+        0.3219798505306244,
+        0.6985800862312317,
+        0.5534300208091736,
+        0.21080130338668823,
+        0.590183436870575,
+        0.18661417067050934,
+        0.5579809546470642,
+        0.6449463963508606,
+        0.5833486318588257,
+        0.7891377210617065
+      ],
+      "ijepa_300": [
+        0.454317569732666,
+        0.13696224987506866,
+        0.2669675350189209,
+        0.1036040410399437,
+        0.1797352433204651,
+        0.418400377035141,
+        0.19417370855808258,
+        0.25149181485176086,
+        0.19405269622802734,
+        0.11751096695661545
+      ],
+      "ijepa_500": [
+        0.2237025648355484,
+        0.16445766389369965,
+        0.17960241436958313,
+        0.6855946183204651,
+        0.23008130490779877,
+        0.3949854373931885,
+        0.2478453367948532,
+        0.10356185585260391,
+        0.2225986272096634,
+        0.0933513194322586
+      ]
+    },
+    "full_training": {
+      "errors": 2,
+      "accuracy_percent": 99.99666666666667,
+      "nll": 0.00005038178278482519
+    },
+    "canonical_test": {
+      "errors": 48,
+      "accuracy_percent": 99.52,
+      "nll": 0.05746812745928764
+    },
+    "reviewed_test": {
+      "scored_examples": 9998,
+      "errors": 44,
+      "accuracy_percent": 99.55991198239647,
+      "nll": 0.04647371917963028
+    }
+  },
+  "comparison": {
+    "dino_individual_errors": {
+      "canonical": 48,
+      "reviewed": 45
+    },
+    "previous_canonical_selected_probability_triplet_errors": {
+      "canonical": 36,
+      "reviewed": 33
+    },
+    "canonical_error_change_vs_previous_triplet": 12,
+    "reviewed_error_change_vs_previous_triplet": 11
+  },
+  "artifacts": {
+    "training_logits_sha256": "0b0ab3ac184d8c9e11a1128aa883ed110f71b2c064d4b0c75d3e505c7b29db13",
+    "calibrator_sha256": "abf3e1ff342bf0b00e77b1f6b0addfb92f4b0e1412812258414404dbbdeb7a16",
+    "raw_summary_sha256": "fe4351378724960698ad0299defd5f4e3b6ec3026753a95e94f041137bca6d1e"
+  },
+  "conclusion": "Training-fitted temperatures and class-specific diagonal weights do not improve this ensemble. Every predefined regularization candidate produced 48-49 canonical and 44-45 reviewed errors. Because the nonlinear probes already nearly memorize MNIST train, the calibration split contains only one or two errors and does not estimate test-time class/model reliability.",
+  "caveat": "The calibrator did not use test labels. The post-hoc per-candidate test counts are diagnostic confirmation after the selected model had already been evaluated; they did not change the selected result."
+}

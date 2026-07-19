@@ -7,28 +7,27 @@ evaluation, and classifier ensembles.
 The project asks how far label-free representation learning can push MNIST
 classification once the learned backbone is frozen. The current best individual
 model is a small nonlinear probe on frozen DINOv2 CLS features at **99.52%**.
-A test-tuned probability mixture of the DINOv2, I-JEPA-300, and I-JEPA-500
-nonlinear probes reaches **99.64%** on the original labels and **99.67%** under
-the manually reviewed label policy at the same weights. Separately tuning to
-the reviewed labels reaches **99.68%**; see the selection caveat in the results
-document.
+The current best ensemble selected without test labels averages the DINOv2,
+I-JEPA-300, and I-JEPA-500 nonlinear probabilities. It reaches **99.63%** on
+the original labels and **99.66%** under the manually reviewed label policy.
+Grids selected directly on test labels reach 99.64%-99.68%, but those numbers
+are retained only as diagnostic ceilings.
 
-## Best reviewed-label result
+## Best train-selected ensemble
 
-The best reviewed-label triplet averages nonlinear-probe softmax probabilities
-with weights `0.530 * DINOv2-75 + 0.253 * I-JEPA-300 + 0.217 *
-I-JEPA-500`. Under the completed manual-review policy, which relabels eight
-examples and excludes two ambiguous examples, it makes **32 errors among 9,998
-scored examples: 99.67994% accuracy**. The individual nonlinear probes make
-45, 59, and 54 errors respectively. Fourteen errors are shared by all three,
-placing the label-oracle ceiling at **99.85997%**.
+The reported triplet averages nonlinear-probe softmax probabilities with
+weights `0.556 * DINOv2-75 + 0.222 * I-JEPA-300 + 0.222 *
+I-JEPA-500`. The weights and probability score space were selected using
+MNIST train; all choices were frozen before test prediction artifacts were
+loaded. It makes **37 errors on the 10,000 canonical test examples: 99.63%**.
 
-These weights were selected on the reviewed test labels. The
-canonical-label-selected weights are `0.547/0.270/0.183`; they make 36
-canonical errors and 33 reviewed errors. The result demonstrates complementary
-errors but is a test-tuned diagnostic, not a validation-clean estimate. Exact
-metrics and hashes are preserved in the
-[nonlinear-ensemble reproduction record](results/reproductions/2026-07-18-nonlinear-ensembles.json).
+Under the completed manual-review policy, which relabels eight examples and
+excludes two ambiguous examples, the same frozen rule makes **34 errors among
+9,998 scored examples: 99.65993%**. The corresponding test-selected diagnostic
+counts are 36/33 at canonical-selected weights and 37/32 at reviewed-selected
+weights. Those rows measure available complementarity but are not reported
+ensemble performance. Exact metrics and hashes are preserved in the
+[train-selected reproduction record](results/reproductions/2026-07-18-training-selected-triplets.json).
 
 ## Start here
 
@@ -85,7 +84,13 @@ uv run python scripts/evaluate/dinov2_frozen.py \
   --output models/dinov2_mnist_augmented_cls_150ep_epoch0075_cls_linear50ep.pt
 ```
 
-Re-run the preserved linear triplet:
+Re-run the current train-selected comparison:
+
+```bash
+uv run python scripts/analysis/grid_train_selected_probe_triplets.py
+```
+
+Re-run the preserved historical linear diagnostic:
 
 ```bash
 uv run python scripts/reproduce/verify_artifacts.py

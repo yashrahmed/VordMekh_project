@@ -1,27 +1,25 @@
 # Reproduce the best DINOv2 + I-JEPA ensemble
 
-The current exploratory best combines the frozen logits of one DINOv2 probe
-and two I-JEPA probes:
+The reported best ensemble combines the frozen nonlinear probes from DINOv2,
+I-JEPA-300, and I-JEPA-500. Its probability score space and weights were
+selected on MNIST train, then frozen before test prediction artifacts were
+loaded:
 
-| Member | Weight | Individual accuracy |
+| Member | Probability weight | Individual test accuracy |
 |---|---:|---:|
-| Augmented DINOv2, fixed-150 epoch-75 EMA-teacher CLS probe | 0.84 | 99.42% |
-| 56x56 I-JEPA, 300-epoch target encoder, flattened probe | 0.06 | 99.36% |
-| 56x56 I-JEPA, 500-epoch target encoder, flattened probe | 0.10 | 99.34% |
+| Augmented DINOv2 epoch-75 CLS nonlinear-50 | 0.556 | 99.52% |
+| 56x56 I-JEPA-300 flattened nonlinear-75 | 0.222 | 99.35% |
+| 56x56 I-JEPA-500 flattened nonlinear-75 | 0.222 | 99.42% |
 
-The weighted-logit triplet makes 39 errors on the 10,000-example MNIST test
-set: **99.61%**.
+The frozen mixture makes 37 errors on canonical test labels: **99.63%**. Under
+the manual-review policy it makes 34 errors over 9,998 examples:
+**99.65993%**.
 
-The `--apply-known-corrections` flag applies the tracked manual-review policy.
-With eight relabels and two ambiguous examples excluded, the same weights make
-35 errors over 9,998 examples: **99.65%**. The reviewed-label oracle ceiling
-is **99.81%**. Omit the flag to run only the original-label benchmark.
+The directly test-selected nonlinear grids reach 36 canonical errors and
+32-33 reviewed errors. Those are diagnostic ceilings, not reported ensemble
+performance.
 
-The weights were selected by a one-percent grid evaluated directly on test
-labels. This is an exploratory measurement of complementary signal, not a
-validation-clean model-selection result.
-
-## Fast verification from existing checkpoints
+## Reproduce from existing checkpoints
 
 From the repository root:
 
@@ -30,49 +28,47 @@ cd projects/mnist-ssl
 uv sync
 ```
 
-Verify that the four required local files (the two I-JEPA probe files embed
-their backbones) match
-[`results/checkpoint-manifest.json`](../results/checkpoint-manifest.json):
+The run needs the three preserved nonlinear-probe prediction artifacts and
+heads, plus their frozen backbone/linear-probe checkpoints. Exact file hashes
+are recorded in
+[`2026-07-18-training-selected-triplets.json`](../results/reproductions/2026-07-18-training-selected-triplets.json).
+Run the train-selected grids into a fresh output directory:
 
 ```bash
-uv run python scripts/reproduce/verify_artifacts.py \
-  dinov2-augmented-fixed150-epoch75-backbone \
-  dinov2-augmented-fixed150-epoch75-cls-linear50 \
-  ijepa-56-epoch300-flatten-linear50 \
-  ijepa-56-epoch500-flatten-linear50
+uv run python scripts/analysis/grid_train_selected_probe_triplets.py \
+  --output-dir out/training_selected_probe_triplets_reproduction
 ```
 
-Run the frozen evaluation and weight grid:
+Expected summary:
+
+```text
+group=linear method=logit weights=0.248/0.541/0.211 train_errors=22
+group=nonlinear method=probability weights=0.556/0.222/0.222 train_errors=3
+group=linear selected_method=logit canonical_errors=55 reviewed_errors=51
+group=nonlinear selected_method=probability canonical_errors=37 reviewed_errors=34
+```
+
+The script searches both probe groups using only training logits. It writes the
+full grid under `out/`; compare the emitted training-logit, grid, and input
+hashes with the tracked reproduction record.
+
+## Historical linear diagnostic
+
+The older manifest-pinned command reproduces a linear-probe mixture whose
+weights were selected directly on MNIST test labels:
 
 ```bash
+uv run python scripts/reproduce/verify_artifacts.py
 uv run python scripts/reproduce/best_ensemble.py \
   --workers 0 \
   --apply-known-corrections
 ```
 
-This command loads [`configs/best/dino_ijepa_triplet.json`](../configs/best/dino_ijepa_triplet.json),
-verifies the referenced checkpoint hashes automatically, and fails if the
-individual errors, winning weights, ensemble score, or shared-error count drift
-from the recorded result. Use `--no-check-expected` only for deliberate
-exploratory overrides.
-
-Expected summary:
-
-```text
-dino: 99.42% (58 errors)
-ijepa_300: 99.36% (64 errors)
-ijepa_500: 99.34% (66 errors)
-best: 99.61% (39 errors), DINO=0.84, I-JEPA-300=0.06, I-JEPA-500=0.10
-all_three_shared_errors=21 oracle=99.79%
-reviewed_labels: 9998 scored, best=99.65% (35 errors), DINO=0.84, I-JEPA-300=0.06, I-JEPA-500=0.10; all_three_shared_errors=19 oracle=99.81%
-```
-
-The evaluator fingerprints every frozen backbone before and after inference and
-fails if any fingerprint changes. It also pins the completed review and fails
-if the decision set, denominator, original metrics, or reviewed metrics drift.
-The original-label and reviewed-label weight grids are written under `out/`;
-the compact audited reproduction is tracked under
-[`results/reproductions/`](../results/reproductions/).
+It verifies the historical `0.84/0.06/0.10` weighted-logit row: 39 canonical
+and 35 reviewed errors. The command and
+[`dino_ijepa_triplet.json`](../configs/best/dino_ijepa_triplet.json) are kept
+for reproducibility, but that row is a test-selected diagnostic rather than the
+current reported ensemble.
 
 ## Rebuild the I-JEPA members
 
@@ -86,6 +82,16 @@ caffeinate -i uv run python scripts/reproduce/ijepa_members.py
 The runner uses 56x56 bbox-normalized MNIST, 7x7 patches, 48 target tokens, 16
 context tokens, and 50-epoch flattened linear probes. Rebuilt checkpoints must
 be evaluated and fingerprinted before the manifest is updated.
+
+Train the matched nonlinear heads without modifying the frozen encoders:
+
+```bash
+uv run python scripts/analysis/train_ijepa_nonlinear_probe.py
+uv run python scripts/analysis/train_ijepa_nonlinear_probe.py \
+  --linear-probe models/ijepa_clf_custom_ijepa_upscale_bbox_p7_flatten_t48_base500ep_probe50ep.pt \
+  --pretraining-epochs 500 \
+  --output-dir out/ijepa_nonlinear_probe_best500
+```
 
 ## Rebuild the DINOv2 member
 
@@ -112,10 +118,17 @@ caffeinate -i uv run python scripts/evaluate/dinov2_frozen.py \
   --output models/dinov2_mnist_augmented_cls_150ep_epoch0075_cls_linear50ep.pt
 ```
 
-Finally, rerun the triplet command. Stochastic retraining may not reproduce the
-exact same checkpoint bytes across PyTorch or hardware versions; the required
-sanity check is the individual metrics, frozen-backbone invariants, and final
-ensemble score, with environment differences recorded alongside the result.
+Train the matched nonlinear head:
+
+```bash
+uv run python scripts/analysis/train_dino_nonlinear_probe.py
+```
+
+Finally, rerun the train-selected comparison. Stochastic retraining may not
+reproduce the exact same checkpoint bytes across PyTorch or hardware versions;
+the required sanity check is the individual metrics, frozen-backbone
+invariants, selected training weights, and final ensemble score, with
+environment differences recorded alongside the result.
 
 The older I-JEPA-only 99.50% triplet requires a historical 28x28 member and has
 its own [reproduction guide](reproduce-ijepa-9950.md).

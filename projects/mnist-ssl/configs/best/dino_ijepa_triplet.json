@@ -1,6 +1,7 @@
 {
   "schema_version": 1,
   "name": "dino-ijepa-test-tuned-triplet",
+  "status": "historical_test_selected_diagnostic",
   "selection": "one-percent weighted-logit grid scored on MNIST test labels",
   "grid_step_percent": 1,
   "output": "out/dino_ijepa_triplet_grid_results.json",

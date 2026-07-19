@@ -40,13 +40,17 @@ When an experiment becomes a result worth preserving:
 For the current best ensemble, the complete verification is:
 
 ```bash
-uv run python scripts/reproduce/verify_artifacts.py
-uv run python scripts/reproduce/best_ensemble.py --workers 0
+uv run python scripts/analysis/grid_train_selected_probe_triplets.py \
+  --output-dir out/training_selected_probe_triplets_reproduction
 ```
 
-The second command independently verifies the four required file hashes,
-fingerprints all three frozen backbones before and after inference, and asserts
-the recorded 99.61% result.
+The command selects both the linear and nonlinear scalar mixtures using MNIST
+train, then loads test predictions only after selection. Compare its source,
+training-logit, and grid hashes with
+[`2026-07-18-training-selected-triplets.json`](../results/reproductions/2026-07-18-training-selected-triplets.json).
+The older `scripts/reproduce/best_ensemble.py` command remains the verifier for
+the manifest-pinned, test-selected linear diagnostic; its 99.61% is not the
+current reported ensemble.
 
 ## Retention and cleanup
 
