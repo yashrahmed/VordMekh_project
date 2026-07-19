@@ -1,6 +1,8 @@
 method,selection,test_accuracy_percent,errors,notes
 DINOv2 epoch-75 CLS linear probe,best individual observed,99.42,58,frozen EMA teacher
+DINOv2 epoch-75 CLS nonlinear-64 probe,best nonlinear individual observed,99.52,48,frozen EMA teacher; LayerNorm-64-GELU head; seed 0
 I-JEPA 56x56 epoch-300 flatten probe,best individual I-JEPA observed,99.36,64,frozen target encoder
+I-JEPA 56x56 epoch-300 flatten nonlinear-64 probe,best nonlinear I-JEPA milestone observed,99.35,65,frozen target encoder; LayerNorm-64-GELU head; 75 epochs; seed 0
 I-JEPA 56x56 epoch-500 flatten probe,individual comparison,99.34,66,frozen target encoder
 DINOv2 plus I-JEPA-300 equal-logit pair,prespecified weights,99.47,53,0.50/0.50 weights
 I-JEPA-only triplet,test-tuned weights,99.50,50,0.39/0.28/0.33 weights

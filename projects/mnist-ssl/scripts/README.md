@@ -47,6 +47,8 @@ generated artifacts.
 | `analysis/review_mnist_labels.py` | Build the standalone manual label reviewer |
 | `analysis/ijepa_errors.py` | Render errors for a saved I-JEPA probe |
 | `analysis/shift_subtract.py` | Inspect the shift/subtract image transform |
+| `analysis/train_dino_nonlinear_probe.py` | Compare a small nonlinear head with the frozen DINO linear probe |
+| `analysis/train_ijepa_nonlinear_probe.py` | Compare the matched small nonlinear head on the best frozen I-JEPA member |
 
 Do not add a second implementation to `scripts/`: put reusable code in
 `src/mnist_ssl/` and expose it through a thin entry point here. Checkpoint and

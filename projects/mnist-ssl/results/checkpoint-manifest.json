@@ -21,6 +21,15 @@
       "required_for": ["dinov2-best-individual", "dino-ijepa-best-triplet"]
     },
     {
+      "id": "dinov2-augmented-fixed150-epoch75-cls-nonlinear64-50",
+      "path": "models/dinov2_mnist_augmented_cls_150ep_epoch0075_cls_nonlinear64_50ep.pt",
+      "role": "DINOv2 frozen CLS LayerNorm-64-GELU nonlinear probe",
+      "bytes": 44661,
+      "file_sha256": "dd4fead735e12c11cb3a5a0d29d49d7d02838ad46904fd2fd8f8d2b190319bad",
+      "frozen_backbone_sha256": "518aca8f613af6c3a4e255b9b9dc80f6a9d15120b6a50658d6d374debd3495e7",
+      "required_for": ["dinov2-best-nonlinear-probe"]
+    },
+    {
       "id": "ijepa-56-epoch300-flatten-linear50",
       "path": "models/ijepa_clf_custom_ijepa_upscale_bbox_p7_flatten_t48_base300ep_probe50ep.pt",
       "role": "I-JEPA frozen flatten probe with embedded target encoder",

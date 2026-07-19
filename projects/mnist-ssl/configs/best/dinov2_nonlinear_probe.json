@@ -1,0 +1,35 @@
+{
+  "schema_version": 1,
+  "name": "dinov2-augmented-fixed150-epoch75-cls-nonlinear64",
+  "entrypoint": "scripts/analysis/train_dino_nonlinear_probe.py",
+  "backbone_artifact_id": "dinov2-augmented-fixed150-epoch75-backbone",
+  "baseline_probe_artifact_id": "dinov2-augmented-fixed150-epoch75-cls-linear50",
+  "probe_artifact_id": "dinov2-augmented-fixed150-epoch75-cls-nonlinear64-50",
+  "architecture": {
+    "input": "frozen 128-dimensional teacher CLS feature",
+    "layers": ["LayerNorm", "Linear(128,64)", "GELU", "Dropout(0.1)", "Linear(64,10)"],
+    "parameters": 9162
+  },
+  "training": {
+    "epochs": 50,
+    "seed": 0,
+    "optimizer": "AdamW",
+    "learning_rate": 0.001,
+    "weight_decay": 0.05,
+    "batch_size": 256,
+    "loss": "cross_entropy",
+    "backbone_frozen": true
+  },
+  "expected_result": {
+    "canonical_test": {
+      "accuracy_percent": 99.52,
+      "errors": 48
+    },
+    "reviewed_test": {
+      "scored_examples": 9998,
+      "accuracy_percent": 99.5499099819964,
+      "errors": 45
+    }
+  },
+  "selection_note": "The 50-epoch run was best among the exploratory 50, 75, and 100 epoch comparisons. This is a single-seed result and has not replaced the linear probe in any recorded ensemble."
+}

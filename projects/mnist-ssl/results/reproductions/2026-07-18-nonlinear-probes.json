@@ -1,0 +1,97 @@
+{
+  "schema_version": 1,
+  "date": "2026-07-18",
+  "experiment": "Small nonlinear probes on the best frozen DINOv2 and I-JEPA representations",
+  "label_policy": {
+    "path": "configs/evaluation/mnist_label_corrections.json",
+    "policy_sha256": "6f3b515d8e404c30df6b7575d0f07ea0dae5956541b060155e07433163b1390d"
+  },
+  "shared_head": {
+    "layers": ["LayerNorm", "Linear(input,64)", "GELU", "Dropout(0.1)", "Linear(64,10)"],
+    "optimizer": "AdamW",
+    "learning_rate": 0.001,
+    "weight_decay": 0.05,
+    "batch_size": 256,
+    "loss": "cross_entropy",
+    "seed": 0
+  },
+  "dinov2": {
+    "backbone_artifact_id": "dinov2-augmented-fixed150-epoch75-backbone",
+    "baseline_probe_artifact_id": "dinov2-augmented-fixed150-epoch75-cls-linear50",
+    "promoted_probe_artifact_id": "dinov2-augmented-fixed150-epoch75-cls-nonlinear64-50",
+    "feature_dim": 128,
+    "parameters": 9162,
+    "frozen_backbone_sha256_before": "518aca8f613af6c3a4e255b9b9dc80f6a9d15120b6a50658d6d374debd3495e7",
+    "frozen_backbone_sha256_after": "518aca8f613af6c3a4e255b9b9dc80f6a9d15120b6a50658d6d374debd3495e7",
+    "linear_baseline": {
+      "train_errors": 219,
+      "canonical_test": {"errors": 58, "accuracy_percent": 99.42},
+      "reviewed_test": {"scored_examples": 9998, "errors": 57, "accuracy_percent": 99.42988597719544}
+    },
+    "runs": [
+      {
+        "epochs": 50,
+        "train_errors": 7,
+        "canonical_test": {"errors": 48, "accuracy_percent": 99.52, "fixed_errors": 24, "new_errors": 14},
+        "reviewed_test": {"scored_examples": 9998, "errors": 45, "accuracy_percent": 99.5499099819964, "fixed_errors": 25, "new_errors": 13},
+        "checkpoint_sha256": "dd4fead735e12c11cb3a5a0d29d49d7d02838ad46904fd2fd8f8d2b190319bad",
+        "raw_summary_sha256": "1b44b4b81f72471537489683d79cef8e274345dcba298acd0f6e9e6bfc32ee8c"
+      },
+      {
+        "epochs": 75,
+        "train_errors": 5,
+        "canonical_test": {"errors": 56, "accuracy_percent": 99.44, "fixed_errors": 20, "new_errors": 18},
+        "reviewed_test": {"scored_examples": 9998, "errors": 53, "accuracy_percent": 99.46989397879576, "fixed_errors": 21, "new_errors": 17},
+        "checkpoint_sha256": "da0631d5f5c3bf07bc457359150df4a3baf17a17e248fc8b85130d44a8371b81",
+        "raw_summary_sha256": "e19562843ae464aaee3a9d2d12cc2bfef072a58326421207b9fb3347e4d422ad"
+      },
+      {
+        "epochs": 100,
+        "train_errors": 0,
+        "canonical_test": {"errors": 52, "accuracy_percent": 99.48, "fixed_errors": 23, "new_errors": 17},
+        "reviewed_test": {"scored_examples": 9998, "errors": 51, "accuracy_percent": 99.48989797959592, "fixed_errors": 23, "new_errors": 17},
+        "checkpoint_sha256": "e91991ed2f20c42fff0853cf37e50de4a6e5245c337f45298fbef430c2c571b6",
+        "raw_summary_sha256": "dbe2eca66b6828e9c2cfa34c5c0e7707ad35690a7071cb9dffe3fb9935025c87"
+      }
+    ],
+    "conclusion": "The 50-epoch nonlinear probe is the winner: it reduces canonical errors by 10 and reviewed-label errors by 12 versus the frozen linear probe."
+  },
+  "ijepa": {
+    "baseline_probe_artifact_id": "ijepa-56-epoch300-flatten-linear50",
+    "feature_dim": 8192,
+    "parameters": 541386,
+    "frozen_backbone_sha256_before": "c49d42369d54e152718e7f791bdb23786396b038f5311295ca7ff370672b7b1d",
+    "frozen_backbone_sha256_after": "c49d42369d54e152718e7f791bdb23786396b038f5311295ca7ff370672b7b1d",
+    "linear_baseline": {
+      "train_errors": 34,
+      "canonical_test": {"errors": 64, "accuracy_percent": 99.36},
+      "reviewed_test": {"scored_examples": 9998, "errors": 60, "accuracy_percent": 99.3998799759952}
+    },
+    "runs": [
+      {
+        "epochs": 50,
+        "train_errors": 53,
+        "canonical_test": {"errors": 73, "accuracy_percent": 99.27, "fixed_errors": 9, "new_errors": 18},
+        "reviewed_test": {"scored_examples": 9998, "errors": 67, "accuracy_percent": 99.32986597319464, "fixed_errors": 10, "new_errors": 17},
+        "checkpoint_sha256": "5d2bca93a21f571fe727f624a18c7fd5764b959c0bd2727e45ff7ac59c3c363d"
+      },
+      {
+        "epochs": 75,
+        "train_errors": 26,
+        "canonical_test": {"errors": 65, "accuracy_percent": 99.35, "fixed_errors": 14, "new_errors": 15},
+        "reviewed_test": {"scored_examples": 9998, "errors": 59, "accuracy_percent": 99.40988197639528, "fixed_errors": 15, "new_errors": 14},
+        "checkpoint_sha256": "2ceeac29cfbc80ae75dde715e70cde9abc5ea83e377d65ed8967c65c8a6f27e0"
+      },
+      {
+        "epochs": 100,
+        "train_errors": 27,
+        "canonical_test": {"errors": 66, "accuracy_percent": 99.34, "fixed_errors": 13, "new_errors": 15},
+        "reviewed_test": {"scored_examples": 9998, "errors": 62, "accuracy_percent": 99.37987597519504, "fixed_errors": 13, "new_errors": 15},
+        "checkpoint_sha256": "889743329912f4cd8bf79f9fed863566034553dd24cdd48201dc577eb528e83e"
+      }
+    ],
+    "raw_summary_sha256": "1ae770275e2bf266aa9b4376b2120cf4c4a015a00f3d08019476f35e5bcd3741",
+    "conclusion": "No I-JEPA nonlinear milestone beat the linear baseline on canonical labels; the 75-epoch reviewed-label gain was one error and is not a meaningful replacement result."
+  },
+  "caveat": "All nonlinear comparisons use one seed. The DINO architecture was fixed before its first test evaluation; the later 75- and 100-epoch checkpoints are exploratory duration comparisons."
+}
