@@ -21,7 +21,7 @@ CANONICAL_SCRIPTS = (
     "scripts/evaluate/ijepa_probe.py",
     "scripts/evaluate/knn.py",
     "scripts/reproduce/verify_artifacts.py",
-    "scripts/reproduce/ijepa_9950.py",
+    "scripts/reproduce/ijepa_train_selected_triplet.py",
     "scripts/reproduce/ijepa_members.py",
 )
 
