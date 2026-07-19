@@ -11,6 +11,20 @@ triplet reaches **99.61%** on the original labels and **99.65%** under the
 manually reviewed label policy; see the selection caveat in the results
 document.
 
+## Best reviewed-label result
+
+The best triplet uses `0.84 * DINOv2-75 + 0.06 * I-JEPA-300 +
+0.10 * I-JEPA-500`. Under the completed manual-review policy, which relabels
+eight examples and excludes two ambiguous examples, it makes **35 errors among
+9,998 scored examples: 99.64993% accuracy**. The individual members make 57,
+60, and 62 errors respectively. Nineteen errors are shared by all three,
+placing the label-oracle ceiling at **99.80996%**.
+
+These weights were selected on the test labels. The result demonstrates
+complementary errors but is a test-tuned diagnostic, not a validation-clean
+estimate. Exact metrics and hashes are preserved in the
+[reviewed-label reproduction record](results/reproductions/2026-07-18-reviewed-label-triplet.json).
+
 ## Start here
 
 - [Curated results](docs/results.md)
@@ -71,6 +85,9 @@ Re-run the current best three-model grid:
 ```bash
 uv run python scripts/reproduce/verify_artifacts.py
 uv run python scripts/reproduce/best_ensemble.py --workers 0
+uv run python scripts/reproduce/best_ensemble.py \
+  --workers 0 \
+  --apply-known-corrections
 ```
 
 ## Code map
