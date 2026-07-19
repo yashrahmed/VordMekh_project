@@ -49,6 +49,13 @@ generated artifacts.
 | `analysis/shift_subtract.py` | Inspect the shift/subtract image transform |
 | `analysis/train_dino_nonlinear_probe.py` | Compare a small nonlinear head with the frozen DINO linear probe |
 | `analysis/train_ijepa_nonlinear_probe.py` | Compare the matched small nonlinear head on the best frozen I-JEPA member |
+| `analysis/train_dino_pairwise_reranker.py` | Cross-fit a linear top-two scorer and select its blend without test tuning |
+| `analysis/train_dino_nonlinear_pairwise_reranker.py` | Cross-fit the matched nonlinear top-two scorer |
+| `analysis/train_dino_normalized_image_reranker.py` | Train an image-only pairwise reranker behind a fixed linear-probe margin gate |
+| `analysis/eval_dino_normalized_image_reranker.py` | Evaluate the frozen normalized-image reranker without test-time tuning |
+| `analysis/sweep_dino_normalized_image_reranker_threshold.py` | Select a margin gate by sweeping a frozen normalized-image reranker |
+| `analysis/train_dino_normalized_image_reranker_split.py` | Train the reranker on 50k examples and select its epoch and gate on a held-out 10k |
+| `analysis/eval_dino_normalized_image_reranker_split.py` | Evaluate the validation-selected split reranker once on the test set |
 
 Do not add a second implementation to `scripts/`: put reusable code in
 `src/mnist_ssl/` and expose it through a thin entry point here. Checkpoint and

@@ -1,0 +1,123 @@
+{
+  "schema_version": 1,
+  "date": "2026-07-18",
+  "experiment": "Validation-selected top-two reranker above the frozen DINOv2 linear probe",
+  "status": "completed_negative_result",
+  "base_model": {
+    "backbone": "DINOv2 epoch-75 EMA teacher, CLS readout",
+    "backbone_checkpoint_sha256": "265d5f6bce3432b7de6475fb7533c0ca3fd2234f9148fced1a9d7cb30df7f849",
+    "frozen_backbone_sha256": "518aca8f613af6c3a4e255b9b9dc80f6a9d15120b6a50658d6d374debd3495e7",
+    "linear_probe": "Linear(128,10), 50 epochs",
+    "linear_probe_sha256": "4a94504135f34f452a08c441e3e550e53ddbac516b9cc6871934c9c0dc74daab",
+    "canonical_test": {
+      "errors": 58,
+      "accuracy_percent": 99.42
+    },
+    "reviewed_test": {
+      "scored_examples": 9998,
+      "errors": 57,
+      "accuracy_percent": 99.42988597719544
+    }
+  },
+  "reranker": {
+    "inputs": "bbox-normalized MNIST pixels only, shape [1,28,28]",
+    "receives_probe_logits_or_margin": false,
+    "architecture": {
+      "channels": [16, 32, 64],
+      "blocks": "Conv2d, GroupNorm, GELU, pooling",
+      "dropout": 0.1,
+      "classifier": "Linear(64,10)",
+      "parameters": 24058
+    },
+    "training": {
+      "epochs": 50,
+      "batch_size": 256,
+      "optimizer": "AdamW",
+      "learning_rate": 0.001,
+      "weight_decay": 0.001,
+      "loss": "softplus(score_hardest_wrong - score_true)",
+      "seed": 0
+    }
+  },
+  "selection_protocol": {
+    "split": "deterministic class-balanced correction split",
+    "correction_training_examples": 50000,
+    "correction_validation_examples": 10000,
+    "validation_examples_per_class": 1000,
+    "linear_probe_training": "existing production probe trained on all 60000 MNIST training examples",
+    "reranker_training": "correction training split only",
+    "epoch_selection": "maximum validation net error reduction; ties use fewer regressions, then fewer gated examples",
+    "threshold_selection": "exact observed normalized top-two margin on correction validation",
+    "gate_normalization": "(top1_logit - top2_logit) / per-sample std(all ten logits)",
+    "test_used_during_training_or_selection": false,
+    "test_evaluations_after_selection": 1,
+    "selected_epoch": 40,
+    "selected_threshold": 0.12154103815555573
+  },
+  "correction_validation": {
+    "samples": 10000,
+    "gate_eligible": 38,
+    "gate_top1_correct": 21,
+    "gate_top2_recoverable": 15,
+    "gate_neither_candidate_correct": 2,
+    "changed_predictions": 13,
+    "fixed_errors": 9,
+    "new_errors": 3,
+    "wrong_to_wrong": 1,
+    "base_errors": 42,
+    "reranked_errors": 36,
+    "base_accuracy_percent": 99.58,
+    "reranked_accuracy_percent": 99.64
+  },
+  "canonical_test": {
+    "samples": 10000,
+    "gate_eligible": 49,
+    "gate_top1_correct": 27,
+    "gate_top2_recoverable": 19,
+    "gate_neither_candidate_correct": 3,
+    "changed_predictions": 19,
+    "fixed_errors": 10,
+    "new_errors": 7,
+    "wrong_to_wrong": 2,
+    "net_error_reduction": 3,
+    "base_errors": 58,
+    "reranked_errors": 55,
+    "base_accuracy_percent": 99.42,
+    "reranked_accuracy_percent": 99.45,
+    "gate_oracle_errors": 39,
+    "gate_oracle_accuracy_percent": 99.61
+  },
+  "reviewed_test": {
+    "scored_examples": 9998,
+    "gate_eligible": 49,
+    "gate_top1_correct": 27,
+    "gate_top2_recoverable": 19,
+    "gate_neither_candidate_correct": 3,
+    "changed_predictions": 19,
+    "fixed_errors": 10,
+    "new_errors": 7,
+    "wrong_to_wrong": 2,
+    "net_error_reduction": 3,
+    "base_errors": 57,
+    "reranked_errors": 54,
+    "base_accuracy_percent": 99.42988597719544,
+    "reranked_accuracy_percent": 99.45989197839568,
+    "gate_oracle_errors": 38,
+    "gate_oracle_accuracy_percent": 99.61992398479696
+  },
+  "exploratory_context": {
+    "full_training_set_threshold": 0.284,
+    "full_training_set_canonical_errors": 54,
+    "full_training_set_reviewed_errors": 51,
+    "interpretation": "The in-sample threshold and checkpoint selection overstated generalization and was superseded by the held-out correction split."
+  },
+  "artifact_sha256": {
+    "split_indices": "591946884b4b6f99971ea4f8cf62f2d425c296821de9b9595151a624f7f386db",
+    "selected_reranker_checkpoint": "cbb1075a0f28e62c08ca7f8a5e46fc0ca59b8734104bc2ce5b4aef71ed62c5f3",
+    "final_epoch_checkpoint": "63a50c2b001b2b199af0d789015ddbc58abf4a3d8a4b53ef259ee2312613e463",
+    "training_summary": "c3b2f09baa36a5bd7dd2fac346d914e52285de1a45a1e6554c455d1b691d37c6",
+    "test_evaluation": "e462e8a9a0972e4afe83686edbe33d4b15fe34cc4169ec0cbf4c23beb30574ff",
+    "test_predictions": "164deea08a30cdac980f2224a95eea725139949e50ea1913313f7c84619f2433"
+  },
+  "conclusion": "The validation-selected reranker provides only a three-error canonical test gain while introducing seven regressions. It cannot reach 99.7% even with a perfect decision rule inside its selected gate, so top-two reranking is closed as a negative result."
+}

@@ -853,6 +853,35 @@ head edges past every fine-tuned model.
    (99.29%) and the flattened linear probe (99.36%). More classifier capacity
    continues to fit the training embeddings without closing the held-out gap.
 
+23. **Top-two reranking is a negative result.** The exact 50-epoch linear probe
+   on the epoch-75 DINOv2 CLS backbone made 58 canonical test errors, and its
+   low normalized top-two margins were strongly associated with mistakes.
+   However, low margin identified *uncertainty*, not whether the runner-up was
+   correct. Blind runner-up switching therefore had little upside after
+   regressions.
+
+   The final correction experiment used a 24,058-parameter image-only ConvNet
+   over bbox-normalized 28x28 pixels. It learned a pairwise logistic ranking
+   objective between the true class and the frozen probe's hardest wrong class.
+   A deterministic, class-balanced split reserved 50,000 examples for
+   correction training and 10,000 for selecting both the checkpoint and gate;
+   the test set was not loaded during training or selection.
+
+   | split/view | base errors | fixes | regressions | final errors | accuracy |
+   |---|---:|---:|---:|---:|---:|
+   | correction validation | 42 | 9 | 3 | 36 | 99.64% |
+   | canonical test | 58 | 10 | 7 | 55 | 99.45% |
+   | reviewed test | 57 | 10 | 7 | 54 | 99.46% |
+
+   Validation selected epoch 40 and normalized-margin threshold
+   `0.121541038`. The canonical test gate contained only 19 recoverable errors,
+   so even a perfect in-gate decision rule was capped at 99.61%. Wider
+   training-selected gates exposed more recoverable errors but failed to
+   generalize their favorable fix/regression ratio. The desired 99.7% and
+   no-regression behavior are therefore unattainable with this reranker. The
+   full protocol and artifact hashes are in the
+   [reproduction record](../results/reproductions/2026-07-18-top2-reranking.json).
+
 **Caveat now flips to the task.** With the epoch confound removed, MNIST's ~97%
 pixel floor leaves little room to separate these pretexts, but the explicit goal
 is still to push the unsupervised MNIST pipeline past **99.5%**. Future work

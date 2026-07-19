@@ -1,0 +1,421 @@
+"""Train a normalized-image reranker with a held-out correction validation set."""
+
+from __future__ import annotations
+
+import argparse
+import json
+from dataclasses import asdict, dataclass
+from pathlib import Path
+from typing import Any, Iterable
+
+import torch
+from torch.utils.data import DataLoader, TensorDataset
+
+from mnist_ssl.paths import OUT_DIR
+
+from .nonlinear_probe import file_sha256
+from .normalized_image_reranker import (
+    DEFAULT_IMAGE_CACHE,
+    DEFAULT_LINEAR_PROBE,
+    IndependentNormalizedReranker,
+    build_or_load_normalized_images,
+    pairwise_ranking_loss,
+    score_dataset,
+    seed_everything,
+    tensor_sha256,
+)
+from .normalized_image_reranker_sweep import (
+    exact_best_threshold,
+    metrics_at_threshold,
+)
+from .train import pick_device
+
+
+DEFAULT_PAIRS = (
+    OUT_DIR
+    / "dinov2_normalized_image_reranker_50ep"
+    / "training_pairs.pt"
+)
+DEFAULT_OUTPUT_DIR = (
+    OUT_DIR / "dinov2_normalized_image_reranker_split_50k10k_50ep_seed0"
+)
+
+
+@dataclass(frozen=True)
+class SplitRerankerConfig:
+    channels: tuple[int, int, int] = (16, 32, 64)
+    dropout: float = 0.1
+    epochs: int = 50
+    batch_size: int = 256
+    learning_rate: float = 1e-3
+    weight_decay: float = 1e-3
+    validation_per_class: int = 1000
+    seed: int = 0
+
+
+def stratified_correction_split(
+    labels: torch.Tensor,
+    *,
+    validation_per_class: int,
+    seed: int,
+) -> tuple[torch.Tensor, torch.Tensor]:
+    """Return deterministic, disjoint train/validation indices."""
+
+    if labels.ndim != 1:
+        raise ValueError("labels must be one-dimensional")
+    generator = torch.Generator().manual_seed(seed)
+    validation_parts = []
+    for class_index in range(10):
+        class_rows = labels.eq(class_index).nonzero(as_tuple=False).flatten()
+        if len(class_rows) <= validation_per_class:
+            raise ValueError(
+                f"class {class_index} has too few examples for the validation split"
+            )
+        order = torch.randperm(len(class_rows), generator=generator)
+        validation_parts.append(class_rows[order[:validation_per_class]])
+
+    validation_indices = torch.cat(validation_parts).sort().values
+    validation_mask = torch.zeros(len(labels), dtype=torch.bool)
+    validation_mask[validation_indices] = True
+    training_indices = (~validation_mask).nonzero(as_tuple=False).flatten()
+    return training_indices, validation_indices
+
+
+def _split_dataset(
+    images: torch.Tensor,
+    labels: torch.Tensor,
+    hardest_wrong: torch.Tensor,
+    indices: torch.Tensor,
+) -> TensorDataset:
+    return TensorDataset(
+        images[indices],
+        labels[indices],
+        hardest_wrong[indices],
+        torch.arange(len(indices)),
+    )
+
+
+def _validation_metrics(
+    *,
+    model: torch.nn.Module,
+    loader: DataLoader,
+    device: torch.device,
+    labels: torch.Tensor,
+    base_top1: torch.Tensor,
+    base_top2: torch.Tensor,
+    normalized_margin: torch.Tensor,
+) -> tuple[torch.Tensor, float, float, dict[str, Any]]:
+    scores, pair_accuracy = score_dataset(model, loader, device)
+    fields = {
+        "labels": labels,
+        "base_top1": base_top1,
+        "base_top2": base_top2,
+        "normalized_margin": normalized_margin,
+        "reranker_scores": scores,
+    }
+    threshold = exact_best_threshold(**fields)
+    metrics = metrics_at_threshold(threshold, **fields)
+    return scores, pair_accuracy, threshold, metrics
+
+
+def _selection_key(metrics: dict[str, Any]) -> tuple[int, int, int]:
+    return (
+        int(metrics["net_error_reduction"]),
+        -int(metrics["new_errors"]),
+        -int(metrics["gate_eligible"]),
+    )
+
+
+def run(args: argparse.Namespace) -> dict[str, Any]:
+    args.output_dir.mkdir(parents=True, exist_ok=True)
+    split_path = args.output_dir / "split_indices.pt"
+    best_path = args.output_dir / "best_validation_reranker.pt"
+    final_path = args.output_dir / "final_epoch_reranker.pt"
+    resume_path = args.output_dir / "training_resume.pt"
+    summary_path = args.output_dir / "training_summary.json"
+    if final_path.exists() or summary_path.exists():
+        raise FileExistsError(
+            "refusing to overwrite completed split-reranker artifacts"
+        )
+
+    config = SplitRerankerConfig(
+        channels=tuple(args.channels),
+        dropout=args.dropout,
+        epochs=args.epochs,
+        batch_size=args.batch_size,
+        learning_rate=args.learning_rate,
+        weight_decay=args.weight_decay,
+        validation_per_class=args.validation_per_class,
+        seed=args.seed,
+    )
+    seed_everything(config.seed)
+    device = torch.device(args.device) if args.device else pick_device()
+
+    pairs = torch.load(args.pairs, map_location="cpu", weights_only=False)
+    signature = pairs.get("signature", {})
+    if signature.get("linear_probe_sha256") != file_sha256(args.linear_probe):
+        raise ValueError("pair metadata was not generated by the requested probe")
+    if signature.get("linear_probe_type") != "Linear(128,10)":
+        raise ValueError("pair metadata does not use the exact linear probe")
+    if signature.get("linear_probe_epochs") != 50:
+        raise ValueError("pair metadata does not use the 50-epoch probe")
+
+    labels = pairs["label"].long()
+    training_indices, validation_indices = stratified_correction_split(
+        labels,
+        validation_per_class=config.validation_per_class,
+        seed=config.seed,
+    )
+    expected_validation = 10 * config.validation_per_class
+    if len(training_indices) != len(labels) - expected_validation:
+        raise RuntimeError("unexpected correction training split size")
+    split_signature = {
+        "seed": config.seed,
+        "strategy": "per-class random validation selection",
+        "training_examples": len(training_indices),
+        "validation_examples": len(validation_indices),
+        "validation_per_class": config.validation_per_class,
+        "labels_sha256": tensor_sha256(labels),
+        "linear_probe_sha256": signature["linear_probe_sha256"],
+    }
+    if split_path.exists():
+        saved_split = torch.load(
+            split_path,
+            map_location="cpu",
+            weights_only=False,
+        )
+        if saved_split.get("signature") != split_signature:
+            raise ValueError(f"{split_path} belongs to another experiment")
+        if not torch.equal(saved_split["training_indices"], training_indices):
+            raise ValueError("saved training indices do not match")
+        if not torch.equal(saved_split["validation_indices"], validation_indices):
+            raise ValueError("saved validation indices do not match")
+    else:
+        torch.save(
+            {
+                "signature": split_signature,
+                "training_indices": training_indices,
+                "validation_indices": validation_indices,
+            },
+            split_path,
+        )
+
+    images, _ = build_or_load_normalized_images(args.image_cache, labels)
+    train_dataset = _split_dataset(
+        images,
+        labels,
+        pairs["hardest_wrong"],
+        training_indices,
+    )
+    validation_dataset = _split_dataset(
+        images,
+        labels,
+        pairs["hardest_wrong"],
+        validation_indices,
+    )
+    train_generator = torch.Generator().manual_seed(config.seed)
+    train_loader = DataLoader(
+        train_dataset,
+        batch_size=config.batch_size,
+        shuffle=True,
+        generator=train_generator,
+        num_workers=0,
+    )
+    validation_loader = DataLoader(
+        validation_dataset,
+        batch_size=1024,
+        shuffle=False,
+        num_workers=0,
+    )
+
+    model = IndependentNormalizedReranker(
+        channels=config.channels,
+        dropout=config.dropout,
+    ).to(device)
+    optimizer = torch.optim.AdamW(
+        model.parameters(),
+        lr=config.learning_rate,
+        weight_decay=config.weight_decay,
+    )
+    history: list[dict[str, Any]] = []
+    best_epoch = 0
+    best_threshold = 0.0
+    best_metrics: dict[str, Any] | None = None
+    start_epoch = 1
+    if resume_path.exists():
+        saved = torch.load(resume_path, map_location=device, weights_only=False)
+        if saved.get("config") != asdict(config):
+            raise ValueError(f"{resume_path} belongs to another configuration")
+        if saved.get("split_signature") != split_signature:
+            raise ValueError(f"{resume_path} belongs to another split")
+        model.load_state_dict(saved["model_state_dict"])
+        optimizer.load_state_dict(saved["optimizer_state_dict"])
+        train_generator.set_state(saved["train_generator_state"])
+        history = saved["history"]
+        best_epoch = int(saved["best_epoch"])
+        best_threshold = float(saved["best_threshold"])
+        best_metrics = saved["best_validation_metrics"]
+        start_epoch = int(saved["completed_epoch"]) + 1
+        print(f"training=resumed start_epoch={start_epoch}", flush=True)
+
+    print(
+        f"device={device} train={len(training_indices)} "
+        f"validation={len(validation_indices)} epochs={config.epochs}",
+        flush=True,
+    )
+    validation_fields = {
+        "labels": labels[validation_indices],
+        "base_top1": pairs["linear_top1"][validation_indices],
+        "base_top2": pairs["linear_top2"][validation_indices],
+        "normalized_margin": pairs["normalized_margin"][validation_indices],
+    }
+
+    for epoch in range(start_epoch, config.epochs + 1):
+        model.train()
+        loss_sum = 0.0
+        seen = 0
+        for batch_images, batch_labels, hardest_wrong, _ in train_loader:
+            batch_images = batch_images.to(device).float().div_(255.0)
+            batch_labels = batch_labels.to(device)
+            hardest_wrong = hardest_wrong.to(device)
+            optimizer.zero_grad(set_to_none=True)
+            scores = model(batch_images)
+            loss = pairwise_ranking_loss(
+                scores,
+                batch_labels,
+                hardest_wrong,
+            )
+            loss.backward()
+            optimizer.step()
+            loss_sum += loss.item() * len(batch_labels)
+            seen += len(batch_labels)
+
+        _, pair_accuracy, threshold, validation_metrics = _validation_metrics(
+            model=model,
+            loader=validation_loader,
+            device=device,
+            **validation_fields,
+        )
+        entry = {
+            "epoch": epoch,
+            "training_pairwise_loss": loss_sum / seen,
+            "validation_pair_accuracy": pair_accuracy,
+            "selected_threshold_for_epoch": threshold,
+            "validation_metrics": validation_metrics,
+        }
+        history.append(entry)
+        improved = (
+            best_metrics is None
+            or _selection_key(validation_metrics) > _selection_key(best_metrics)
+        )
+        if improved:
+            best_epoch = epoch
+            best_threshold = threshold
+            best_metrics = validation_metrics
+            torch.save(
+                {
+                    "config": asdict(config),
+                    "completed_epoch": epoch,
+                    "model_state_dict": model.state_dict(),
+                    "selected_threshold": threshold,
+                    "validation_pair_accuracy": pair_accuracy,
+                    "validation_metrics": validation_metrics,
+                    "split_signature": split_signature,
+                    "selection": (
+                        "maximum validation net error reduction; ties use fewer "
+                        "breaks, then fewer gated examples"
+                    ),
+                },
+                best_path,
+            )
+        print(
+            f"epoch={epoch:02d}/{config.epochs} "
+            f"loss={entry['training_pairwise_loss']:.6f} "
+            f"val_pair_acc={pair_accuracy:.6f} "
+            f"t={threshold:.6f} "
+            f"fixes={validation_metrics['fixed_errors']} "
+            f"breaks={validation_metrics['new_errors']} "
+            f"net={validation_metrics['net_error_reduction']} "
+            f"errors={validation_metrics['reranked_errors']} "
+            f"best_epoch={best_epoch}",
+            flush=True,
+        )
+        torch.save(
+            {
+                "config": asdict(config),
+                "completed_epoch": epoch,
+                "model_state_dict": model.state_dict(),
+                "optimizer_state_dict": optimizer.state_dict(),
+                "train_generator_state": train_generator.get_state(),
+                "history": history,
+                "best_epoch": best_epoch,
+                "best_threshold": best_threshold,
+                "best_validation_metrics": best_metrics,
+                "split_signature": split_signature,
+            },
+            resume_path,
+        )
+
+    torch.save(
+        {
+            "config": asdict(config),
+            "completed_epoch": config.epochs,
+            "model_state_dict": model.state_dict(),
+            "split_signature": split_signature,
+        },
+        final_path,
+    )
+    result = {
+        "protocol": {
+            "correction_training_examples": len(training_indices),
+            "correction_validation_examples": len(validation_indices),
+            "split": split_signature,
+            "linear_probe": str(args.linear_probe),
+            "linear_probe_sha256": file_sha256(args.linear_probe),
+            "linear_probe_training": (
+                "existing production probe trained on all MNIST training examples"
+            ),
+            "reranker_inputs": "bbox-normalized MNIST pixels only",
+            "reranker_training_labels": (
+                "true class versus frozen-probe hardest wrong class"
+            ),
+            "test_used_during_training_or_selection": False,
+        },
+        "config": asdict(config),
+        "best_epoch": best_epoch,
+        "selected_threshold": best_threshold,
+        "best_validation_metrics": best_metrics,
+        "best_checkpoint": str(best_path),
+        "best_checkpoint_sha256": file_sha256(best_path),
+        "final_checkpoint": str(final_path),
+        "final_checkpoint_sha256": file_sha256(final_path),
+        "history": history,
+    }
+    summary_path.write_text(json.dumps(result, indent=2) + "\n")
+    print(
+        f"selected epoch={best_epoch} threshold={best_threshold:.9f} "
+        f"validation_net={best_metrics['net_error_reduction']} "
+        f"validation_errors={best_metrics['reranked_errors']}",
+        flush=True,
+    )
+    print(f"summary={summary_path}", flush=True)
+    print(f"checkpoint={best_path}", flush=True)
+    return result
+
+
+def parse_args(argv: Iterable[str] | None = None) -> argparse.Namespace:
+    parser = argparse.ArgumentParser(description=__doc__)
+    parser.add_argument("--linear-probe", type=Path, default=DEFAULT_LINEAR_PROBE)
+    parser.add_argument("--pairs", type=Path, default=DEFAULT_PAIRS)
+    parser.add_argument("--image-cache", type=Path, default=DEFAULT_IMAGE_CACHE)
+    parser.add_argument("--output-dir", type=Path, default=DEFAULT_OUTPUT_DIR)
+    parser.add_argument("--channels", type=int, nargs=3, default=(16, 32, 64))
+    parser.add_argument("--dropout", type=float, default=0.1)
+    parser.add_argument("--epochs", type=int, default=50)
+    parser.add_argument("--batch-size", type=int, default=256)
+    parser.add_argument("--learning-rate", type=float, default=1e-3)
+    parser.add_argument("--weight-decay", type=float, default=1e-3)
+    parser.add_argument("--validation-per-class", type=int, default=1000)
+    parser.add_argument("--seed", type=int, default=0)
+    parser.add_argument("--device", choices=("cpu", "cuda", "mps"))
+    return parser.parse_args(argv)

@@ -7,7 +7,10 @@ model and ensemble choices and to understand why the members fail differently.
 
 ## Current priorities
 
-- [ ] Try out a resolver/corrector n/w to recover results from top-2 logits where feasible.
+- [x] Evaluate a resolver/corrector network for top-2 logits. The clean
+  50K/10K correction split produced only a three-error canonical test gain
+  with seven regressions, so reranking is closed as a negative result; see the
+  [reproduction record](results/reproductions/2026-07-18-top2-reranking.json).
 - [ ] Try a full stack Lora finetuning with a linear probe.
 - [ ] Try ConvNeXt as a modern convolutional comparison.
 - [ ] Test whether a small transformer over frozen DINOv2/I-JEPA features can

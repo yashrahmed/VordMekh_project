@@ -43,6 +43,27 @@ errors are shared by all three members, so the label-oracle ceiling is
 the original-label view; it does not turn the test-tuned weights into a
 validation-clean result.
 
+## Top-two reranking: negative result
+
+A compact normalized-image ConvNet was trained to choose between the frozen
+DINOv2 linear probe's top two classes. The correction data used a deterministic
+class-balanced 50,000/10,000 training/validation split. Both the reranker epoch
+and the normalized logit-margin gate were selected only on the 10,000-example
+correction validation set; test was evaluated once after freezing the choice.
+
+Validation selected epoch 40 and threshold `0.121541038`. It reduced validation
+errors from 42 to 36 with nine fixes and three regressions. On canonical test
+labels it made ten fixes but introduced seven regressions, reducing errors only
+from 58 to 55 (**99.45%**). The reviewed-label view similarly moved from 57 to
+54 errors (**99.46%**). Even a perfect decision rule inside the selected test
+gate could reach only 99.61%, because the gate exposed 19 of the 58 canonical
+errors.
+
+The reranker therefore neither approaches the 99.7% target nor provides the
+desired no-regression behavior. Top-two reranking is retained as a reproducible
+negative result and is not a current research direction. See the
+[machine-readable record](../results/reproductions/2026-07-18-top2-reranking.json).
+
 ## Best individual DINOv2
 
 - Augmented DINOv2, fixed 150-epoch cosine schedule.
