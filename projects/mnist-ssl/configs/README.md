@@ -8,8 +8,6 @@ ignored artifact directories.
   DINOv2 trajectory.
 - `ijepa_56_t48_fixed500.json`: training/probe recipe that produces the two
   56x56 I-JEPA ensemble members.
-- `dino_ijepa_triplet.json`: historical test-selected linear diagnostic,
-  consumed directly by `scripts/reproduce/best_ensemble.py`.
 
 Changing a fixed training horizon creates a different schedule and therefore a
 different experiment. Add a new config rather than editing a completed recipe.

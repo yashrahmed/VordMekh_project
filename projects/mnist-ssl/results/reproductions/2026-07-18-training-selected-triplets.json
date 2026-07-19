@@ -95,18 +95,7 @@
       }
     },
     "selected_method": "logit",
-    "selection_reason": "22 train errors versus 25 for probabilities",
-    "comparison_to_test_tuned_logit_triplet": {
-      "test_tuned_weights": [
-        0.84,
-        0.06,
-        0.1
-      ],
-      "test_tuned_canonical_errors": 39,
-      "test_tuned_reviewed_errors": 35,
-      "train_selected_canonical_error_change": 16,
-      "train_selected_reviewed_error_change": 16
-    }
+    "selection_reason": "22 train errors versus 25 for probabilities"
   },
   "nonlinear_group": {
     "training_individual_errors": {
@@ -157,23 +146,12 @@
       }
     },
     "selected_method": "probability",
-    "selection_reason": "both methods made three train errors; the prespecified method tie-breaker chose probabilities",
-    "comparison_to_test_tuned_probability_triplet": {
-      "canonical_selected_weights": [
-        0.547,
-        0.27,
-        0.183
-      ],
-      "test_tuned_canonical_errors": 36,
-      "reviewed_errors_at_same_weights": 33,
-      "train_selected_canonical_error_change": 1,
-      "train_selected_reviewed_error_change": 1
-    }
+    "selection_reason": "both methods made three train errors; the prespecified method tie-breaker chose probabilities"
   },
   "artifacts": {
     "training_logits_sha256": "0f7a6b9662404e0dcb00b219eb4820a6bc2dfb0c17ce9ceec0d269d69c3ee54f",
     "grid_sha256": "8c3662021a8f0dcc7a60c0a0882d36780a4ea3d54d44c987eb0841eb5c233546",
     "raw_summary_sha256": "3b17883abf697d63ae1c5940636142afbe6f9d18519aad87a187d084ee65526f"
   },
-  "conclusion": "Train selection transfers poorly for the linear probes because I-JEPA-300 has far fewer training errors than DINO despite weaker test generalization. The nonlinear probability mixture transfers well: its 37 canonical and 34 reviewed errors are only one worse in each view than the directly test-tuned mixture."
+  "conclusion": "Train selection transfers poorly for the linear probes because I-JEPA-300 has far fewer training errors than DINO despite weaker test generalization. The nonlinear probability mixture transfers well, with 37 canonical and 34 reviewed errors."
 }

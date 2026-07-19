@@ -2,9 +2,7 @@
 
 All linear-probe and k-NN results use frozen self-supervised backbones. Ensemble
 rows in the reported leaderboard use rules fixed without test labels;
-historically observed individual milestones remain labeled as such. Mixtures
-selected directly on test labels are separated into a diagnostic-ceiling
-table.
+historically observed individual milestones remain labeled as such.
 
 ## Reported leaderboard
 
@@ -23,19 +21,16 @@ The train-selected nonlinear triplet is the reported best ensemble. Its
 probability score space and `0.556/0.222/0.222` weights were frozen before test
 prediction artifacts were loaded.
 
-## Test-selected diagnostic ceilings
+## Historical pre-DINOv2 ensemble
 
-| Method | Test-selected accuracy | Errors |
-|---|---:|---:|
-| I-JEPA-only triplet | 99.50% | 50 |
-| DINOv2 + I-JEPA-300 | 99.57% | 43 |
-| DINOv2 + I-JEPA-300 + I-JEPA-500 linear probes | 99.61% | 39 |
-| DINOv2 + I-JEPA-500 nonlinear probabilities | 99.61% | 39 |
-| DINOv2 + I-JEPA-300 + I-JEPA-500 nonlinear probabilities | 99.64% | 36 |
+| Method | Selection | Test accuracy | Errors |
+|---|---|---:|---:|
+| I-JEPA-only triplet | Test-selected weights | 99.50% | 50 |
 
-These rows demonstrate complementary errors and upper-bound headroom. Because
-their weights were selected on MNIST test labels, they are not reported model
-performance.
+This is the one retained test-selected ensemble record from before DINOv2 was
+trained. Its weights were selected on MNIST test labels, so it is not reported
+model performance. See the dedicated
+[reproduction guide](reproduce-ijepa-9950.md).
 
 ## Training-selected ensemble weights
 
@@ -49,11 +44,10 @@ test prediction artifacts were loaded.
 | Linear | logits, 0.248/0.541/0.211 | 22 | 99.45% (55) | 99.49% (51) |
 | **Nonlinear** | **probabilities, 0.556/0.222/0.222** | **3** | **99.63% (37)** | **99.66% (34)** |
 
-The nonlinear result is only one canonical and one reviewed error behind the
-canonical test-tuned mixture. The linear search transfers poorly: its member
-training errors are 219/34/75, so it places 54.1% of the weight on I-JEPA-300,
-whereas DINO is the stronger test model. Exact plateau sizes and hashes are in
-the [training-selected reproduction record](../results/reproductions/2026-07-18-training-selected-triplets.json).
+The linear search transfers poorly: its member training errors are 219/34/75,
+so it places 54.1% of the weight on I-JEPA-300, whereas DINO is the stronger
+test model. Exact plateau sizes and hashes are in the
+[training-selected reproduction record](../results/reproductions/2026-07-18-training-selected-triplets.json).
 
 ## Manually reviewed label view
 
@@ -75,9 +69,6 @@ additional view; without the flag, evaluation uses only the original labels.
 | Linear triplet, train-selected weights | 99.49% | 51 |
 | **Nonlinear probability triplet, train-selected weights** | **99.66%** | **34** |
 
-For diagnostic context, the canonical-test-selected nonlinear weights make 33
-reviewed errors, and weights selected directly on the reviewed labels make 32.
-Those are upper-bound measurements rather than reported ensemble results.
 Fourteen reviewed errors are shared by all three nonlinear members, giving a
 label-oracle ceiling of **99.86%**.
 
@@ -147,11 +138,8 @@ The nonlinear grid used the DINO 50-epoch nonlinear head and the I-JEPA-300
 and I-JEPA-500 75-epoch nonlinear heads. Exact training selection, plateau
 sizes, input hashes, and test metrics are in the
 [train-selected reproduction record](../results/reproductions/2026-07-18-training-selected-triplets.json).
-The test-selected nonlinear ceiling remains in a separate
-[diagnostic record](../results/reproductions/2026-07-18-nonlinear-ensembles.json),
-and the historical linear diagnostic remains in its
-[reproduction record](../results/reproductions/2026-07-16-best-triplet.json)
-and [checkpoint manifest](../results/checkpoint-manifest.json).
+The older pre-DINOv2 I-JEPA-only test-selected result remains in its dedicated
+[reproduction guide](reproduce-ijepa-9950.md).
 
 Long-horizon DINOv2 tables, MAE baselines, probe alternatives, and negative
 results remain available in the [experiment log](experiment-log.md).

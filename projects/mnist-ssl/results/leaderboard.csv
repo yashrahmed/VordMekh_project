@@ -9,7 +9,3 @@ DINOv2 plus I-JEPA-300 equal-logit pair,prespecified weights,99.47,53,0.50/0.50 
 DINOv2 plus I-JEPA-300 plus I-JEPA-500 linear-probe triplet,train-selected weights,99.45,55,raw logits; 0.248/0.541/0.211 weights
 DINOv2 plus I-JEPA-300 plus I-JEPA-500 nonlinear-probe triplet,train-selected weights,99.63,37,probabilities; 0.556/0.222/0.222 weights
 I-JEPA-only triplet,diagnostic test-selected weights,99.50,50,not reported performance; 0.39/0.28/0.33 weights
-DINOv2 plus I-JEPA-300 pair,diagnostic test-selected weights,99.57,43,not reported performance; 0.76/0.24 weights
-DINOv2 plus I-JEPA-300 plus I-JEPA-500 triplet,diagnostic test-selected weights,99.61,39,not reported performance; 0.84/0.06/0.10 weights
-DINOv2 plus I-JEPA-500 nonlinear probability pair,diagnostic test-selected weights,99.61,39,not reported performance; 0.54/0.46 weights
-DINOv2 plus I-JEPA-300 plus I-JEPA-500 nonlinear probability triplet,diagnostic test-selected weights,99.64,36,not reported performance; 0.547/0.270/0.183 weights

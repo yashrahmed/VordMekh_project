@@ -93,5 +93,44 @@
     "raw_summary_sha256": "1ae770275e2bf266aa9b4376b2120cf4c4a015a00f3d08019476f35e5bcd3741",
     "conclusion": "No I-JEPA nonlinear milestone beat the linear baseline on canonical labels; the 75-epoch reviewed-label gain was one error and is not a meaningful replacement result."
   },
+  "ijepa_500": {
+    "baseline_probe_artifact_id": "ijepa-56-epoch500-flatten-linear50",
+    "feature_dim": 8192,
+    "parameters": 541386,
+    "frozen_backbone_sha256_before": "390e8ef1b1fd2c3ee75d1b95fb0814dce3f608be1b68c6d47790dc1e87fa907a",
+    "frozen_backbone_sha256_after": "390e8ef1b1fd2c3ee75d1b95fb0814dce3f608be1b68c6d47790dc1e87fa907a",
+    "linear_baseline": {
+      "train_errors": 75,
+      "canonical_test": {"errors": 66, "accuracy_percent": 99.34},
+      "reviewed_test": {"scored_examples": 9998, "errors": 62, "accuracy_percent": 99.37987597519504}
+    },
+    "runs": [
+      {
+        "epochs": 50,
+        "train_errors": 39,
+        "canonical_test": {"errors": 64, "accuracy_percent": 99.36, "fixed_errors": 20, "new_errors": 18},
+        "reviewed_test": {"scored_examples": 9998, "errors": 60, "accuracy_percent": 99.3998799759952, "fixed_errors": 20, "new_errors": 18},
+        "checkpoint_sha256": "8321c79adc510e960509cf6f21839b06c8a94ddda99e2241d2e1138b42613214"
+      },
+      {
+        "epochs": 75,
+        "train_errors": 33,
+        "canonical_test": {"errors": 58, "accuracy_percent": 99.42, "fixed_errors": 24, "new_errors": 16},
+        "reviewed_test": {"scored_examples": 9998, "errors": 54, "accuracy_percent": 99.45989197839567, "fixed_errors": 24, "new_errors": 16},
+        "checkpoint_sha256": "02993081ed12db47a945cc2321bdeb8ff843723fd41a58351c2c86b8620e2e4f"
+      },
+      {
+        "epochs": 100,
+        "train_errors": 18,
+        "canonical_test": {"errors": 61, "accuracy_percent": 99.39, "fixed_errors": 23, "new_errors": 18},
+        "reviewed_test": {"scored_examples": 9998, "errors": 57, "accuracy_percent": 99.42988597719544, "fixed_errors": 23, "new_errors": 18},
+        "checkpoint_sha256": "deb9d6473af44123b6c71c68932c9f00b06c75988876092bd8b0ad574504b0f9"
+      }
+    ],
+    "selected_milestone": 75,
+    "raw_summary_sha256": "c77b1a757f62ca64a7f279e22a474474bf7a8890435eda5a7a1f136051c74526",
+    "predictions_sha256": "faffe20038f0b5899dd2b6655bd8d3963f735c32a35e71c957050299a123729b",
+    "conclusion": "The 75-epoch nonlinear head reduces canonical and reviewed errors by eight relative to the frozen linear probe."
+  },
   "caveat": "All nonlinear comparisons use one seed. The DINO architecture was fixed before its first test evaluation; the later 75- and 100-epoch checkpoints are exploratory duration comparisons."
 }

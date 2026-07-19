@@ -12,7 +12,7 @@ def main() -> None:
     parser.add_argument(
         "artifact_ids",
         nargs="*",
-        help="artifact IDs to verify (default: historical linear triplet)",
+        help="artifact IDs to verify (default: every manifest artifact)",
     )
     parser.add_argument(
         "--all",
@@ -28,12 +28,7 @@ def main() -> None:
     if args.all:
         artifact_ids = list(index)
     elif not artifact_ids:
-        artifact_ids = [
-            artifact_id
-            for artifact_id, artifact in index.items()
-            if "dino-ijepa-linear-test-selected-diagnostic"
-            in artifact.get("required_for", [])
-        ]
+        artifact_ids = list(index)
     paths = verify_artifacts(artifact_ids)
     for artifact_id, path in paths.items():
         print(f"verified {artifact_id}: {sha256_file(path)}  {path}")

@@ -10,8 +10,6 @@ model is a small nonlinear probe on frozen DINOv2 CLS features at **99.52%**.
 The current best ensemble selected without test labels averages the DINOv2,
 I-JEPA-300, and I-JEPA-500 nonlinear probabilities. It reaches **99.63%** on
 the original labels and **99.66%** under the manually reviewed label policy.
-Grids selected directly on test labels reach 99.64%-99.68%, but those numbers
-are retained only as diagnostic ceilings.
 
 ## Best train-selected ensemble
 
@@ -23,10 +21,7 @@ loaded. It makes **37 errors on the 10,000 canonical test examples: 99.63%**.
 
 Under the completed manual-review policy, which relabels eight examples and
 excludes two ambiguous examples, the same frozen rule makes **34 errors among
-9,998 scored examples: 99.65993%**. The corresponding test-selected diagnostic
-counts are 36/33 at canonical-selected weights and 37/32 at reviewed-selected
-weights. Those rows measure available complementarity but are not reported
-ensemble performance. Exact metrics and hashes are preserved in the
+9,998 scored examples: 99.65993%**. Exact metrics and hashes are preserved in the
 [train-selected reproduction record](results/reproductions/2026-07-18-training-selected-triplets.json).
 
 ## Start here
@@ -90,22 +85,10 @@ Re-run the current train-selected comparison:
 uv run python scripts/analysis/grid_train_selected_probe_triplets.py
 ```
 
-Re-run the preserved historical linear diagnostic:
+Verify every manifest-pinned artifact:
 
 ```bash
 uv run python scripts/reproduce/verify_artifacts.py
-uv run python scripts/reproduce/best_ensemble.py --workers 0
-uv run python scripts/reproduce/best_ensemble.py \
-  --workers 0 \
-  --apply-known-corrections
-```
-
-With the ignored nonlinear prediction artifacts present, re-run the latest
-diagnostic grids:
-
-```bash
-uv run python scripts/analysis/grid_dino_ijepa500_nonlinear_ensemble.py
-uv run python scripts/analysis/grid_dino_ijepa_nonlinear_triplet.py
 ```
 
 ## Code map

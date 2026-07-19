@@ -27,15 +27,11 @@ mixing orchestration into model modules.
 | Script | Purpose |
 |---|---|
 | `reproduce/verify_artifacts.py` | Verify manifest-pinned checkpoint file hashes |
-| `reproduce/best_ensemble.py` | Reproduce the historical test-selected linear DINO/I-JEPA diagnostic |
 | `reproduce/ijepa_members.py` | Rebuild the 300/500-epoch 56x56 I-JEPA members |
 | `reproduce/ijepa_9950.py` | Verify the historical 99.50% I-JEPA-only triplet |
 
-The historical linear-ensemble command reads
-`configs/best/dino_ijepa_triplet.json`, resolves its checkpoint IDs through
-`results/checkpoint-manifest.json`, verifies the files, and fails if the
-recorded diagnostic metrics drift. The reported current ensemble is selected
-by `analysis/grid_train_selected_probe_triplets.py`.
+The reported current ensemble is selected by
+`analysis/grid_train_selected_probe_triplets.py`.
 
 ## Sweeps and analysis
 

@@ -48,9 +48,6 @@ The command selects both the linear and nonlinear scalar mixtures using MNIST
 train, then loads test predictions only after selection. Compare its source,
 training-logit, and grid hashes with
 [`2026-07-18-training-selected-triplets.json`](../results/reproductions/2026-07-18-training-selected-triplets.json).
-The older `scripts/reproduce/best_ensemble.py` command remains the verifier for
-the manifest-pinned, test-selected linear diagnostic; its 99.61% is not the
-current reported ensemble.
 
 ## Retention and cleanup
 

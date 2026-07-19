@@ -15,10 +15,6 @@ The frozen mixture makes 37 errors on canonical test labels: **99.63%**. Under
 the manual-review policy it makes 34 errors over 9,998 examples:
 **99.65993%**.
 
-The directly test-selected nonlinear grids reach 36 canonical errors and
-32-33 reviewed errors. Those are diagnostic ceilings, not reported ensemble
-performance.
-
 ## Reproduce from existing checkpoints
 
 From the repository root:
@@ -51,24 +47,6 @@ group=nonlinear selected_method=probability canonical_errors=37 reviewed_errors=
 The script searches both probe groups using only training logits. It writes the
 full grid under `out/`; compare the emitted training-logit, grid, and input
 hashes with the tracked reproduction record.
-
-## Historical linear diagnostic
-
-The older manifest-pinned command reproduces a linear-probe mixture whose
-weights were selected directly on MNIST test labels:
-
-```bash
-uv run python scripts/reproduce/verify_artifacts.py
-uv run python scripts/reproduce/best_ensemble.py \
-  --workers 0 \
-  --apply-known-corrections
-```
-
-It verifies the historical `0.84/0.06/0.10` weighted-logit row: 39 canonical
-and 35 reviewed errors. The command and
-[`dino_ijepa_triplet.json`](../configs/best/dino_ijepa_triplet.json) are kept
-for reproducibility, but that row is a test-selected diagnostic rather than the
-current reported ensemble.
 
 ## Rebuild the I-JEPA members
 

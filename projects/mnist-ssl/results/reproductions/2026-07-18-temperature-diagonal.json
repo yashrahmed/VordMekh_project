@@ -171,12 +171,12 @@
       "canonical": 48,
       "reviewed": 45
     },
-    "previous_canonical_selected_probability_triplet_errors": {
-      "canonical": 36,
-      "reviewed": 33
+    "train_selected_probability_triplet_errors": {
+      "canonical": 37,
+      "reviewed": 34
     },
-    "canonical_error_change_vs_previous_triplet": 12,
-    "reviewed_error_change_vs_previous_triplet": 11
+    "canonical_error_change_vs_train_selected_triplet": 11,
+    "reviewed_error_change_vs_train_selected_triplet": 10
   },
   "artifacts": {
     "training_logits_sha256": "0b0ab3ac184d8c9e11a1128aa883ed110f71b2c064d4b0c75d3e505c7b29db13",
