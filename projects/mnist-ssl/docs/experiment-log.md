@@ -882,11 +882,46 @@ head edges past every fine-tuned model.
    full protocol and artifact hashes are in the
    [reproduction record](../results/reproductions/2026-07-18-top2-reranking.json).
 
+24. **Nonlinear-probe probability averaging reaches 99.64%, still short of
+    99.7%.** Generalized the small frozen I-JEPA head to load either the
+    300- or 500-epoch backbone without overwriting prior probe artifacts. On
+    I-JEPA-500, the matched `LayerNorm -> 8192x64 -> GELU -> dropout ->
+    64x10` head peaked at 75 probe epochs:
+
+    | probe | train errors | canonical errors | reviewed errors |
+    |---|---:|---:|---:|
+    | I-JEPA-500 linear baseline | 75 | 66 | 62 |
+    | nonlinear, 50 epochs | 39 | 64 | 60 |
+    | **nonlinear, 75 epochs** | **33** | **58** | **54** |
+    | nonlinear, 100 epochs | 18 | 61 | 57 |
+
+    A 1%-step DINO/I-JEPA-500 pair grid reached 39 canonical errors by
+    averaging softmax probabilities at `0.54/0.46`. The final triplet grid used
+    DINO nonlinear-50, I-JEPA-300 nonlinear-75, and I-JEPA-500 nonlinear-75,
+    searching the full 1% simplex and then a 0.1% grid around every coarse
+    winning region.
+
+    | selection view | probability weights (DINO/300/500) | canonical errors | reviewed errors |
+    |---|---|---:|---:|
+    | canonical | 0.547 / 0.270 / 0.183 | **36** | 33 |
+    | reviewed | 0.530 / 0.253 / 0.217 | 37 | **32** |
+
+    The three nonlinear members share only 18 canonical errors and 14 reviewed
+    errors, corresponding to oracle ceilings of 99.82% and 99.86%. There is
+    genuine complementarity, but no searched mixture simultaneously achieved
+    36 canonical and 32 reviewed errors. All I-JEPA milestone and ensemble
+    selections in this follow-up were made by direct test comparison; the
+    numbers are useful upper-bound diagnostics, not validation-clean estimates.
+    Full hashes and cross-view results are in the
+    [reproduction record](../results/reproductions/2026-07-18-nonlinear-ensembles.json).
+
 **Caveat now flips to the task.** With the epoch confound removed, MNIST's ~97%
 pixel floor leaves little room to separate these pretexts, but the explicit goal
-is still to push the unsupervised MNIST pipeline past **99.5%**. Future work
-should focus on changes that plausibly close the remaining ~0.14 pt gap from the
-current 99.36% best, while accounting for known MNIST label errors.
+is now to push the unsupervised MNIST pipeline past **99.7%**. The best
+individual frozen representation plus nonlinear head is 99.52%, and the
+test-tuned nonlinear triplet reaches 99.64%. Future work should focus on
+representation/objective changes that can close that gap under validation-clean
+selection, while accounting for known MNIST label errors.
 
 ## Original intent
 

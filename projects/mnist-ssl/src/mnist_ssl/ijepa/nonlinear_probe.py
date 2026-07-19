@@ -1,9 +1,9 @@
-"""Evaluate a small nonlinear probe on the best frozen I-JEPA representation.
+"""Evaluate a small nonlinear probe on a frozen I-JEPA representation.
 
-The recorded best individual I-JEPA member uses the 300-epoch 56x56 backbone,
-48 target patches, and its flattened 64 x 128 token grid.  This experiment
-replaces only its linear classification head with the same LayerNorm/GELU
-architecture used by the DINO nonlinear-probe experiment.
+The recorded I-JEPA members use a 56x56 backbone, 48 target patches, and a
+flattened 64 x 128 token grid.  This experiment replaces only a member's linear
+classification head with the same LayerNorm/GELU architecture used by the DINO
+nonlinear-probe experiment.
 """
 
 from __future__ import annotations
@@ -59,6 +59,8 @@ def parse_milestones(value: str) -> tuple[int, ...]:
 def load_best_member(
     checkpoint_path: Path,
     device: torch.device,
+    *,
+    pretraining_epochs: int,
 ) -> tuple[nn.Module, nn.Linear, dict[str, Any]]:
     """Rebuild the exact encoder and linear head stored in the best checkpoint."""
 
@@ -94,7 +96,7 @@ def load_best_member(
         "checkpoint": str(checkpoint_path),
         "checkpoint_sha256": file_sha256(checkpoint_path),
         "encoder": "custom_ijepa",
-        "pretraining_epochs": 300,
+        "pretraining_epochs": pretraining_epochs,
         "pool": "flatten",
         "preproc": checkpoint.get("preproc", True),
         "enc_dim": model.embed_dim,
@@ -159,6 +161,8 @@ def run(args: argparse.Namespace) -> dict[str, Any]:
     seed_everything(args.seed)
     device = torch.device(args.device)
     milestones = tuple(args.milestones)
+    if args.pretraining_epochs < 1:
+        raise ValueError("pretraining_epochs must be positive")
     args.output_dir.mkdir(parents=True, exist_ok=True)
     summary_path = args.output_dir / "summary.json"
     predictions_path = args.output_dir / "predictions.pt"
@@ -174,7 +178,9 @@ def run(args: argparse.Namespace) -> dict[str, Any]:
         )
 
     model, linear_head, backbone_metadata = load_best_member(
-        args.linear_probe, device
+        args.linear_probe,
+        device,
+        pretraining_epochs=args.pretraining_epochs,
     )
     before = backbone_fingerprint(model)
     print(
@@ -372,6 +378,7 @@ def run(args: argparse.Namespace) -> dict[str, Any]:
 def parse_args() -> argparse.Namespace:
     parser = argparse.ArgumentParser(description=__doc__)
     parser.add_argument("--linear-probe", type=Path, default=DEFAULT_LINEAR_PROBE)
+    parser.add_argument("--pretraining-epochs", type=int, default=300)
     parser.add_argument("--output-dir", type=Path, default=DEFAULT_OUTPUT_DIR)
     parser.add_argument(
         "--milestones",

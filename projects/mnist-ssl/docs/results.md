@@ -10,16 +10,22 @@ weights selected directly on the MNIST test labels.
 |---|---|---:|---:|
 | DINOv2 + I-JEPA-300, equal logits | Prespecified weights | 99.47% | 53 |
 | DINOv2 CLS, epoch 75 of fixed-150 schedule | Best individual observed | 99.42% | 58 |
+| DINOv2 CLS nonlinear-64 probe | Best nonlinear individual observed | 99.52% | 48 |
 | I-JEPA 56x56 flatten, epoch 300 | Best individual I-JEPA observed | 99.36% | 64 |
 | I-JEPA 56x56 flatten, epoch 500 | Individual comparison | 99.34% | 66 |
+| I-JEPA-500 flatten nonlinear-64 probe | Best nonlinear milestone observed | 99.42% | 58 |
 | I-JEPA-only triplet | Test-tuned weights | 99.50% | 50 |
 | DINOv2 + I-JEPA-300 | Test-tuned weights | 99.57% | 43 |
-| **DINOv2 + I-JEPA-300 + I-JEPA-500** | **Test-tuned weights** | **99.61%** | **39** |
+| DINOv2 + I-JEPA-300 + I-JEPA-500 linear probes | Test-tuned weights | 99.61% | 39 |
+| DINOv2 + I-JEPA-500 nonlinear probabilities | Test-tuned weights | 99.61% | 39 |
+| **DINOv2 + I-JEPA-300 + I-JEPA-500 nonlinear probabilities** | **Test-tuned weights** | **99.64%** | **36** |
 
-The 99.50%, 99.57%, and 99.61% rows are diagnostics demonstrating
-complementary errors. Their weights were selected on the MNIST test labels, so
-they are not unbiased held-out estimates. The next rigorous experiment must
-choose weights on a validation split and evaluate the test set once.
+All rows marked test-tuned are diagnostics demonstrating complementary errors.
+Their weights were selected on the MNIST test labels, so they are not unbiased
+held-out estimates. The nonlinear triplet's canonical winner averages softmax
+probabilities with DINO/I-JEPA-300/I-JEPA-500 weights
+`0.547/0.270/0.183`. The next rigorous experiment must choose weights on a
+validation split and evaluate the test set once.
 
 ## Manually reviewed label view
 
@@ -35,13 +41,17 @@ additional view; without the flag, evaluation uses only the original labels.
 | DINOv2 CLS | 99.43% | 57 |
 | I-JEPA 56x56 flatten, epoch 300 | 99.40% | 60 |
 | I-JEPA 56x56 flatten, epoch 500 | 99.38% | 62 |
-| **DINOv2 + I-JEPA-300 + I-JEPA-500** | **99.65%** | **35** |
+| DINOv2 CLS nonlinear-64 probe | 99.55% | 45 |
+| I-JEPA-300 flatten nonlinear-64 probe | 99.41% | 59 |
+| I-JEPA-500 flatten nonlinear-64 probe | 99.46% | 54 |
+| Nonlinear probability triplet, canonical-selected weights | 99.67% | 33 |
+| **Nonlinear probability triplet, reviewed-selected weights** | **99.68%** | **32** |
 
-The same 0.84/0.06/0.10 weights win the reviewed-label grid. Nineteen reviewed
-errors are shared by all three members, so the label-oracle ceiling is
-**99.81%**. This is four fewer ensemble errors and two fewer shared errors than
-the original-label view; it does not turn the test-tuned weights into a
-validation-clean result.
+The reviewed-selected probability weights are `0.530/0.253/0.217`; they make
+37 errors on the canonical labels. The canonical-selected weights make 36
+canonical and 33 reviewed errors. Fourteen reviewed errors are shared by all
+three nonlinear members, so the reviewed-label oracle ceiling is **99.86%**.
+Direct reviewed-label selection does not make the result validation-clean.
 
 ## Top-two reranking: negative result
 
@@ -92,27 +102,31 @@ negative result and is not a current research direction. See the
 
 ## Best current ensemble
 
-The exploratory winning logit rule is:
+The exploratory canonical-label winner averages nonlinear-probe probabilities:
 
 ```text
-0.84 * DINOv2-75-CLS logits
-+ 0.06 * I-JEPA-300-flatten logits
-+ 0.10 * I-JEPA-500-flatten logits
+0.547 * softmax(DINOv2-75-CLS nonlinear logits)
++ 0.270 * softmax(I-JEPA-300-flatten nonlinear logits)
++ 0.183 * softmax(I-JEPA-500-flatten nonlinear logits)
 ```
 
-It makes 39 errors for **99.61%** accuracy. Only 21 errors are shared by all
-three members, giving a label-oracle ceiling of 99.79% for this triplet.
+It makes 36 errors for **99.64%** accuracy. Only 18 canonical errors are shared
+by all three members, giving a label-oracle ceiling of **99.82%**.
 
-Under the manually reviewed policy, the same weights make 35 errors among
-9,998 included examples for **99.65%** accuracy. Nineteen errors remain shared,
-giving a reviewed-label oracle ceiling of **99.81%**.
+Under the manually reviewed policy, the same weights make 33 errors among
+9,998 included examples for **99.67%** accuracy. Separately selecting on the
+reviewed labels changes the weights to `0.530/0.253/0.217` and reduces the
+reviewed count to 32, while increasing the canonical count to 37. Fourteen
+reviewed errors remain shared, giving a reviewed-label oracle ceiling of
+**99.86%**.
 
-The result was reproduced from the preserved checkpoints on 2026-07-16 at
-commit `6d79240c375285203c0892b6378d28f9b5c504cd`. Frozen-backbone fingerprints
-matched before and after evaluation. See the [reproduction record](../results/reproductions/2026-07-16-best-triplet.json)
-and [checkpoint manifest](../results/checkpoint-manifest.json). The reviewed
-view has its own
-[2026-07-18 reproduction record](../results/reproductions/2026-07-18-reviewed-label-triplet.json).
+The nonlinear grid used the DINO 50-epoch nonlinear head and the 75-epoch
+I-JEPA-300 and I-JEPA-500 nonlinear heads. Exact input hashes, checkpoint
+hashes, cross-view scores, and grid hashes are in the
+[nonlinear-ensemble reproduction record](../results/reproductions/2026-07-18-nonlinear-ensembles.json).
+The previous linear triplet remains preserved in its
+[reproduction record](../results/reproductions/2026-07-16-best-triplet.json)
+and [checkpoint manifest](../results/checkpoint-manifest.json).
 
 Long-horizon DINOv2 tables, MAE baselines, probe alternatives, and negative
 results remain available in the [experiment log](experiment-log.md).

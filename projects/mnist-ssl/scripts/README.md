@@ -48,7 +48,9 @@ generated artifacts.
 | `analysis/ijepa_errors.py` | Render errors for a saved I-JEPA probe |
 | `analysis/shift_subtract.py` | Inspect the shift/subtract image transform |
 | `analysis/train_dino_nonlinear_probe.py` | Compare a small nonlinear head with the frozen DINO linear probe |
-| `analysis/train_ijepa_nonlinear_probe.py` | Compare the matched small nonlinear head on the best frozen I-JEPA member |
+| `analysis/train_ijepa_nonlinear_probe.py` | Compare the matched small nonlinear head on a specified frozen 300- or 500-epoch I-JEPA member |
+| `analysis/grid_dino_ijepa500_nonlinear_ensemble.py` | Grid raw-logit and probability mixtures of the best DINO and I-JEPA-500 nonlinear probes |
+| `analysis/grid_dino_ijepa_nonlinear_triplet.py` | Coarse-to-fine raw-logit and probability grids over all three nonlinear probes |
 | `analysis/train_dino_pairwise_reranker.py` | Cross-fit a linear top-two scorer and select its blend without test tuning |
 | `analysis/train_dino_nonlinear_pairwise_reranker.py` | Cross-fit the matched nonlinear top-two scorer |
 | `analysis/train_dino_normalized_image_reranker.py` | Train an image-only pairwise reranker behind a fixed linear-probe margin gate |
