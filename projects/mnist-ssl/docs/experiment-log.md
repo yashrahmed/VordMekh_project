@@ -7,9 +7,8 @@ the [roadmap](../ROADMAP.md); the concise leaderboard is in
 [results](results.md).
 
 The original goal was to beat 99.5% MNIST test accuracy using representations
-learned without label supervision. Exploratory test-tuned ensembles crossed
-that threshold. The next phase is validation-clean model selection and failure
-analysis.
+learned without label supervision. The reported train-selected nonlinear
+ensemble reaches 99.63%.
 
 ## DINOv2
 
@@ -297,18 +296,9 @@ processed in canonical MNIST order so the logits aligned exactly.
 | I-JEPA 56x56 flatten, epoch 300 | — | 99.36% | 64 |
 | I-JEPA 56x56 flatten, epoch 500 | — | 99.34% | 66 |
 | DINO + I-JEPA-300, equal logits | 0.50 / 0.50 | 99.47% | 53 |
-| DINO + I-JEPA-300, best swept logits | 0.76 / 0.24 | 99.57% | 43 |
-| **DINO + I-JEPA-300 + I-JEPA-500, best swept logits** | **0.84 / 0.06 / 0.10** | **99.61%** | **39** |
 
-The triplet result exceeds the earlier I-JEPA-only triplet's 99.50%. It is not
-a single-cell optimum: several nearby one-percent-grid combinations scored
-99.60%. The members are complementary—only 21 test errors are shared by all
-three, for a label-oracle ceiling of 99.79%. However, both reported "best
-swept" rows selected weights directly on the 10,000 MNIST test labels. They are
-therefore explicitly **test-tuned diagnostics**, not clean held-out model
-selection. The prespecified equal-logit pair at 99.47% is the untuned result;
-the next rigorous experiment is to select ensemble weights on a validation
-split and evaluate the locked weights once on test.
+The equal-logit pair was prespecified and improves on either individual member.
+Later ensemble work selects score space and weights without using test labels.
 
 ### Completed 100-epoch DINOv2 baseline
 
@@ -882,8 +872,8 @@ head edges past every fine-tuned model.
    full protocol and artifact hashes are in the
    [reproduction record](../results/reproductions/2026-07-18-top2-reranking.json).
 
-24. **Nonlinear-probe probability averaging reaches 99.64%, still short of
-    99.7%.** Generalized the small frozen I-JEPA head to load either the
+24. **The I-JEPA-500 nonlinear probe reaches 99.42%.** Generalized the small
+    frozen I-JEPA head to load either the
     300- or 500-epoch backbone without overwriting prior probe artifacts. On
     I-JEPA-500, the matched `LayerNorm -> 8192x64 -> GELU -> dropout ->
     64x10` head peaked at 75 probe epochs:
@@ -895,33 +885,74 @@ head edges past every fine-tuned model.
     | **nonlinear, 75 epochs** | **33** | **58** | **54** |
     | nonlinear, 100 epochs | 18 | 61 | 57 |
 
-    A 1%-step DINO/I-JEPA-500 pair grid reached 39 canonical errors by
-    averaging softmax probabilities at `0.54/0.46`. The final triplet grid used
-    DINO nonlinear-50, I-JEPA-300 nonlinear-75, and I-JEPA-500 nonlinear-75,
-    searching the full 1% simplex and then a 0.1% grid around every coarse
-    winning region.
+    The 75-epoch head reduces both canonical and reviewed errors by eight
+    relative to the I-JEPA-500 linear baseline. Its frozen-backbone invariants
+    and checkpoint hashes are preserved in the
+    [nonlinear-probe reproduction record](../results/reproductions/2026-07-18-nonlinear-probes.json).
 
-    | selection view | probability weights (DINO/300/500) | canonical errors | reviewed errors |
-    |---|---|---:|---:|
-    | canonical | 0.547 / 0.270 / 0.183 | **36** | 33 |
-    | reviewed | 0.530 / 0.253 / 0.217 | 37 | **32** |
+25. **Training-fitted temperatures and class-specific diagonal weights regress
+    to 99.52%.** Used only the three nonlinear probes from finding 24. Each
+    model received one positive temperature, and each output class received a
+    non-negative three-model weight vector normalized across models. Logits
+    were centered per model and example before scaling so arbitrary common
+    logit offsets could not act as class biases.
 
-    The three nonlinear members share only 18 canonical errors and 14 reviewed
-    errors, corresponding to oracle ceilings of 99.82% and 99.86%. There is
-    genuine complementarity, but no searched mixture simultaneously achieved
-    36 canonical and 32 reviewed errors. All I-JEPA milestone and ensemble
-    selections in this follow-up were made by direct test comparison; the
-    numbers are useful upper-bound diagnostics, not validation-clean estimates.
-    Full hashes and cross-view results are in the
-    [reproduction record](../results/reproductions/2026-07-18-nonlinear-ensembles.json).
+    The calibrator used a fixed class-stratified 50,000/10,000 split of MNIST
+    train. Five prespecified shrinkage levels were fit with Adam; training-side
+    selection NLL chose zero shrinkage at step 70. Test logits were not loaded
+    until that selection was frozen.
+
+    | shrinkage | selection errors | canonical test errors | reviewed test errors |
+    |---:|---:|---:|---:|
+    | **0** | 2 | **48** | **44** |
+    | 0.0001 | 2 | 48 | 44 |
+    | 0.001 | 1 | 49 | 45 |
+    | 0.01 | 1 | 48 | 44 |
+    | 0.1 | 1 | 49 | 45 |
+
+    The selected calibrator made two errors over the full 60,000-example
+    training set, but 48 canonical test errors (99.52%) and 44 reviewed errors
+    (99.56%). That is 11 and 10 more errors than the train-selected scalar
+    probability mixture. All regularization candidates failed similarly, so
+    zero-shrinkage selection is not the cause. The underlying problem is that
+    probes trained on all MNIST-train labels nearly memorize that split:
+    one or two calibration-selection errors cannot estimate which model should
+    be trusted for a class at test time. A clean retry would require retraining
+    the probes without a held-out calibration split or obtaining external
+    calibration data. Exact parameters, metrics, and hashes are in the
+    [reproduction record](../results/reproductions/2026-07-18-temperature-diagonal.json).
+
+26. **Train-selected scalar nonlinear weights reach 99.63%.** Repeated the
+    complete scalar triplet search separately for the three linear probes and
+    the three nonlinear probes. Each searched raw logits and softmax
+    probabilities on all 60,000 training examples using a full 1% simplex and
+    a 0.1% refinement. Within-method error ties selected the point closest to
+    equal weights; probabilities won a method tie. Test artifacts were loaded
+    only after both groups were frozen.
+
+    | group/method | weights (DINO/300/500) | train errors | canonical errors | reviewed errors |
+    |---|---|---:|---:|---:|
+    | linear logits | 0.248 / 0.541 / 0.211 | 22 | 55 | 51 |
+    | linear probabilities | 0.316 / 0.476 / 0.208 | 25 | 54 | 50 |
+    | nonlinear logits | 0.646 / 0.134 / 0.220 | 3 | 43 | 39 |
+    | **nonlinear probabilities** | **0.556 / 0.222 / 0.222** | **3** | **37** | **34** |
+
+    Train selection chose linear logits because they made 22 versus 25
+    training errors. That group transfers poorly: the linear members make
+    219/34/75 training errors, causing the grid to overweight I-JEPA-300 even
+    though DINO generalizes better. The nonlinear members make 7/26/33
+    training errors, and probability selection remains DINO-led. Its 37
+    canonical and 34 reviewed errors establish the current reported ensemble
+    result. Exact plateaus, cross-view metrics, and artifact hashes are in the
+    [reproduction record](../results/reproductions/2026-07-18-training-selected-triplets.json).
 
 **Caveat now flips to the task.** With the epoch confound removed, MNIST's ~97%
 pixel floor leaves little room to separate these pretexts, but the explicit goal
 is now to push the unsupervised MNIST pipeline past **99.7%**. The best
 individual frozen representation plus nonlinear head is 99.52%, and the
-test-tuned nonlinear triplet reaches 99.64%. Future work should focus on
-representation/objective changes that can close that gap under validation-clean
-selection, while accounting for known MNIST label errors.
+train-selected nonlinear triplet reaches 99.63%. Future work should focus on
+representation/objective changes that can close the reported gap, while
+accounting for known MNIST label errors.
 
 ## Original intent
 

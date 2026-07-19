@@ -6,8 +6,6 @@ I-JEPA 56x56 epoch-300 flatten nonlinear-64 probe,best nonlinear I-JEPA mileston
 I-JEPA 56x56 epoch-500 flatten probe,individual comparison,99.34,66,frozen target encoder
 I-JEPA 56x56 epoch-500 flatten nonlinear-64 probe,best nonlinear I-JEPA-500 milestone observed,99.42,58,frozen target encoder; LayerNorm-64-GELU head; 75 epochs; seed 0
 DINOv2 plus I-JEPA-300 equal-logit pair,prespecified weights,99.47,53,0.50/0.50 weights
-I-JEPA-only triplet,test-tuned weights,99.50,50,0.39/0.28/0.33 weights
-DINOv2 plus I-JEPA-300 pair,test-tuned weights,99.57,43,0.76/0.24 weights
-DINOv2 plus I-JEPA-300 plus I-JEPA-500 triplet,test-tuned weights,99.61,39,0.84/0.06/0.10 weights
-DINOv2 plus I-JEPA-500 nonlinear probability pair,test-tuned weights,99.61,39,0.54/0.46 weights; 50/75-epoch nonlinear probes
-DINOv2 plus I-JEPA-300 plus I-JEPA-500 nonlinear probability triplet,test-tuned weights,99.64,36,0.547/0.270/0.183 weights; 50/75/75-epoch nonlinear probes
+DINOv2 plus I-JEPA-300 plus I-JEPA-500 linear-probe triplet,train-selected weights,99.45,55,raw logits; 0.248/0.541/0.211 weights
+DINOv2 plus I-JEPA-300 plus I-JEPA-500 nonlinear-probe triplet,train-selected weights,99.63,37,probabilities; 0.556/0.222/0.222 weights
+I-JEPA-only triplet,diagnostic test-selected weights,99.50,50,not reported performance; 0.39/0.28/0.33 weights

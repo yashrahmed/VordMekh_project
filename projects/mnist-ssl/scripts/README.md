@@ -27,13 +27,11 @@ mixing orchestration into model modules.
 | Script | Purpose |
 |---|---|
 | `reproduce/verify_artifacts.py` | Verify manifest-pinned checkpoint file hashes |
-| `reproduce/best_ensemble.py` | Reproduce the DINO/I-JEPA triplet; add `--apply-known-corrections` for reviewed labels |
 | `reproduce/ijepa_members.py` | Rebuild the 300/500-epoch 56x56 I-JEPA members |
 | `reproduce/ijepa_9950.py` | Verify the historical 99.50% I-JEPA-only triplet |
 
-The best-ensemble command reads `configs/best/dino_ijepa_triplet.json`, resolves
-its checkpoint IDs through `results/checkpoint-manifest.json`, verifies the
-files, and fails if the recorded metrics drift.
+The reported current ensemble is selected by
+`analysis/grid_train_selected_probe_triplets.py`.
 
 ## Sweeps and analysis
 
@@ -51,6 +49,8 @@ generated artifacts.
 | `analysis/train_ijepa_nonlinear_probe.py` | Compare the matched small nonlinear head on a specified frozen 300- or 500-epoch I-JEPA member |
 | `analysis/grid_dino_ijepa500_nonlinear_ensemble.py` | Grid raw-logit and probability mixtures of the best DINO and I-JEPA-500 nonlinear probes |
 | `analysis/grid_dino_ijepa_nonlinear_triplet.py` | Coarse-to-fine raw-logit and probability grids over all three nonlinear probes |
+| `analysis/calibrate_nonlinear_triplet.py` | Fit training-only temperatures and class-specific diagonal weights over the three nonlinear probes |
+| `analysis/grid_train_selected_probe_triplets.py` | Select scalar linear- and nonlinear-probe triplet mixtures on train, then evaluate test once |
 | `analysis/train_dino_pairwise_reranker.py` | Cross-fit a linear top-two scorer and select its blend without test tuning |
 | `analysis/train_dino_nonlinear_pairwise_reranker.py` | Cross-fit the matched nonlinear top-two scorer |
 | `analysis/train_dino_normalized_image_reranker.py` | Train an image-only pairwise reranker behind a fixed linear-probe margin gate |

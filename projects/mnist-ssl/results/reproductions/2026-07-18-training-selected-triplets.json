@@ -1,0 +1,157 @@
+{
+  "schema_version": 1,
+  "date": "2026-07-18",
+  "experiment": "Train-selected scalar mixtures for the linear- and nonlinear-probe triplets",
+  "protocol": {
+    "selection_split": "MNIST train, canonical labels",
+    "selection_examples": 60000,
+    "test_loaded_after_all_weight_selection": true,
+    "test_labels_used_for_selection": false,
+    "model_order": [
+      "dino",
+      "ijepa_300",
+      "ijepa_500"
+    ],
+    "groups": {
+      "linear": [
+        "DINO epoch-75 50-epoch linear probe",
+        "I-JEPA epoch-300 50-epoch linear probe",
+        "I-JEPA epoch-500 50-epoch linear probe"
+      ],
+      "nonlinear": [
+        "DINO epoch-75 50-epoch nonlinear probe",
+        "I-JEPA epoch-300 75-epoch nonlinear probe",
+        "I-JEPA epoch-500 75-epoch nonlinear probe"
+      ]
+    },
+    "methods": [
+      "non-negative weighted raw logits",
+      "non-negative weighted softmax probabilities"
+    ],
+    "coarse_step": 0.01,
+    "refined_step": 0.001,
+    "refinement_radius": 0.02,
+    "within_method_tie_breaker": "minimum squared distance from equal weights",
+    "between_method_tie_breaker": "probability wins when train errors tie"
+  },
+  "sources": {
+    "dino_backbone_sha256": "265d5f6bce3432b7de6475fb7533c0ca3fd2234f9148fced1a9d7cb30df7f849",
+    "dino_linear_sha256": "4a94504135f34f452a08c441e3e550e53ddbac516b9cc6871934c9c0dc74daab",
+    "dino_nonlinear_sha256": "dd4fead735e12c11cb3a5a0d29d49d7d02838ad46904fd2fd8f8d2b190319bad",
+    "ijepa_300_base_sha256": "d68673c454b286f4205a94e47d610a52af1cabd13a44ff2901f6d054945c1f1a",
+    "ijepa_300_nonlinear_sha256": "2ceeac29cfbc80ae75dde715e70cde9abc5ea83e377d65ed8967c65c8a6f27e0",
+    "ijepa_500_base_sha256": "8dc389ae4be991510cef0421b681326ad3d57d845c233e606b783a94a7307715",
+    "ijepa_500_nonlinear_sha256": "02993081ed12db47a945cc2321bdeb8ff843723fd41a58351c2c86b8620e2e4f",
+    "dino_test_predictions_sha256": "57b053ab0d3eeda6696db5fecd4f181f1b28e713da672bd6dcceeab3b39568d3",
+    "ijepa_300_test_predictions_sha256": "b240a46bb09f3627c79b1934a7366b3072469ed88f9f2190b81d2293d407eec0",
+    "ijepa_500_test_predictions_sha256": "faffe20038f0b5899dd2b6655bd8d3963f735c32a35e71c957050299a123729b"
+  },
+  "linear_group": {
+    "training_individual_errors": {
+      "dino": 219,
+      "ijepa_300": 34,
+      "ijepa_500": 75
+    },
+    "training_all_three_shared_errors": 10,
+    "training_oracle_accuracy_percent": 99.98333333333333,
+    "logit": {
+      "selected_weights": {
+        "dino": 0.248,
+        "ijepa_300": 0.541,
+        "ijepa_500": 0.211
+      },
+      "training_errors": 22,
+      "training_accuracy_percent": 99.96333333333334,
+      "coarse_exact_best_count": 4,
+      "refined_exact_best_count": 264,
+      "canonical_test": {
+        "errors": 55,
+        "accuracy_percent": 99.45
+      },
+      "reviewed_test": {
+        "scored_examples": 9998,
+        "errors": 51,
+        "accuracy_percent": 99.48989797959592
+      }
+    },
+    "probability": {
+      "selected_weights": {
+        "dino": 0.316,
+        "ijepa_300": 0.476,
+        "ijepa_500": 0.208
+      },
+      "training_errors": 25,
+      "training_accuracy_percent": 99.95833333333334,
+      "coarse_exact_best_count": 29,
+      "refined_exact_best_count": 3274,
+      "canonical_test": {
+        "errors": 54,
+        "accuracy_percent": 99.46
+      },
+      "reviewed_test": {
+        "scored_examples": 9998,
+        "errors": 50,
+        "accuracy_percent": 99.499899979996
+      }
+    },
+    "selected_method": "logit",
+    "selection_reason": "22 train errors versus 25 for probabilities"
+  },
+  "nonlinear_group": {
+    "training_individual_errors": {
+      "dino": 7,
+      "ijepa_300": 26,
+      "ijepa_500": 33
+    },
+    "training_all_three_shared_errors": 1,
+    "training_oracle_accuracy_percent": 99.99833333333333,
+    "logit": {
+      "selected_weights": {
+        "dino": 0.646,
+        "ijepa_300": 0.134,
+        "ijepa_500": 0.22
+      },
+      "training_errors": 3,
+      "training_accuracy_percent": 99.995,
+      "coarse_exact_best_count": 156,
+      "refined_exact_best_count": 15442,
+      "canonical_test": {
+        "errors": 43,
+        "accuracy_percent": 99.57
+      },
+      "reviewed_test": {
+        "scored_examples": 9998,
+        "errors": 39,
+        "accuracy_percent": 99.60992198439688
+      }
+    },
+    "probability": {
+      "selected_weights": {
+        "dino": 0.556,
+        "ijepa_300": 0.222,
+        "ijepa_500": 0.222
+      },
+      "training_errors": 3,
+      "training_accuracy_percent": 99.995,
+      "coarse_exact_best_count": 390,
+      "refined_exact_best_count": 38233,
+      "canonical_test": {
+        "errors": 37,
+        "accuracy_percent": 99.63
+      },
+      "reviewed_test": {
+        "scored_examples": 9998,
+        "errors": 34,
+        "accuracy_percent": 99.65993198639728
+      }
+    },
+    "selected_method": "probability",
+    "selection_reason": "both methods made three train errors; the prespecified method tie-breaker chose probabilities"
+  },
+  "artifacts": {
+    "training_logits_sha256": "0f7a6b9662404e0dcb00b219eb4820a6bc2dfb0c17ce9ceec0d269d69c3ee54f",
+    "grid_sha256": "8c3662021a8f0dcc7a60c0a0882d36780a4ea3d54d44c987eb0841eb5c233546",
+    "raw_summary_sha256": "3b17883abf697d63ae1c5940636142afbe6f9d18519aad87a187d084ee65526f"
+  },
+  "conclusion": "Train selection transfers poorly for the linear probes because I-JEPA-300 has far fewer training errors than DINO despite weaker test generalization. The nonlinear probability mixture transfers well, with 37 canonical and 34 reviewed errors."
+}
