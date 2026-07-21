@@ -1013,6 +1013,37 @@ head edges past every fine-tuned model.
     minimum leaf size. Exact distributions, settings, and checkpoint hashes are
     in the [reproduction record](../results/reproductions/2026-07-21-neural-impurity-stump.json).
 
+29. **A two-convolution splitter preserves the question but loses entropy
+    purity.** Replaced the third convolution with adaptive average pooling and
+    changed the routing head from 64 to 32 inputs. This reduced the model from
+    23,361 to 4,833 parameters (79.31%) without changing the loss, seed,
+    optimizer, data, or fixed 20-epoch horizon. The matched run was forced to
+    CPU and protected by `caffeinate -i` so device selection did not confound
+    the comparison.
+
+    | criterion / routing | 3-conv test reduction | 2-conv test reduction | change | 2-conv left/right mass |
+    |---|---:|---:|---:|---:|
+    | Gini, soft | 12.00% | 11.17% | -0.83 pt | 11.23% / 88.77% |
+    | **Gini, hard** | **12.08%** | **11.61%** | **-0.47 pt** | 11.22% / 88.78% |
+    | entropy, soft | 20.30% | 13.15% | -7.15 pt | 46.22% / 53.78% |
+    | **entropy, hard** | **20.98%** | **13.90%** | **-7.07 pt** | 46.39% / 53.61% |
+
+    The smaller Gini model still isolated digit `1`, with leaf orientation
+    reversed. The smaller entropy model also recovered the same majority
+    partition up to orientation: `{0,2,3,5,8}` versus `{1,4,6,7,9}`. Its
+    routing was less decisive, however, so its leaves remained substantially
+    more mixed. Train and test hard reductions agreed closely (Gini 11.31% ->
+    11.61%; entropy 13.01% -> 13.90%), providing no sign of failed optimization
+    or overfitting.
+
+    No residual path was added. Gradients were nonzero through both
+    convolutions, training improved smoothly, and both category-level
+    questions were recovered. A skip connection would not replace the removed
+    convolution's representational capacity or receptive field. The
+    three-convolution model therefore remains preferable when split quality is
+    more important than its extra 18,528 parameters. Exact metrics and hashes
+    are in the [reproduction record](../results/reproductions/2026-07-21-neural-impurity-stump.json).
+
 **Caveat now flips to the task.** With the epoch confound removed, MNIST's ~97%
 pixel floor leaves little room to separate these pretexts, but the explicit goal
 is now to push the unsupervised MNIST pipeline past **99.7%**. The best

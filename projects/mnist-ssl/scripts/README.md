@@ -47,7 +47,7 @@ generated artifacts.
 | `analysis/shift_subtract.py` | Inspect the shift/subtract image transform |
 | `analysis/train_dino_nonlinear_probe.py` | Compare a small nonlinear head with the frozen DINO linear probe |
 | `analysis/train_ijepa_nonlinear_probe.py` | Compare the matched small nonlinear head on a specified frozen 300- or 500-epoch I-JEPA member |
-| `analysis/train_impurity_convnet.py` | Train one CNN binary splitter to reduce Gini or Shannon impurity across two leaves |
+| `analysis/train_impurity_convnet.py` | Train one two-convolution binary splitter to reduce Gini or Shannon impurity across two leaves |
 | `analysis/grid_dino_ijepa500_nonlinear_ensemble.py` | Grid raw-logit and probability mixtures of the best DINO and I-JEPA-500 nonlinear probes |
 | `analysis/grid_dino_ijepa_nonlinear_triplet.py` | Coarse-to-fine raw-logit and probability grids over all three nonlinear probes |
 | `analysis/calibrate_nonlinear_triplet.py` | Fit training-only temperatures and class-specific diagonal weights over the three nonlinear probes |

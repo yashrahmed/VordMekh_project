@@ -4,13 +4,19 @@ from __future__ import annotations
 
 import pytest
 import torch
+from torch import nn
 
 from mnist_ssl.baselines.impurity_convnet import (
     SmallConvSplitter,
     leaf_memberships,
+    pick_device,
     split_statistics,
     weighted_leaf_impurity,
 )
+
+
+def test_explicit_cpu_device_is_respected() -> None:
+    assert pick_device("cpu") == torch.device("cpu")
 
 
 def test_splitter_emits_one_binary_membership_per_image() -> None:
@@ -22,6 +28,8 @@ def test_splitter_emits_one_binary_membership_per_image() -> None:
     assert memberships.shape == (7, 2)
     assert torch.all(memberships >= 0)
     assert torch.allclose(memberships.sum(dim=1), torch.ones(7), atol=1e-6)
+    assert sum(isinstance(layer, nn.Conv2d) for layer in model.modules()) == 2
+    assert sum(parameter.numel() for parameter in model.parameters()) == 4_833
 
 
 @pytest.mark.parametrize("criterion", ["gini", "entropy"])
@@ -48,7 +56,8 @@ def test_impurity_backpropagates_through_the_single_splitter() -> None:
     loss = weighted_leaf_impurity(memberships, labels, "gini")
     loss.backward()
 
-    assert model.features[0].weight.grad is not None
-    assert model.features[0].weight.grad.abs().sum() > 0
+    for layer in (model.features[0], model.features[3]):
+        assert layer.weight.grad is not None
+        assert layer.weight.grad.abs().sum() > 0
     assert model.split.weight.grad is not None
     assert model.split.weight.grad.abs().sum() > 0

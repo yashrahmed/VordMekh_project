@@ -50,6 +50,7 @@ class ExperimentConfig:
     balance_weight: float = 0.05
     seed: int = 0
     num_workers: int = 0
+    device: str = "auto"
 
 
 def set_seed(seed: int) -> None:
@@ -60,7 +61,14 @@ def set_seed(seed: int) -> None:
         torch.cuda.manual_seed_all(seed)
 
 
-def pick_device() -> torch.device:
+def pick_device(requested: str = "auto") -> torch.device:
+    if requested != "auto":
+        device = torch.device(requested)
+        if device.type == "cuda" and not torch.cuda.is_available():
+            raise ValueError("CUDA was requested but is unavailable")
+        if device.type == "mps" and not torch.backends.mps.is_available():
+            raise ValueError("MPS was requested but is unavailable")
+        return device
     if torch.cuda.is_available():
         return torch.device("cuda")
     if torch.backends.mps.is_available():
@@ -69,7 +77,7 @@ def pick_device() -> torch.device:
 
 
 class SmallConvSplitter(nn.Module):
-    """A compact CNN with exactly one learned binary routing output."""
+    """A two-convolution CNN with exactly one learned routing output."""
 
     def __init__(self) -> None:
         super().__init__()
@@ -79,12 +87,9 @@ class SmallConvSplitter(nn.Module):
             nn.MaxPool2d(2),
             nn.Conv2d(16, 32, kernel_size=3, padding=1),
             nn.ReLU(inplace=True),
-            nn.MaxPool2d(2),
-            nn.Conv2d(32, 64, kernel_size=3, padding=1),
-            nn.ReLU(inplace=True),
             nn.AdaptiveAvgPool2d(1),
         )
-        self.split = nn.Linear(64, 1)
+        self.split = nn.Linear(32, 1)
 
     def forward(self, images: torch.Tensor) -> torch.Tensor:
         """Return one unconstrained right-routing logit per image."""
@@ -320,7 +325,7 @@ def run_criterion(
     torch.save(
         {
             "criterion": criterion,
-            "model_kind": "small_conv_binary_splitter",
+            "model_kind": "two_conv_binary_splitter",
             "config": asdict(config),
             "model_state_dict": model.state_dict(),
             "history": history,
@@ -330,7 +335,7 @@ def run_criterion(
     )
     result = {
         "criterion": criterion,
-        "model_kind": "small_conv_binary_splitter",
+        "model_kind": "two_conv_binary_splitter",
         "parameter_count": sum(p.numel() for p in model.parameters()),
         "elapsed_seconds": time.monotonic() - started,
         "checkpoint": checkpoint_path.name,
@@ -363,16 +368,17 @@ def run_experiment(
         raise ValueError("at least one criterion is required")
 
     output_dir.mkdir(parents=True, exist_ok=True)
-    device = pick_device()
+    device = pick_device(config.device)
     print(f"device={device}  output={output_dir}")
     results = [
         run_criterion(criterion, config, device, output_dir)
         for criterion in criteria
     ]
     summary = {
-        "experiment": "mnist_small_conv_binary_impurity_splitter",
+        "experiment": "mnist_two_conv_binary_impurity_splitter",
         "architecture": (
-            "one CNN, one sigmoid binary decision, two leaves, no classifier head"
+            "two convolutions, one sigmoid binary decision, two leaves, "
+            "no classifier head, no residual connection"
         ),
         "criterion_definition": {
             "gini": "sample-weighted CART Gini impurity across two leaves",
@@ -420,9 +426,15 @@ def main() -> None:
     parser.add_argument("--seed", type=int, default=0)
     parser.add_argument("--num-workers", type=int, default=0)
     parser.add_argument(
+        "--device",
+        choices=("auto", "cpu", "mps", "cuda"),
+        default="auto",
+        help="Training device (default: choose the best available device).",
+    )
+    parser.add_argument(
         "--output-dir",
         type=Path,
-        default=OUT_DIR / "neural_impurity_stump",
+        default=OUT_DIR / "neural_impurity_stump_2conv",
     )
     args = parser.parse_args()
     config = ExperimentConfig(
@@ -433,6 +445,7 @@ def main() -> None:
         balance_weight=args.balance_weight,
         seed=args.seed,
         num_workers=args.num_workers,
+        device=args.device,
     )
     run_experiment(args.criteria, config, args.output_dir)
 

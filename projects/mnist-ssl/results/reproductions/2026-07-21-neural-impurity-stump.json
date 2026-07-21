@@ -58,6 +58,35 @@
       "hard_test_right_leaf_class_distribution": [0.013353115878999233, 0.23887240886688232, 0.00699448911473155, 0.005298855248838663, 0.20517168939113617, 0.0027554049156606197, 0.12399321794509888, 0.20178040862083435, 0.00869012251496315, 0.1930902898311615]
     }
   ],
+  "two_convolution_follow_up": {
+    "command": "caffeinate -i uv run python scripts/analysis/train_impurity_convnet.py --criteria gini,entropy --epochs 20 --batch-size 1024 --learning-rate 0.001 --weight-decay 0.0001 --balance-weight 0.05 --seed 0 --num-workers 0 --device cpu --output-dir out/neural_impurity_stump_2conv_cpu_2026-07-21",
+    "architecture": "Conv(1,16,3) -> ReLU -> MaxPool(2) -> Conv(16,32,3) -> ReLU -> adaptive average pool -> Linear(32,1); no residual connection",
+    "parameter_count": 4833,
+    "parameter_reduction_from_three_convolutions": 0.793117,
+    "device": "cpu",
+    "residual_connection": false,
+    "residual_rationale": "Both objectives optimized normally, generalized from train to test, and recovered the same category-level questions up to leaf orientation. The entropy gap therefore indicates reduced representational capacity rather than a vanishing-gradient failure in a two-layer network.",
+    "results": {
+      "gini": {
+        "checkpoint": "out/neural_impurity_stump_2conv_cpu_2026-07-21/gini.pt",
+        "checkpoint_sha256": "8373ff0ca54df8aea19617991ddbfc201733baffd1822eed6a8b5e080e826812",
+        "train_hard": {"parent_impurity": 0.8997118473052979, "child_weighted_impurity": 0.7979483604431152, "absolute_reduction": 0.10176348686218262, "relative_reduction": 0.11310675740242004, "left_mass": 0.11031666398048401, "right_mass": 0.8896833062171936},
+        "canonical_test_soft": {"parent_impurity": 0.8996496200561523, "child_weighted_impurity": 0.7991294860839844, "absolute_reduction": 0.10052013397216797, "relative_reduction": 0.11173253506422043, "left_mass": 0.11232168227434158, "right_mass": 0.8876783847808838},
+        "canonical_test_hard": {"parent_impurity": 0.8996496200561523, "child_weighted_impurity": 0.7951759696006775, "absolute_reduction": 0.10447365045547485, "relative_reduction": 0.11612704396247864, "left_mass": 0.11219999939203262, "right_mass": 0.8877999782562256},
+        "hard_test_per_digit_right_fraction": [1.0, 0.035242289304733276, 1.0, 1.0, 0.9989816546440125, 1.0, 0.9906054139137268, 0.9873540997505188, 0.9989733099937439, 0.9970267415046692],
+        "comparison_to_three_convolutions": "Same digit-1-vs-rest question up to leaf orientation; hard test relative reduction decreased by 0.47 percentage points."
+      },
+      "entropy": {
+        "checkpoint": "out/neural_impurity_stump_2conv_cpu_2026-07-21/entropy.pt",
+        "checkpoint_sha256": "463cb74ff102c8843dab6ae7381f6c5216e4f11c0ec9a77e339fddfb14db5d42",
+        "train_hard": {"parent_impurity": 0.9993807077407837, "child_weighted_impurity": 0.869362473487854, "absolute_reduction": 0.1300182342529297, "relative_reduction": 0.13009880483150482, "left_mass": 0.4626833200454712, "right_mass": 0.5373166799545288},
+        "canonical_test_soft": {"parent_impurity": 0.9992457628250122, "child_weighted_impurity": 0.86786949634552, "absolute_reduction": 0.1313762664794922, "relative_reduction": 0.13147543370723724, "left_mass": 0.4621591567993164, "right_mass": 0.5378408432006836},
+        "canonical_test_hard": {"parent_impurity": 0.9992457628250122, "child_weighted_impurity": 0.8603253364562988, "absolute_reduction": 0.13892042636871338, "relative_reduction": 0.13902528584003448, "left_mass": 0.46389999985694885, "right_mass": 0.5360999703407288},
+        "hard_test_per_digit_right_fraction": [0.718367338180542, 0.0044052861630916595, 0.9263566136360168, 0.9633663296699524, 0.11608961224555969, 0.9686098694801331, 0.4050104320049286, 0.17412450909614563, 0.8501026630401611, 0.3468781113624573],
+        "comparison_to_three_convolutions": "Same {0,2,3,5,8} versus {1,4,6,7,9} majority partition up to leaf orientation; hard test relative reduction decreased by 7.07 percentage points."
+      }
+    }
+  },
   "train_test_generalization": {
     "routing": "hard threshold at P(right) >= 0.5; no parameters or thresholds selected on test",
     "gini_splitter": {
@@ -87,5 +116,5 @@
       "train_test_leaf_distribution_total_variation": {"left": 0.016541189630515873, "right": 0.015314748510718346}
     }
   },
-  "conclusion": "A single CNN with one binary output can learn a nondegenerate impurity-reducing split without performing multiclass classification. Gini learned an almost pure digit-1-vs-rest split; entropy learned a balanced multi-digit grouping. These are suitable primitives for a recursively grown neural decision tree."
+  "conclusion": "A single CNN with one binary output can learn a nondegenerate impurity-reducing split without performing multiclass classification. Gini learned an almost pure digit-1-vs-rest split; entropy learned a balanced multi-digit grouping. A two-convolution version retained the qualitative questions with 79.31% fewer parameters, but its entropy reduction fell materially, so the three-convolution network remains the stronger splitter."
 }
