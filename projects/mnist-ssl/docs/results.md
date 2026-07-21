@@ -40,6 +40,8 @@ were fixed in advance and did not change training. Because there was no
 validation-based epoch selection, bold entries below are descriptive observed
 maxima rather than deployment selections.
 
+### Canonical test accuracy
+
 | Backbone | Head | 50 epochs | 75 epochs | 100 epochs | 150 epochs |
 |---|---|---:|---:|---:|---:|
 | I-JEPA-300 | Linear | 99.33% (67) | 99.36% (64) | 99.41% (59) | **99.45% (55)** |
@@ -49,9 +51,24 @@ maxima rather than deployment selections.
 | DINOv2 epoch-75 CLS | Linear | 99.45% (55) | 99.48% (52) | **99.51% (49)** | 99.49% (51) |
 | DINOv2 epoch-75 CLS | Nonlinear-64 | **99.54% (46)** | 99.50% (50) | 99.50% (50) | **99.54% (46)** |
 
-The manually reviewed-label view peaks at 99.59% (41 errors among 9,998) for
-the 150-epoch DINO nonlinear trajectory. Exact train, canonical-test, and
-reviewed-test measurements plus checkpoint and backbone hashes are in the
+### Corrected/reviewed-label test accuracy
+
+The fixed review policy relabels eight test examples and excludes two
+ambiguous examples, leaving 9,998 scored examples. Accuracy and error counts
+under that policy are:
+
+| Backbone | Head | 50 epochs | 75 epochs | 100 epochs | 150 epochs |
+|---|---|---:|---:|---:|---:|
+| I-JEPA-300 | Linear | 99.35% (65) | 99.38% (62) | 99.45% (55) | **99.47% (53)** |
+| I-JEPA-300 | Nonlinear-64 | 99.49% (51) | 99.48% (52) | 99.49% (51) | **99.51% (49)** |
+| I-JEPA-500 | Linear | 99.38% (62) | 99.43% (57) | **99.46% (54)** | 99.43% (57) |
+| I-JEPA-500 | Nonlinear-64 | 99.56% (44) | 99.54% (46) | 99.50% (50) | **99.58% (42)** |
+| DINOv2 epoch-75 CLS | Linear | 99.49% (51) | 99.52% (48) | **99.55% (45)** | **99.55% (45)** |
+| DINOv2 epoch-75 CLS | Nonlinear-64 | 99.58% (42) | 99.54% (46) | 99.55% (45) | **99.59% (41)** |
+
+The corrected/reviewed view peaks at 99.59% (41 errors) for the 150-epoch DINO
+nonlinear trajectory. Exact train, canonical-test, and reviewed-test
+measurements plus checkpoint and backbone hashes are in the
 [LoRA reproduction record](../results/reproductions/2026-07-20-lora-backbone-probes.json).
 
 ## Pre-DINOv2 I-JEPA ensemble
