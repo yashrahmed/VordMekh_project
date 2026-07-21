@@ -109,6 +109,18 @@ caffeinate -i uv run python scripts/analysis/train_impurity_tree_depth_two.py \
   --output-dir out/neural_impurity_tree_depth_two_2026-07-21
 ```
 
+Grow the three mixed leaves of the frozen entropy tree one more level. Leaf 3,
+which is already almost entirely digit `1`, remains terminal; all three new
+splitters finish training before the test set is loaded:
+
+```bash
+caffeinate -i uv run python scripts/analysis/train_impurity_tree_depth_three.py \
+  --epochs 20 --batch-size 1024 --seed 0 --device cpu \
+  --root-checkpoint out/neural_impurity_stump_2026-07-21/entropy.pt \
+  --depth-two-checkpoint-dir out/neural_impurity_tree_depth_two_2026-07-21 \
+  --output-dir out/neural_impurity_tree_depth_three_entropy_2026-07-21
+```
+
 Re-run the current train-selected comparison:
 
 ```bash

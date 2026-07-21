@@ -1,0 +1,155 @@
+{
+  "schema_version": 1,
+  "name": "mnist-frozen-entropy-neural-impurity-tree-depth-three",
+  "date": "2026-07-21",
+  "protocol": {
+    "entrypoint": "scripts/analysis/train_impurity_tree_depth_three.py",
+    "command": "caffeinate -i uv run python scripts/analysis/train_impurity_tree_depth_three.py --epochs 20 --batch-size 1024 --learning-rate 0.001 --weight-decay 0.0001 --balance-weight 0.05 --seed 0 --num-workers 0 --device cpu --root-checkpoint out/neural_impurity_stump_2026-07-21/entropy.pt --depth-two-checkpoint-dir out/neural_impurity_tree_depth_two_2026-07-21 --dataset-dir dataset --output-dir out/neural_impurity_tree_depth_three_entropy_2026-07-21",
+    "architecture": "one frozen original 23361-parameter entropy root, two frozen original 23361-parameter depth-two children, and three independently trained original 23361-parameter splitters below depth-two leaves 0, 1, and 2; depth-two leaf 3 remains terminal",
+    "objective": "sample-weighted normalized Shannon entropy of two differentiable leaves plus a 0.05 label-free balance penalty; no ten-class head and no classification cross-entropy",
+    "routing": "hard routing at P(right) >= 0.5 through the frozen root and frozen depth-two child; each new splitter is trained only on its routed MNIST-train subset",
+    "optimization": "three fresh splitters; AdamW with cosine decay; no ancestor parameters in an optimizer; no end-to-end gradients",
+    "device": "cpu",
+    "seed": 0,
+    "epochs": 20,
+    "batch_size": 1024,
+    "learning_rate": 0.001,
+    "weight_decay": 0.0001,
+    "balance_weight": 0.05,
+    "elapsed_training_seconds": 214.84869787469506,
+    "test_used_for_selection": false,
+    "test_policy": "all three new splitters finished before canonical MNIST test was loaded; no threshold, epoch, architecture, or parameter was selected on test"
+  },
+  "final_leaf_index": {
+    "0": "leaf_0/grandchild_left",
+    "1": "leaf_0/grandchild_right",
+    "2": "leaf_1/grandchild_left",
+    "3": "leaf_1/grandchild_right",
+    "4": "leaf_2/grandchild_left",
+    "5": "leaf_2/grandchild_right",
+    "6": "leaf_3/terminal"
+  },
+  "ancestors": {
+    "root_checkpoint": "out/neural_impurity_stump_2026-07-21/entropy.pt",
+    "root_checkpoint_sha256": "cccb960afab792f80fafccfe45068e38e9244646c1aa6ec9af27efb410649737",
+    "root_state_sha256_before": "66a0e2b21e3d1da6763131cdeea01349c0002757d770dca836727f4ebb56b6ea",
+    "root_state_sha256_after": "66a0e2b21e3d1da6763131cdeea01349c0002757d770dca836727f4ebb56b6ea",
+    "depth_two_left_checkpoint": "out/neural_impurity_tree_depth_two_2026-07-21/entropy_root_left.pt",
+    "depth_two_left_checkpoint_sha256": "6a089191e56b917242edfb463f7ee959a67c745389d109a794af5c5858ca36dc",
+    "depth_two_left_state_sha256_before": "5483ddc850b6ec37d018f1fb77f591b044d42483f46a2055e6fdd92dca9321e5",
+    "depth_two_left_state_sha256_after": "5483ddc850b6ec37d018f1fb77f591b044d42483f46a2055e6fdd92dca9321e5",
+    "depth_two_right_checkpoint": "out/neural_impurity_tree_depth_two_2026-07-21/entropy_root_right.pt",
+    "depth_two_right_checkpoint_sha256": "54ebb925ad01c61ceb0a7d693f1427fe149ca800ba1715590c15f052ffd28035",
+    "depth_two_right_state_sha256_before": "0f4c52f863dcec162250e32a6232145176935997d2a1b6057ac13c38cf5fdda7",
+    "depth_two_right_state_sha256_after": "0f4c52f863dcec162250e32a6232145176935997d2a1b6057ac13c38cf5fdda7",
+    "all_unchanged": true
+  },
+  "new_splitters": {
+    "leaf_0": {
+      "training_examples": 14973,
+      "test_examples": 2387,
+      "checkpoint": "out/neural_impurity_tree_depth_three_entropy_2026-07-21/entropy_leaf_0.pt",
+      "checkpoint_sha256": "c4f4e3f098804a2daf5541074c6b475efcc7882c3e2aeee2557b86f0e41b66d7",
+      "train_hard": {"parent_impurity": 0.6245831847190857, "child_weighted_impurity": 0.4403134882450104, "absolute_reduction": 0.18426969647407532, "relative_reduction": 0.2950282692909241, "left_mass": 0.36866360902786255, "right_mass": 0.6313363909721375},
+      "canonical_test_hard": {"parent_impurity": 0.600563108921051, "child_weighted_impurity": 0.39994731545448303, "absolute_reduction": 0.200615793466568, "relative_reduction": 0.3340461552143097, "left_mass": 0.3896103799343109, "right_mass": 0.6103895902633667},
+      "train_per_digit_right_fraction": [0.0788436233997345, 0.3636363744735718, 0.8814015984535217, 0.9056603908538818, 0.7954545617103577, 0.8091602921485901, 0.896928071975708, 0.692307710647583, 0.9822808504104614, 0.8523489832878113],
+      "canonical_test_per_digit_right_fraction": [0.05429864302277565, 0.0, 0.8742138147354126, 1.0, 0.6666666865348816, 0.6666666865348816, 0.8971428275108337, 0.5, 0.9808988571166992, 0.875],
+      "routing_pearson_train_test": 0.944235853451051,
+      "per_digit_routing_mae": 0.09775457046926021,
+      "interpretation": "The high aggregate routing error is driven by categories with very few examples in this parent. Its dominant categories are stable: digit 0 routes left while digits 8 and 6 route right."
+    },
+    "leaf_1": {
+      "training_examples": 16990,
+      "test_examples": 2895,
+      "checkpoint": "out/neural_impurity_tree_depth_three_entropy_2026-07-21/entropy_leaf_1.pt",
+      "checkpoint_sha256": "4f2421f258f9dd6281049f44cf91a0121f06b0363be589d63415a557ff4ac74a",
+      "train_hard": {"parent_impurity": 0.6173213720321655, "child_weighted_impurity": 0.5836036205291748, "absolute_reduction": 0.03371775150299072, "relative_reduction": 0.0546194463968277, "left_mass": 0.4051206707954407, "right_mass": 0.5948793292045593},
+      "canonical_test_hard": {"parent_impurity": 0.6095812320709229, "child_weighted_impurity": 0.5707724094390869, "absolute_reduction": 0.03880882263183594, "relative_reduction": 0.06366472691297531, "left_mass": 0.44455957412719727, "right_mass": 0.5554404258728027},
+      "train_per_digit_right_fraction": [0.5631067752838135, 0.6770833134651184, 0.3227282762527466, 0.6002719402313232, 0.4736842215061188, 0.8222007751464844, 0.5939849615097046, 0.6175548434257507, 0.670694887638092, 0.6309012770652771],
+      "canonical_test_per_digit_right_fraction": [0.6060606241226196, 0.2857142984867096, 0.2809523940086365, 0.5575942993164062, 0.5, 0.806526780128479, 0.5652173757553101, 0.5810810923576355, 0.8372092843055725, 0.529411792755127],
+      "routing_pearson_train_test": 0.6305130126279377,
+      "per_digit_routing_mae": 0.0894011378288269,
+      "interpretation": "This is the weakest new node. It preferentially routes digit 2 left and digit 5 right, while digit 3 is divided between the two children. The only majority-side train/test flip is digit 1, represented by just 0.57% of train and 0.24% of test examples in this parent."
+    },
+    "leaf_2": {
+      "training_examples": 21474,
+      "test_examples": 3589,
+      "checkpoint": "out/neural_impurity_tree_depth_three_entropy_2026-07-21/entropy_leaf_2.pt",
+      "checkpoint_sha256": "ebe1de52bbdfa3c73dc77f6e290c495a8ad8c7e8cb572a3768f1adebc49a4f96",
+      "train_hard": {"parent_impurity": 0.698345959186554, "child_weighted_impurity": 0.5065538883209229, "absolute_reduction": 0.1917920708656311, "relative_reduction": 0.2746376097202301, "left_mass": 0.6707646250724792, "right_mass": 0.32923534512519836},
+      "canonical_test_hard": {"parent_impurity": 0.689005434513092, "child_weighted_impurity": 0.4981303811073303, "absolute_reduction": 0.19087505340576172, "relative_reduction": 0.277029812335968, "left_mass": 0.6912789344787598, "right_mass": 0.3087210953235626},
+      "train_per_digit_right_fraction": [0.03341902419924736, 0.41129031777381897, 0.7430830001831055, 0.7434554696083069, 0.009265733882784843, 0.8272727131843567, 0.0021212121937423944, 0.9600135087966919, 0.09803921729326248, 0.15506088733673096],
+      "canonical_test_per_digit_right_fraction": [0.0634920671582222, 0.1666666716337204, 0.8484848737716675, 0.8399999737739563, 0.00518672214820981, 0.6153846383094788, 0.010327022522687912, 0.9609704613685608, 0.09756097197532654, 0.13091309368610382],
+      "routing_pearson_train_test": 0.9557725063421182,
+      "per_digit_routing_mae": 0.07263989553321153,
+      "interpretation": "The dominant categories are stable: digit 7 routes right, while digits 4, 6, and 9 route left."
+    }
+  },
+  "whole_tree": {
+    "train": {
+      "root_hard_relative_reduction": 0.20312538743019104,
+      "depth_two_hard_weighted_impurity": 0.5840266346931458,
+      "depth_two_hard_relative_reduction": 0.4156114459037781,
+      "depth_three_soft_weighted_impurity": 0.47076815366744995,
+      "depth_three_soft_relative_reduction": 0.5289401412010193,
+      "depth_three_hard_weighted_impurity": 0.459852010011673,
+      "depth_three_hard_relative_reduction": 0.5398630499839783,
+      "hard_relative_incremental_reduction_from_depth_two": 0.21261808504113094,
+      "hard_leaf_mass_fraction": [0.09200000017881393, 0.15755000710487366, 0.11471666395664215, 0.1684499979019165, 0.24006666243076324, 0.11783333122730255, 0.10938332974910736],
+      "per_digit_final_leaf_fraction": [
+        [0.8284652829170227, 0.0709100142121315, 0.015195002779364586, 0.019584670662879944, 0.06348134577274323, 0.0021948337089270353, 0.00016883335774764419],
+        [0.002076535252854228, 0.0011865915730595589, 0.004598041996359825, 0.009641055949032307, 0.010827647522091866, 0.007564520929008722, 0.9641056060791016],
+        [0.02215508557856083, 0.16465257108211517, 0.521651566028595, 0.24857334792613983, 0.010909701697528362, 0.031554214656353, 0.0005035246722400188],
+        [0.0008155276300385594, 0.007829065434634686, 0.38362419605255127, 0.5760887265205383, 0.007992170751094818, 0.023160984739661217, 0.0004893165896646678],
+        [0.003081136615946889, 0.011982197873294353, 0.0017117426032200456, 0.0015405683079734445, 0.9700444936752319, 0.00907223578542471, 0.0025676137302070856],
+        [0.004611695185303688, 0.019553588703274727, 0.16989485919475555, 0.7856484055519104, 0.0035048883873969316, 0.016786571592092514, 0.0],
+        [0.0430888831615448, 0.37495777010917664, 0.009124704636633396, 0.013349104672670364, 0.5564379692077637, 0.0011828320566564798, 0.0018587360391393304],
+        [0.0006384676671586931, 0.0014365522656589746, 0.01947326399385929, 0.03144453465938568, 0.0378292091190815, 0.9082202911376953, 0.0009577015298418701],
+        [0.016065629199147224, 0.8906170129776001, 0.018629293888807297, 0.03794223070144653, 0.03144761547446251, 0.003418219042941928, 0.0018800204852595925],
+        [0.01109430193901062, 0.06404437869787216, 0.01445621158927679, 0.02471003495156765, 0.7465119957923889, 0.13699781894683838, 0.0021852413192391396]
+      ]
+    },
+    "canonical_test": {
+      "parent_impurity": 0.9992457628250122,
+      "root_hard_relative_reduction": 0.20977267622947693,
+      "depth_two_hard_weighted_impurity": 0.5712075233459473,
+      "depth_two_hard_relative_reduction": 0.42836132645606995,
+      "depth_three_soft_weighted_impurity": 0.4572327733039856,
+      "depth_three_soft_relative_reduction": 0.5424221158027649,
+      "depth_three_hard_weighted_impurity": 0.4435803294181824,
+      "depth_three_hard_relative_reduction": 0.5560848712921143,
+      "hard_relative_incremental_reduction_from_depth_two": 0.22343402128208403,
+      "hard_leaf_mass_fraction": [0.09300000220537186, 0.14569999277591705, 0.12870000302791595, 0.1607999950647354, 0.24809999763965607, 0.11079999804496765, 0.11289999634027481],
+      "hard_leaf_impurity": [0.2142053097486496, 0.5185060501098633, 0.5514241456985474, 0.5862582921981812, 0.5830895900726318, 0.3078923225402832, 0.036273859441280365],
+      "leaf_class_distribution": [
+        [0.898924708366394, 0.0010752688394859433, 0.02150537632405758, 0.0, 0.004301075357943773, 0.007526881527155638, 0.03870967775583267, 0.0010752688394859433, 0.01827956922352314, 0.008602150715887547],
+        [0.03294440731406212, 0.0, 0.09540151059627533, 0.002745367120951414, 0.005490734241902828, 0.00960878562182188, 0.21551132202148438, 0.0006863417802378535, 0.5991764068603516, 0.03843514248728752],
+        [0.010101010091602802, 0.0038850039709359407, 0.469308465719223, 0.33721834421157837, 0.0007770007941871881, 0.12898212671279907, 0.0077700079418718815, 0.024087024852633476, 0.005439005326479673, 0.01243201270699501],
+        [0.012437811121344566, 0.001243781065568328, 0.14676617085933685, 0.34017413854599, 0.000621890532784164, 0.4303482472896576, 0.00808457750827074, 0.02674129419028759, 0.02238805964589119, 0.011194029822945595],
+        [0.023780733346939087, 0.00403063278645277, 0.002015316393226385, 0.0016122531378641725, 0.38653770089149475, 0.002015316393226385, 0.2317613810300827, 0.014913341030478477, 0.014913341030478477, 0.3184199929237366],
+        [0.003610108280554414, 0.001805054140277207, 0.02527075819671154, 0.018953068181872368, 0.004512635525316, 0.007220216561108828, 0.0054151625372469425, 0.8222021460533142, 0.003610108280554414, 0.10740072280168533],
+        [0.0, 0.9875996708869934, 0.0, 0.0, 0.0035429582931101322, 0.0, 0.0035429582931101322, 0.0035429582931101322, 0.0, 0.0017714791465550661]
+      ],
+      "per_digit_final_leaf_fraction": [
+        [0.8530611991882324, 0.04897959157824516, 0.013265306130051613, 0.020408162847161293, 0.06020408123731613, 0.004081632476300001, 0.0],
+        [0.0008810572908259928, 0.0, 0.0044052861630916595, 0.0017621145816519856, 0.008810572326183319, 0.0017621145816519856, 0.9823788404464722],
+        [0.01937984488904476, 0.13468992710113525, 0.5852712988853455, 0.22868217527866364, 0.00484496122226119, 0.027131782844662666, 0.0],
+        [0.0, 0.003960396163165569, 0.4297029674053192, 0.5415841341018677, 0.003960396163165569, 0.020792080089449883, 0.0],
+        [0.004073319956660271, 0.008146639913320541, 0.0010183299891650677, 0.0010183299891650677, 0.976578414440155, 0.005091649480164051, 0.004073319956660271],
+        [0.00784753356128931, 0.01569506712257862, 0.18609865009784698, 0.7757847309112549, 0.005605380982160568, 0.008968610316514969, 0.0],
+        [0.037578288465738297, 0.32776618003845215, 0.010438413359224796, 0.013569937087595463, 0.6002087593078613, 0.00626304792240262, 0.004175365436822176],
+        [0.0009727626456879079, 0.0009727626456879079, 0.030155641958117485, 0.04182879254221916, 0.03599221631884575, 0.8861867785453796, 0.0038910505827516317],
+        [0.01745379902422428, 0.8963038921356201, 0.00718685844913125, 0.03696098551154137, 0.03798767924308777, 0.00410677632316947, 0.0],
+        [0.007928642444312572, 0.05550049617886543, 0.015857284888625145, 0.017839444801211357, 0.7829534411430359, 0.1179385557770729, 0.001982160611078143]
+      ]
+    },
+    "train_test_audit": {
+      "majority_final_leaf_stable_for_all_digits": true,
+      "majority_final_leaf_by_digit": [0, 6, 2, 3, 4, 3, 4, 5, 1, 4],
+      "mean_per_digit_route_total_variation": 0.031503256878932004,
+      "maximum_per_digit_route_total_variation": {"digit": 2, "value": 0.0636197435669601},
+      "leaf_distribution_total_variation": [0.015614760894095525, 0.04792283088318072, 0.02412336436100304, 0.018092963320668787, 0.016082535905297846, 0.024370783648919314, 0.00575304361700546]
+    }
+  },
+  "conclusion": "Growing only the three mixed depth-two leaves raises hard held-out entropy reduction from 42.84% to 55.61%, a 22.34% reduction of the impurity remaining after depth two. Leaves 0 and 2 provide strong local held-out gains of 33.40% and 27.70%; leaf 1 provides a weaker but positive 6.37%. All ten digits retain the same majority final leaf between train and test, and leaf label distributions differ by at most 4.79% total variation. The result supports greedy independent growth with a minimum held-out local-gain threshold; the digit-1 terminal remains unsplit."
+}

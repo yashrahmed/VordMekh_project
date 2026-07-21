@@ -1086,6 +1086,41 @@ head edges past every fine-tuned model.
     matrices and checkpoint hashes are in the
     [depth-two reproduction record](../results/reproductions/2026-07-21-neural-impurity-tree-depth-two.json).
 
+31. **Selective entropy growth reaches 55.61% held-out impurity reduction.**
+    Kept the entropy root and both depth-two children frozen, then hard-routed
+    MNIST train through that fixed tree. Three fresh original 23,361-parameter
+    CNN splitters were trained independently below mixed leaves 0, 1, and 2;
+    the 98.76%-digit-`1` leaf 3 stayed terminal. This creates seven final
+    leaves without any end-to-end gradients. All three new nodes completed
+    training before the canonical test split was loaded.
+
+    | new parent | train / test examples | train hard gain | test hard gain | held-out split |
+    |---|---:|---:|---:|---|
+    | leaf 0 (`0/8/6`) | 14,973 / 2,387 | 29.50% | **33.40%** | `0` versus mostly `8/6` |
+    | leaf 1 (`2/3/5`) | 16,990 / 2,895 | 5.46% | **6.37%** | `2` versus mostly `3/5` |
+    | leaf 2 (`4/7/9/6`) | 21,474 / 3,589 | 27.46% | **27.70%** | mostly `4/6/9` versus `7` |
+
+    | routing / split | root reduction | depth-two reduction | depth-three reduction | gain on impurity remaining after depth two |
+    |---|---:|---:|---:|---:|
+    | train, hard | 20.31% | 41.56% | **53.99%** | 21.26% |
+    | test, soft new children | 20.98% | 42.24% | **54.24%** | 19.95% |
+    | **test, hard** | **20.98%** | **42.84%** | **55.61%** | **22.34%** |
+
+    The hard test leaf masses are 9.30%, 14.57%, 12.87%, 16.08%, 24.81%,
+    11.08%, and 11.29%. Their leading categories are respectively `0`
+    (89.89%), `8` (59.92%, with 21.55% `6`), `2` (46.93%), `5` (43.03%),
+    `4` (38.65%, with `9/6`), `7` (82.22%), and `1` (98.76%). The middle
+    `2/3/5` node is a plausible candidate for pruning under a stricter local
+    gain threshold, but it does produce a positive held-out improvement.
+
+    Train and test again describe the same global tree. Every digit has the
+    same majority final leaf in both splits; mean per-digit routing total
+    variation is 3.15 points and the maximum is 6.36 points for digit `2`.
+    Per-leaf train/test label-distribution total variation ranges from 0.58 to
+    4.79 points. Ancestor state fingerprints match before and after training
+    and evaluation. Exact routing matrices and all six checkpoint/state hashes
+    are in the [depth-three entropy reproduction record](../results/reproductions/2026-07-21-neural-impurity-tree-depth-three-entropy.json).
+
 **Caveat now flips to the task.** With the epoch confound removed, MNIST's ~97%
 pixel floor leaves little room to separate these pretexts, but the explicit goal
 is now to push the unsupervised MNIST pipeline past **99.7%**. The best

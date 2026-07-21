@@ -49,6 +49,7 @@ generated artifacts.
 | `analysis/train_ijepa_nonlinear_probe.py` | Compare the matched small nonlinear head on a specified frozen 300- or 500-epoch I-JEPA member |
 | `analysis/train_impurity_convnet.py` | Train one two-convolution binary splitter to reduce Gini or Shannon impurity across two leaves |
 | `analysis/train_impurity_tree_depth_two.py` | Freeze each original impurity stump and independently train one child splitter on each routed leaf |
+| `analysis/train_impurity_tree_depth_three.py` | Freeze the entropy tree and independently split its mixed depth-two leaves 0, 1, and 2 |
 | `analysis/grid_dino_ijepa500_nonlinear_ensemble.py` | Grid raw-logit and probability mixtures of the best DINO and I-JEPA-500 nonlinear probes |
 | `analysis/grid_dino_ijepa_nonlinear_triplet.py` | Coarse-to-fine raw-logit and probability grids over all three nonlinear probes |
 | `analysis/calibrate_nonlinear_triplet.py` | Fit training-only temperatures and class-specific diagonal weights over the three nonlinear probes |

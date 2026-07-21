@@ -221,8 +221,12 @@ def tree_statistics(
     memberships: torch.Tensor,
     labels: torch.Tensor,
     criterion: str,
+    leaf_names: tuple[str, ...] = FINAL_LEAVES,
 ) -> dict:
-    """Report soft-child and hard-child statistics for the four-leaf tree."""
+    """Report soft-child and hard-child statistics for a multi-leaf tree."""
+
+    if len(leaf_names) != memberships.shape[1]:
+        raise ValueError("leaf_names must contain one name per membership column")
 
     soft = _multi_leaf_partition_statistics(memberships, labels, criterion)
     hard_leaf = memberships.argmax(dim=1)
@@ -230,7 +234,7 @@ def tree_statistics(
         memberships.dtype
     )
     return {
-        "leaf_names": FINAL_LEAVES,
+        "leaf_names": leaf_names,
         "soft": soft,
         "hard": _multi_leaf_partition_statistics(hard, labels, criterion),
     }
