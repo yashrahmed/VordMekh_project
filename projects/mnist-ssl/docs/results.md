@@ -1,8 +1,9 @@
 # Curated MNIST results
 
-All linear-probe and k-NN results use frozen self-supervised backbones. Ensemble
-rows in the reported leaderboard use rules fixed without test labels;
-historically observed individual milestones remain labeled as such.
+Frozen-probe and k-NN rows use fixed self-supervised backbones. LoRA rows freeze
+the original tensors and train separate low-rank adapters. Ensemble rows in the
+reported leaderboard use rules fixed without test labels; historically observed
+individual milestones remain labeled as such.
 
 ## Reported leaderboard
 
@@ -11,9 +12,12 @@ historically observed individual milestones remain labeled as such.
 | DINOv2 + I-JEPA-300, equal logits | Prespecified weights | 99.47% | 53 |
 | DINOv2 CLS, epoch 75 of fixed-150 schedule | Best individual observed | 99.42% | 58 |
 | DINOv2 CLS nonlinear-64 probe | Best nonlinear individual observed | 99.52% | 48 |
+| DINOv2 CLS + LoRA, linear head (100 epochs) | Prespecified milestone observed | 99.51% | 49 |
+| DINOv2 CLS + LoRA, nonlinear head (50/150 epochs) | Prespecified milestones observed | 99.54% | 46 |
 | I-JEPA 56x56 flatten, epoch 300 | Best individual I-JEPA observed | 99.36% | 64 |
 | I-JEPA 56x56 flatten, epoch 500 | Individual comparison | 99.34% | 66 |
 | I-JEPA-500 flatten nonlinear-64 probe | Best nonlinear milestone observed | 99.42% | 58 |
+| **I-JEPA-500 flatten + LoRA, nonlinear head (150 epochs)** | **Prespecified milestone observed** | **99.58%** | **42** |
 | I-JEPA-only linear-probe triplet | Train-selected logits | 99.42% | 58 |
 | DINOv2 + I-JEPA-300 + I-JEPA-500 linear probes | Train-selected logits | 99.45% | 55 |
 | **DINOv2 + I-JEPA-300 + I-JEPA-500 nonlinear probes** | **Train-selected probabilities** | **99.63%** | **37** |
@@ -21,6 +25,51 @@ historically observed individual milestones remain labeled as such.
 The train-selected nonlinear triplet is the reported best ensemble. Its
 probability score space and `0.556/0.222/0.222` weights were frozen before test
 prediction artifacts were loaded.
+
+## LoRA backbone adaptation
+
+Rank-8 LoRA adapters were trained across every attention and MLP matrix in all
+four transformer blocks. DINOv2 uses 20 adapted matrices (69,888 parameters);
+each I-JEPA target tower uses 16 (65,536 parameters). The original parameters
+were frozen, fingerprinted before and after every trajectory, and excluded from
+the saved milestone checkpoints. All six fingerprints were unchanged.
+
+Each backbone/head pair followed one fixed 150-epoch trajectory with constant
+learning rates (`1e-4` for LoRA and `1e-3` for the head). The four test reads
+were fixed in advance and did not change training. Because there was no
+validation-based epoch selection, bold entries below are descriptive observed
+maxima rather than deployment selections.
+
+### Canonical test accuracy
+
+| Backbone | Head | 50 epochs | 75 epochs | 100 epochs | 150 epochs |
+|---|---|---:|---:|---:|---:|
+| I-JEPA-300 | Linear | 99.33% (67) | 99.36% (64) | 99.41% (59) | **99.45% (55)** |
+| I-JEPA-300 | Nonlinear-64 | 99.47% (53) | 99.44% (56) | 99.45% (55) | **99.49% (51)** |
+| I-JEPA-500 | Linear | 99.36% (64) | 99.43% (57) | **99.44% (56)** | 99.41% (59) |
+| I-JEPA-500 | Nonlinear-64 | 99.56% (44) | 99.52% (48) | 99.48% (52) | **99.58% (42)** |
+| DINOv2 epoch-75 CLS | Linear | 99.45% (55) | 99.48% (52) | **99.51% (49)** | 99.49% (51) |
+| DINOv2 epoch-75 CLS | Nonlinear-64 | **99.54% (46)** | 99.50% (50) | 99.50% (50) | **99.54% (46)** |
+
+### Corrected/reviewed-label test accuracy
+
+The fixed review policy relabels eight test examples and excludes two
+ambiguous examples, leaving 9,998 scored examples. Accuracy and error counts
+under that policy are:
+
+| Backbone | Head | 50 epochs | 75 epochs | 100 epochs | 150 epochs |
+|---|---|---:|---:|---:|---:|
+| I-JEPA-300 | Linear | 99.35% (65) | 99.38% (62) | 99.45% (55) | **99.47% (53)** |
+| I-JEPA-300 | Nonlinear-64 | 99.49% (51) | 99.48% (52) | 99.49% (51) | **99.51% (49)** |
+| I-JEPA-500 | Linear | 99.38% (62) | 99.43% (57) | **99.46% (54)** | 99.43% (57) |
+| I-JEPA-500 | Nonlinear-64 | 99.56% (44) | 99.54% (46) | 99.50% (50) | **99.58% (42)** |
+| DINOv2 epoch-75 CLS | Linear | 99.49% (51) | 99.52% (48) | **99.55% (45)** | **99.55% (45)** |
+| DINOv2 epoch-75 CLS | Nonlinear-64 | 99.58% (42) | 99.54% (46) | 99.55% (45) | **99.59% (41)** |
+
+The corrected/reviewed view peaks at 99.59% (41 errors) for the 150-epoch DINO
+nonlinear trajectory. Exact train, canonical-test, and reviewed-test
+measurements plus checkpoint and backbone hashes are in the
+[LoRA reproduction record](../results/reproductions/2026-07-20-lora-backbone-probes.json).
 
 ## Pre-DINOv2 I-JEPA ensemble
 

@@ -5,8 +5,11 @@ I-JEPA, ViT/conv masked autoencoders, frozen linear probes, nearest-neighbor
 evaluation, and classifier ensembles.
 
 The project asks how far label-free representation learning can push MNIST
-classification once the learned backbone is frozen. The current best individual
-model is a small nonlinear probe on frozen DINOv2 CLS features at **99.52%**.
+classification with frozen or parameter-efficiently adapted backbones. The
+current best frozen individual is a nonlinear probe on DINOv2 CLS features at
+**99.52%**. Rank-8 LoRA adaptation of the I-JEPA-500 target tower with a
+nonlinear head reaches an observed **99.58%** without changing any pretrained
+backbone tensor.
 The current best ensemble selected without test labels averages the DINOv2,
 I-JEPA-300, and I-JEPA-500 nonlinear probabilities. It reaches **99.63%** on
 the original labels and **99.66%** under the manually reviewed label policy.
@@ -77,6 +80,13 @@ uv run python scripts/evaluate/dinov2_frozen.py \
   --model models/dinov2_mnist_augmented_cls_150ep_epoch0075.pt \
   --pool cls \
   --output models/dinov2_mnist_augmented_cls_150ep_epoch0075_cls_linear50ep.pt
+```
+
+Run the complete LoRA backbone/probe matrix. The command follows fixed
+150-epoch trajectories and reports the prespecified 50/75/100/150 milestones:
+
+```bash
+caffeinate -i uv run python scripts/analysis/train_lora_backbone_probes.py
 ```
 
 Re-run the current train-selected comparison:
