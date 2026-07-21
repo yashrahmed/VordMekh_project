@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-"""Train the small CNN neural tree with Gini, entropy, and CE criteria."""
+"""Train one CNN binary splitter with Gini or Shannon leaf impurity."""
 
 from mnist_ssl.baselines.impurity_convnet import main
 

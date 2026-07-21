@@ -964,38 +964,36 @@ head edges past every fine-tuned model.
     The epoch maxima are descriptive because no validation split selected an
     epoch; all four requested test milestones are reported.
 
-28. **A convolutional neural tree learns from pure leaf impurity, but trails
-    direct supervision.** Built a 24K-parameter CNN that emits the 15 binary
-    decisions of a complete depth-4 soft tree. Gini and Shannon-entropy runs
-    used no per-example classifier loss: their only supervised objective was
-    the sample-weighted true-label impurity across 16 differentiable leaves,
-    plus a small label-free branch-balance penalty. Training labels then fixed
-    each leaf's class distribution before a single canonical-test evaluation.
-    A 23.9K-parameter softmax CNN with the identical convolutional trunk was the
-    control. All three seed-0 runs used AdamW for 20 epochs on all 60K training
-    examples.
+28. **One neural binary splitter reduces held-out class impurity.** Built a
+    23,361-parameter CNN with exactly one sigmoid routing output and two leaves.
+    There is no ten-class head and the leaves do not predict digits. The only
+    label-dependent objective is the sample-weighted Gini or normalized Shannon
+    impurity of the two differentiable leaf distributions; a small label-free
+    balance term discourages an empty leaf. Both seed-0 models used AdamW for a
+    fixed 20 epochs on all 60K training images, followed by one canonical-test
+    impurity measurement.
 
-    | criterion / prediction | train accuracy | test accuracy | test errors |
-    |---|---:|---:|---:|
-    | Gini, soft leaf mixture | 79.48% | **79.63%** | 2,037 |
-    | Gini, hard CART-style leaf | 79.12% | 79.44% | 2,056 |
-    | entropy, soft leaf mixture | 75.30% | **74.94%** | 2,506 |
-    | entropy, hard CART-style leaf | 74.82% | 74.15% | 2,585 |
-    | cross-entropy CNN control | 91.83% | **92.05%** | 795 |
+    | criterion / routing | test parent | test children | absolute reduction | relative reduction | left/right mass |
+    |---|---:|---:|---:|---:|---:|
+    | Gini, soft | 0.89965 | 0.79170 | 0.10795 | 12.00% | 88.75% / 11.25% |
+    | **Gini, hard** | 0.89965 | **0.79093** | **0.10872** | **12.08%** | 88.75% / 11.25% |
+    | entropy, soft | 0.99925 | 0.79644 | 0.20280 | 20.30% | 52.85% / 47.15% |
+    | **entropy, hard** | 0.99925 | **0.78963** | **0.20961** | **20.98%** | 52.82% / 47.18% |
 
-    Both impurity objectives reduced substantially and every hard-routed leaf
-    received training examples, so the trees did not collapse. Gini beat
-    entropy by 4.69 points under the soft rule, and soft versus hard inference
-    was close for both. The nearly identical train/test numbers also rule out
-    ordinary overfitting as the main gap. The result supports neural impurity
-    routing as a workable partitioning signal, but not pure impurity as a
-    replacement for per-example supervision: Gini remains 12.42 points behind
-    the matched cross-entropy control. A literal tree of independent neural
-    experts should therefore use impurity to choose or regularize routing while
-    retaining supervised expert losses, ideally with greedy or progressive
-    node growth rather than training all paths symmetrically from scratch.
-    Exact settings and checkpoint hashes are in the
-    [reproduction record](../results/reproductions/2026-07-20-neural-impurity-convnet.json).
+    The objectives discovered qualitatively different useful questions. Gini
+    isolated digit `1`: 98.33% of test ones routed right, the right leaf was
+    99.20% ones, and almost every other digit stayed left. Entropy favored a
+    balanced grouping. Its right-routing rates were 99.30% for `1`, 98.57% for
+    `4`, 61.06% for `6`, 92.61% for `7`, and 90.29% for `9`; digits `0`, `2`,
+    `3`, `5`, and `8` mostly routed left. Train and test reductions closely
+    matched for both criteria, showing that the learned questions generalized.
+
+    This establishes the intended primitive: a single neural net can act as an
+    impurity-reducing splitter without performing multiclass classification.
+    The next experiment can recursively train another independent splitter on
+    each resulting subset, with stopping based on held-out impurity gain and
+    minimum leaf size. Exact distributions, settings, and checkpoint hashes are
+    in the [reproduction record](../results/reproductions/2026-07-21-neural-impurity-stump.json).
 
 **Caveat now flips to the task.** With the epoch confound removed, MNIST's ~97%
 pixel floor leaves little room to separate these pretexts, but the explicit goal
