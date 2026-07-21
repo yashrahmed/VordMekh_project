@@ -89,6 +89,16 @@ Run the complete LoRA backbone/probe matrix. The command follows fixed
 caffeinate -i uv run python scripts/analysis/train_lora_backbone_probes.py
 ```
 
+Run the small convolutional neural-tree comparison. The Gini and entropy runs
+train differentiable binary routers from leaf class impurity; cross-entropy is
+the matched conventional CNN control:
+
+```bash
+caffeinate -i uv run python scripts/analysis/train_impurity_convnet.py \
+  --criteria gini,entropy,cross_entropy \
+  --epochs 20 --batch-size 1024 --depth 4 --seed 0
+```
+
 Re-run the current train-selected comparison:
 
 ```bash
