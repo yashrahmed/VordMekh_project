@@ -58,5 +58,34 @@
       "hard_test_right_leaf_class_distribution": [0.013353115878999233, 0.23887240886688232, 0.00699448911473155, 0.005298855248838663, 0.20517168939113617, 0.0027554049156606197, 0.12399321794509888, 0.20178040862083435, 0.00869012251496315, 0.1930902898311615]
     }
   ],
+  "train_test_generalization": {
+    "routing": "hard threshold at P(right) >= 0.5; no parameters or thresholds selected on test",
+    "gini_splitter": {
+      "train_weighted_shannon_entropy": 0.8595359385774776,
+      "test_weighted_shannon_entropy": 0.8534555530354286,
+      "test_minus_train_entropy": -0.006080385542048927,
+      "train_relative_criterion_reduction": 0.11737667769193649,
+      "test_relative_criterion_reduction": 0.12084466964006424,
+      "train_majority_groups": {"left": [0, 2, 3, 4, 5, 6, 7, 8, 9], "right": [1]},
+      "test_majority_groups": {"left": [0, 2, 3, 4, 5, 6, 7, 8, 9], "right": [1]},
+      "per_digit_right_fraction_pearson": 0.9999985430447303,
+      "per_digit_right_fraction_mae": 0.0020057380126672795,
+      "maximum_per_digit_difference": {"digit": 1, "absolute_difference": 0.016187846660614014},
+      "train_test_leaf_distribution_total_variation": {"left": 0.00880949362181127, "right": 0.0023696823336649686}
+    },
+    "entropy_splitter": {
+      "train_weighted_shannon_entropy": 0.7963811121170271,
+      "test_weighted_shannon_entropy": 0.7896313125434987,
+      "test_minus_train_entropy": -0.006749799573528392,
+      "train_relative_criterion_reduction": 0.20312538743019104,
+      "test_relative_criterion_reduction": 0.20977267622947693,
+      "train_majority_groups": {"left": [0, 2, 3, 5, 8], "right": [1, 4, 6, 7, 9]},
+      "test_majority_groups": {"left": [0, 2, 3, 5, 8], "right": [1, 4, 6, 7, 9]},
+      "per_digit_right_fraction_pearson": 0.9991174033493815,
+      "per_digit_right_fraction_mae": 0.013430271670222283,
+      "maximum_per_digit_difference": {"digit": 6, "absolute_difference": 0.05116766691207886},
+      "train_test_leaf_distribution_total_variation": {"left": 0.016541189630515873, "right": 0.015314748510718346}
+    }
+  },
   "conclusion": "A single CNN with one binary output can learn a nondegenerate impurity-reducing split without performing multiclass classification. Gini learned an almost pure digit-1-vs-rest split; entropy learned a balanced multi-digit grouping. These are suitable primitives for a recursively grown neural decision tree."
 }

@@ -988,6 +988,24 @@ head edges past every fine-tuned model.
     `3`, `5`, and `8` mostly routed left. Train and test reductions closely
     matched for both criteria, showing that the learned questions generalized.
 
+    A frozen train-versus-test audit confirmed both the entropy and category
+    structure. Test weighted Shannon entropy was slightly *lower* than train
+    for both learned questions, while the majority-side digit assignments were
+    identical:
+
+    | splitter | train/test weighted Shannon entropy | criterion-relative reduction, train -> test | per-digit routing correlation | mean / max routing change | majority-side grouping stable? |
+    |---|---:|---:|---:|---:|---:|
+    | Gini | 0.85954 / 0.85346 | 11.74% -> 12.08% | 0.999999 | 0.20 / 1.62 pt | yes |
+    | entropy | 0.79638 / 0.78963 | 20.31% -> 20.98% | 0.999117 | 1.34 / 5.12 pt | yes |
+
+    For Gini, both splits assigned only digit `1` to the right by majority. For
+    entropy, both assigned `{1,4,6,7,9}` right and `{0,2,3,5,8}` left. Digit
+    `6` accounted for entropy's largest train/test routing change (55.95% ->
+    61.06% right), but did not change sides. Train/test total-variation distance
+    between the full leaf label distributions was below 0.009 for either Gini
+    leaf and below 0.017 for either entropy leaf. No threshold or model choice
+    was changed after inspecting test.
+
     This establishes the intended primitive: a single neural net can act as an
     impurity-reducing splitter without performing multiclass classification.
     The next experiment can recursively train another independent splitter on
