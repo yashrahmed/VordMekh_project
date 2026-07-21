@@ -97,6 +97,30 @@ class SmallConvSplitter(nn.Module):
         return self.split(self.features(images).flatten(1)).squeeze(1)
 
 
+class OriginalConvSplitter(nn.Module):
+    """The original three-convolution, 23,361-parameter splitter."""
+
+    def __init__(self) -> None:
+        super().__init__()
+        self.features = nn.Sequential(
+            nn.Conv2d(1, 16, kernel_size=3, padding=1),
+            nn.ReLU(inplace=True),
+            nn.MaxPool2d(2),
+            nn.Conv2d(16, 32, kernel_size=3, padding=1),
+            nn.ReLU(inplace=True),
+            nn.MaxPool2d(2),
+            nn.Conv2d(32, 64, kernel_size=3, padding=1),
+            nn.ReLU(inplace=True),
+            nn.AdaptiveAvgPool2d(1),
+        )
+        self.split = nn.Linear(64, 1)
+
+    def forward(self, images: torch.Tensor) -> torch.Tensor:
+        """Return one unconstrained right-routing logit per image."""
+
+        return self.split(self.features(images).flatten(1)).squeeze(1)
+
+
 def leaf_memberships(split_logits: torch.Tensor) -> torch.Tensor:
     """Convert one split logit into ``[P(left), P(right)]`` per image."""
 
@@ -224,7 +248,7 @@ def mnist_loaders(config: ExperimentConfig) -> tuple[DataLoader, DataLoader]:
 
 
 def train_splitter(
-    model: SmallConvSplitter,
+    model: nn.Module,
     loader: DataLoader,
     criterion: str,
     config: ExperimentConfig,
@@ -277,7 +301,7 @@ def train_splitter(
 
 @torch.no_grad()
 def collect_memberships(
-    model: SmallConvSplitter,
+    model: nn.Module,
     loader: DataLoader,
     device: torch.device,
 ) -> tuple[torch.Tensor, torch.Tensor]:

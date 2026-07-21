@@ -98,6 +98,17 @@ caffeinate -i uv run python scripts/analysis/train_impurity_convnet.py \
   --criteria gini,entropy --epochs 20 --batch-size 1024 --seed 0 --device cpu
 ```
 
+Grow both original three-convolution stumps by one level without end-to-end
+training. The roots remain frozen and one fresh child is trained independently
+on each hard-routed training subset:
+
+```bash
+caffeinate -i uv run python scripts/analysis/train_impurity_tree_depth_two.py \
+  --criteria gini,entropy --epochs 20 --batch-size 1024 --seed 0 --device cpu \
+  --root-checkpoint-dir out/neural_impurity_stump_2026-07-21 \
+  --output-dir out/neural_impurity_tree_depth_two_2026-07-21
+```
+
 Re-run the current train-selected comparison:
 
 ```bash

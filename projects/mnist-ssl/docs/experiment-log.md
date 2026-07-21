@@ -1044,6 +1044,48 @@ head edges past every fine-tuned model.
     more important than its extra 18,528 parameters. Exact metrics and hashes
     are in the [reproduction record](../results/reproductions/2026-07-21-neural-impurity-stump.json).
 
+30. **Independent child splitters turn the frozen stumps into useful shallow
+    trees.** Returned to the stronger original 23,361-parameter architecture.
+    For each criterion, the original root was loaded and frozen, MNIST train
+    was hard-routed into its two leaves, and one fresh child CNN was trained on
+    each subset for 20 epochs. The four children were all trained before the
+    canonical test split was loaded. Root tensor fingerprints matched before
+    and after, so this was not end-to-end training.
+
+    | criterion / routing | root test reduction | depth-two test reduction | child reduction of impurity remaining after root | final leaf masses |
+    |---|---:|---:|---:|---:|
+    | Gini, soft children | 12.08% | 20.88% | 10.01% | 30.21 / 58.54 / 5.62 / 5.63% |
+    | **Gini, hard children** | **12.08%** | **21.12%** | **10.27%** | 30.17 / 58.58 / 4.86 / 6.39% |
+    | entropy, soft children | 20.98% | 42.24% | 26.90% | 23.90 / 28.92 / 35.90 / 11.28% |
+    | **entropy, hard children** | **20.98%** | **42.84%** | **27.66%** | 23.87 / 28.95 / 35.89 / 11.29% |
+
+    Local child gains explain the difference:
+
+    | tree / parent leaf | train examples | test examples | train hard gain | test hard gain | useful child? |
+    |---|---:|---:|---:|---:|---:|
+    | Gini / left, mixed | 53,418 | 8,875 | 10.16% | 10.30% | yes |
+    | Gini / right, 99.2% digit `1` | 6,582 | 1,125 | 0.16% | 0.03% | **no; prune** |
+    | entropy / left | 31,963 | 5,282 | 24.84% | 26.02% | yes |
+    | entropy / right | 28,037 | 4,718 | 28.92% | 29.65% | yes |
+
+    The entropy tree's test leaves form a recognizable hierarchy. Leaf 0 is
+    mostly `0` and `8` (37% each, plus 15% `6`); leaf 1 is mostly `2`, `3`, and
+    `5` (29%, 34%, and 30%); leaf 2 is mostly `4`, `7`, and `9` (27%, 26%, and
+    25%, plus 16% `6`); and leaf 3 is 98.76% digit `1`. Gini's mixed branch
+    separates `{2,3,5}` from `{0,4,6,7,8,9}`, while both children of its other
+    branch remain about 99.2% digit `1`. Forcing a child below an already-pure
+    leaf therefore adds parameters without information gain.
+
+    Train and test agree closely. Every digit chose the same majority final
+    leaf on both splits. Mean per-digit routing total variation was 0.94 points
+    for Gini and 1.95 points for entropy; the maximum changes were 3.31 points
+    for digit `1` under Gini and 5.27 points for digit `6` under entropy. Total
+    hard reduction improved from 20.69% train to 21.12% test for Gini and from
+    41.56% to 42.84% for entropy. This supports independently growing only
+    leaves whose held-out impurity gain clears a stopping threshold. Exact
+    matrices and checkpoint hashes are in the
+    [depth-two reproduction record](../results/reproductions/2026-07-21-neural-impurity-tree-depth-two.json).
+
 **Caveat now flips to the task.** With the epoch confound removed, MNIST's ~97%
 pixel floor leaves little room to separate these pretexts, but the explicit goal
 is now to push the unsupervised MNIST pipeline past **99.7%**. The best
