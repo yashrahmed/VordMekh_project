@@ -89,6 +89,15 @@ Run the complete LoRA backbone/probe matrix. The command follows fixed
 caffeinate -i uv run python scripts/analysis/train_lora_backbone_probes.py
 ```
 
+Run the two-convolution neural decision-stump comparison. Each model emits one
+binary split and is trained only to reduce the label impurity of its two leaves;
+there is no digit-classification head:
+
+```bash
+caffeinate -i uv run python scripts/analysis/train_impurity_convnet.py \
+  --criteria gini,entropy --epochs 20 --batch-size 1024 --seed 0 --device cpu
+```
+
 Re-run the current train-selected comparison:
 
 ```bash
