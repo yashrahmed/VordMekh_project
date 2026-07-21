@@ -11,7 +11,10 @@ model and ensemble choices and to understand why the members fail differently.
   50K/10K correction split produced only a three-error canonical test gain
   with seven regressions, so reranking is closed as a negative result; see the
   [reproduction record](results/reproductions/2026-07-18-top2-reranking.json).
-- [ ] Try a full stack Lora finetuning with a linear probe.
+- [x] Try full-stack LoRA adaptation with linear and nonlinear probes. Rank-8
+  adapters improved the best individual result to 99.58% without changing any
+  pretrained backbone tensor; see the
+  [reproduction record](results/reproductions/2026-07-20-lora-backbone-probes.json).
 - [ ] Try ConvNeXt as a modern convolutional comparison.
 - [ ] Test whether a small transformer over frozen DINOv2/I-JEPA features can
   learn a useful visual strategy without unfreezing the backbones.

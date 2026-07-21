@@ -1,0 +1,79 @@
+{
+  "schema_version": 1,
+  "name": "lora-backbone-probe-matrix",
+  "date": "2026-07-20",
+  "protocol": {
+    "entrypoint": "scripts/analysis/train_lora_backbone_probes.py",
+    "device": "mps",
+    "seed": 0,
+    "backbones": ["ijepa-300", "ijepa-500", "dinov2-best"],
+    "probe_types": ["linear", "nonlinear"],
+    "milestones": [50, 75, 100, 150],
+    "trajectory": "one fixed 150-epoch trajectory per backbone/head pair; evaluation at prespecified milestones",
+    "test_used_for_selection": false,
+    "lora": {
+      "rank": 8,
+      "alpha": 16.0,
+      "learning_rate": 0.0001,
+      "scope": "all attention and MLP matrices in every transformer block"
+    },
+    "head": {
+      "learning_rate": 0.001,
+      "nonlinear_hidden_dim": 64,
+      "nonlinear_dropout": 0.1
+    },
+    "optimizer": "AdamW",
+    "weight_decay": 0.05,
+    "batch_size": 512
+  },
+  "backbones": [
+    {
+      "id": "dinov2-best",
+      "checkpoint_sha256": "265d5f6bce3432b7de6475fb7533c0ca3fd2234f9148fced1a9d7cb30df7f849",
+      "base_backbone_sha256": "518aca8f613af6c3a4e255b9b9dc80f6a9d15120b6a50658d6d374debd3495e7",
+      "lora_targets": 20,
+      "lora_parameters": 69888
+    },
+    {
+      "id": "ijepa-300",
+      "checkpoint_sha256": "4a714299b00f7ac52e800c6bcd313473ee010687d090a603f6d181b6ee8aa19e",
+      "base_backbone_sha256": "c49d42369d54e152718e7f791bdb23786396b038f5311295ca7ff370672b7b1d",
+      "lora_targets": 16,
+      "lora_parameters": 65536
+    },
+    {
+      "id": "ijepa-500",
+      "checkpoint_sha256": "e2dbeafdd3c2bdb37b7bf29ce39b1cfcb73e4e2716bf02785b14ee27c54b73a1",
+      "base_backbone_sha256": "390e8ef1b1fd2c3ee75d1b95fb0814dce3f608be1b68c6d47790dc1e87fa907a",
+      "lora_targets": 16,
+      "lora_parameters": 65536
+    }
+  ],
+  "base_backbones_unchanged": true,
+  "results": [
+    {"backbone":"ijepa-300","probe_type":"linear","epochs":50,"train":{"scored_examples":60000,"errors":15,"accuracy":0.99975},"canonical_test":{"scored_examples":10000,"errors":67,"accuracy":0.9933},"reviewed_test":{"scored_examples":9998,"errors":65,"accuracy":0.993498699739948}},
+    {"backbone":"ijepa-300","probe_type":"linear","epochs":75,"train":{"scored_examples":60000,"errors":15,"accuracy":0.99975},"canonical_test":{"scored_examples":10000,"errors":64,"accuracy":0.9936},"reviewed_test":{"scored_examples":9998,"errors":62,"accuracy":0.9937987597519504}},
+    {"backbone":"ijepa-300","probe_type":"linear","epochs":100,"train":{"scored_examples":60000,"errors":9,"accuracy":0.99985},"canonical_test":{"scored_examples":10000,"errors":59,"accuracy":0.9941},"reviewed_test":{"scored_examples":9998,"errors":55,"accuracy":0.994498899779956}},
+    {"backbone":"ijepa-300","probe_type":"linear","epochs":150,"train":{"scored_examples":60000,"errors":0,"accuracy":1.0},"canonical_test":{"scored_examples":10000,"errors":55,"accuracy":0.9945},"reviewed_test":{"scored_examples":9998,"errors":53,"accuracy":0.9946989397879575}},
+    {"backbone":"ijepa-300","probe_type":"nonlinear","epochs":50,"train":{"scored_examples":60000,"errors":22,"accuracy":0.9996333333333334},"canonical_test":{"scored_examples":10000,"errors":53,"accuracy":0.9947},"reviewed_test":{"scored_examples":9998,"errors":51,"accuracy":0.9948989797959592}},
+    {"backbone":"ijepa-300","probe_type":"nonlinear","epochs":75,"train":{"scored_examples":60000,"errors":6,"accuracy":0.9999},"canonical_test":{"scored_examples":10000,"errors":56,"accuracy":0.9944},"reviewed_test":{"scored_examples":9998,"errors":52,"accuracy":0.9947989597919584}},
+    {"backbone":"ijepa-300","probe_type":"nonlinear","epochs":100,"train":{"scored_examples":60000,"errors":5,"accuracy":0.9999166666666667},"canonical_test":{"scored_examples":10000,"errors":55,"accuracy":0.9945},"reviewed_test":{"scored_examples":9998,"errors":51,"accuracy":0.9948989797959592}},
+    {"backbone":"ijepa-300","probe_type":"nonlinear","epochs":150,"train":{"scored_examples":60000,"errors":3,"accuracy":0.99995},"canonical_test":{"scored_examples":10000,"errors":51,"accuracy":0.9949},"reviewed_test":{"scored_examples":9998,"errors":49,"accuracy":0.9950990198039608}},
+    {"backbone":"ijepa-500","probe_type":"linear","epochs":50,"train":{"scored_examples":60000,"errors":24,"accuracy":0.9996},"canonical_test":{"scored_examples":10000,"errors":64,"accuracy":0.9936},"reviewed_test":{"scored_examples":9998,"errors":62,"accuracy":0.9937987597519504}},
+    {"backbone":"ijepa-500","probe_type":"linear","epochs":75,"train":{"scored_examples":60000,"errors":17,"accuracy":0.9997166666666667},"canonical_test":{"scored_examples":10000,"errors":57,"accuracy":0.9943},"reviewed_test":{"scored_examples":9998,"errors":57,"accuracy":0.9942988597719544}},
+    {"backbone":"ijepa-500","probe_type":"linear","epochs":100,"train":{"scored_examples":60000,"errors":20,"accuracy":0.9996666666666667},"canonical_test":{"scored_examples":10000,"errors":56,"accuracy":0.9944},"reviewed_test":{"scored_examples":9998,"errors":54,"accuracy":0.9945989197839568}},
+    {"backbone":"ijepa-500","probe_type":"linear","epochs":150,"train":{"scored_examples":60000,"errors":4,"accuracy":0.9999333333333333},"canonical_test":{"scored_examples":10000,"errors":59,"accuracy":0.9941},"reviewed_test":{"scored_examples":9998,"errors":57,"accuracy":0.9942988597719544}},
+    {"backbone":"ijepa-500","probe_type":"nonlinear","epochs":50,"train":{"scored_examples":60000,"errors":17,"accuracy":0.9997166666666667},"canonical_test":{"scored_examples":10000,"errors":44,"accuracy":0.9956},"reviewed_test":{"scored_examples":9998,"errors":44,"accuracy":0.9955991198239648}},
+    {"backbone":"ijepa-500","probe_type":"nonlinear","epochs":75,"train":{"scored_examples":60000,"errors":22,"accuracy":0.9996333333333334},"canonical_test":{"scored_examples":10000,"errors":48,"accuracy":0.9952},"reviewed_test":{"scored_examples":9998,"errors":46,"accuracy":0.9953990798159632}},
+    {"backbone":"ijepa-500","probe_type":"nonlinear","epochs":100,"train":{"scored_examples":60000,"errors":7,"accuracy":0.9998833333333333},"canonical_test":{"scored_examples":10000,"errors":52,"accuracy":0.9948},"reviewed_test":{"scored_examples":9998,"errors":50,"accuracy":0.99499899979996}},
+    {"backbone":"ijepa-500","probe_type":"nonlinear","epochs":150,"train":{"scored_examples":60000,"errors":8,"accuracy":0.9998666666666667},"canonical_test":{"scored_examples":10000,"errors":42,"accuracy":0.9958},"reviewed_test":{"scored_examples":9998,"errors":42,"accuracy":0.9957991598319664}},
+    {"backbone":"dinov2-best","probe_type":"linear","epochs":50,"train":{"scored_examples":60000,"errors":1,"accuracy":0.9999833333333333},"canonical_test":{"scored_examples":10000,"errors":55,"accuracy":0.9945},"reviewed_test":{"scored_examples":9998,"errors":51,"accuracy":0.9948989797959592}},
+    {"backbone":"dinov2-best","probe_type":"linear","epochs":75,"train":{"scored_examples":60000,"errors":0,"accuracy":1.0},"canonical_test":{"scored_examples":10000,"errors":52,"accuracy":0.9948},"reviewed_test":{"scored_examples":9998,"errors":48,"accuracy":0.9951990398079615}},
+    {"backbone":"dinov2-best","probe_type":"linear","epochs":100,"train":{"scored_examples":60000,"errors":0,"accuracy":1.0},"canonical_test":{"scored_examples":10000,"errors":49,"accuracy":0.9951},"reviewed_test":{"scored_examples":9998,"errors":45,"accuracy":0.995499099819964}},
+    {"backbone":"dinov2-best","probe_type":"linear","epochs":150,"train":{"scored_examples":60000,"errors":0,"accuracy":1.0},"canonical_test":{"scored_examples":10000,"errors":51,"accuracy":0.9949},"reviewed_test":{"scored_examples":9998,"errors":45,"accuracy":0.995499099819964}},
+    {"backbone":"dinov2-best","probe_type":"nonlinear","epochs":50,"train":{"scored_examples":60000,"errors":3,"accuracy":0.99995},"canonical_test":{"scored_examples":10000,"errors":46,"accuracy":0.9954},"reviewed_test":{"scored_examples":9998,"errors":42,"accuracy":0.9957991598319664}},
+    {"backbone":"dinov2-best","probe_type":"nonlinear","epochs":75,"train":{"scored_examples":60000,"errors":1,"accuracy":0.9999833333333333},"canonical_test":{"scored_examples":10000,"errors":50,"accuracy":0.995},"reviewed_test":{"scored_examples":9998,"errors":46,"accuracy":0.9953990798159632}},
+    {"backbone":"dinov2-best","probe_type":"nonlinear","epochs":100,"train":{"scored_examples":60000,"errors":0,"accuracy":1.0},"canonical_test":{"scored_examples":10000,"errors":50,"accuracy":0.995},"reviewed_test":{"scored_examples":9998,"errors":45,"accuracy":0.995499099819964}},
+    {"backbone":"dinov2-best","probe_type":"nonlinear","epochs":150,"train":{"scored_examples":60000,"errors":0,"accuracy":1.0},"canonical_test":{"scored_examples":10000,"errors":46,"accuracy":0.9954},"reviewed_test":{"scored_examples":9998,"errors":41,"accuracy":0.9958991798359672}}
+  ]
+}

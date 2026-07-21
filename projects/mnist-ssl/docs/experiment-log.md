@@ -946,13 +946,32 @@ head edges past every fine-tuned model.
     result. Exact plateaus, cross-view metrics, and artifact hashes are in the
     [reproduction record](../results/reproductions/2026-07-18-training-selected-triplets.json).
 
+27. **Full-stack LoRA adaptation reaches 99.58% without changing a pretrained
+    tensor.** Added rank-8 adapters to every attention and MLP matrix in the
+    four-block I-JEPA and DINOv2 backbones, then trained matched linear and
+    nonlinear heads. Six fixed 150-epoch trajectories produced 24
+    prespecified milestone measurements. The strongest observed individual was
+    I-JEPA-500 with a nonlinear head at epoch 150: 42 canonical errors
+    (99.58%). DINO nonlinear tied at 46 canonical errors at epochs 50 and 150;
+    the latter made 41 reviewed-label errors among 9,998 (99.59%). The best
+    linear measurement was DINO at epoch 100 with 49 errors (99.51%).
+
+    Every pretrained parameter stayed frozen. Pre/post fingerprints matched
+    for all six runs, and milestone checkpoints contain only LoRA tensors, the
+    classification head, metrics, and predictions. The complete table and
+    hashes are in the
+    [LoRA reproduction record](../results/reproductions/2026-07-20-lora-backbone-probes.json).
+    The epoch maxima are descriptive because no validation split selected an
+    epoch; all four requested test milestones are reported.
+
 **Caveat now flips to the task.** With the epoch confound removed, MNIST's ~97%
 pixel floor leaves little room to separate these pretexts, but the explicit goal
 is now to push the unsupervised MNIST pipeline past **99.7%**. The best
-individual frozen representation plus nonlinear head is 99.52%, and the
-train-selected nonlinear triplet reaches 99.63%. Future work should focus on
-representation/objective changes that can close the reported gap, while
-accounting for known MNIST label errors.
+individual frozen representation plus nonlinear head is 99.52%, the strongest
+LoRA-adapted individual observed is 99.58%, and the train-selected nonlinear
+triplet reaches 99.63%. Future work should focus on representation/objective
+changes that can close the reported gap, while accounting for known MNIST label
+errors.
 
 ## Original intent
 
