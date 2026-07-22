@@ -20,8 +20,6 @@ CANONICAL_SCRIPTS = (
     "scripts/evaluate/dinov2_knn.py",
     "scripts/evaluate/ijepa_probe.py",
     "scripts/evaluate/knn.py",
-    "scripts/analysis/train_impurity_convnet.py",
-    "scripts/analysis/train_impurity_tree_depth_three.py",
     "scripts/reproduce/verify_artifacts.py",
     "scripts/reproduce/ijepa_train_selected_triplet.py",
     "scripts/reproduce/ijepa_members.py",

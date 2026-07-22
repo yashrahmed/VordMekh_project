@@ -1,0 +1,127 @@
+{
+  "schema_version": 2,
+  "name": "neural-impurity-tree-final-archive",
+  "date": "2026-07-22",
+  "status": "completed_and_archived",
+  "protocol": {
+    "architecture": "Every completed-tree node used the same 2,497-parameter two-convolution residual binary splitter with one routing logit and no classifier head.",
+    "training": "Greedy local training on hard-routed MNIST training subsets; every ancestor was frozen before descendants trained; no end-to-end gradients.",
+    "objective": "Sample-weighted normalized Shannon entropy of the two differentiable children plus a label-free balance term.",
+    "expansion_policy": "Use training statistics only; keep leaves at or above 90% dominant-category purity terminal.",
+    "test_policy": "Construct canonical MNIST test only after the layer topology and every new splitter were fixed.",
+    "epochs_per_node": 20,
+    "batch_size": 1024,
+    "learning_rate": 0.001,
+    "weight_decay": 0.0001,
+    "balance_weight": 0.05,
+    "seed": 0,
+    "device": "cpu"
+  },
+  "stage_results": [
+    {
+      "routing_depth": 1,
+      "splitters": 1,
+      "leaves": 2,
+      "train_hard_relative_impurity_reduction": 0.12715238332748413,
+      "canonical_test_hard_relative_impurity_reduction": 0.1366569548845291
+    },
+    {
+      "routing_depth": 2,
+      "splitters": 3,
+      "leaves": 4,
+      "train_hard_relative_impurity_reduction": 0.28944990038871765,
+      "canonical_test_hard_relative_impurity_reduction": 0.3083309829235077
+    },
+    {
+      "routing_depth": 3,
+      "splitters": 6,
+      "leaves": 7,
+      "train_hard_relative_impurity_reduction": 0.31143200397491455,
+      "canonical_test_hard_relative_impurity_reduction": 0.3317205607891083
+    },
+    {
+      "routing_depth": 4,
+      "splitters": 12,
+      "leaves": 13,
+      "train_hard_relative_impurity_reduction": 0.3248855173587799,
+      "canonical_test_hard_relative_impurity_reduction": 0.34486186504364014,
+      "relative_reduction_of_impurity_remaining_after_previous_depth": {
+        "train": 0.019538418896328312,
+        "canonical_test": 0.019664366534052305
+      },
+      "local_test_gain_range": [
+        0.007947135716676712,
+        0.03240508213639259
+      ]
+    },
+    {
+      "routing_depth": 5,
+      "splitters": 24,
+      "leaves": 25,
+      "train_hard_relative_impurity_reduction": 0.33201155066490173,
+      "canonical_test_hard_relative_impurity_reduction": 0.3542712926864624,
+      "relative_reduction_of_impurity_remaining_after_previous_depth": {
+        "train": 0.010555299704660804,
+        "canonical_test": 0.014362515369061423
+      },
+      "local_test_relative_impurity_reductions": [
+        0.017562171444296837,
+        0.014247181825339794,
+        0.017049772664904594,
+        0.006923398934304714,
+        0.007073442451655865,
+        0.009945676662027836,
+        0.0112510547041893,
+        0.004072158597409725,
+        0.016791000962257385,
+        0.008113384246826172,
+        0.021495576947927475,
+        0.028294047340750694
+      ]
+    }
+  ],
+  "final_train_test_audit": {
+    "mean_per_digit_route_total_variation": 0.06684765005193186,
+    "maximum_per_digit_route_total_variation": {
+      "digit": 6,
+      "value": 0.11537850822787732
+    },
+    "majority_route_changes": [
+      {"digit": 3, "train_leaf": 9, "test_leaf": 10},
+      {"digit": 6, "train_leaf": 21, "test_leaf": 16}
+    ],
+    "mean_leaf_distribution_total_variation": 0.06773934183613164,
+    "maximum_leaf_distribution_total_variation": {
+      "leaf": 5,
+      "value": 0.14010157843586057
+    },
+    "mean_leaf_mass_absolute_change": 0.001671999990940094,
+    "maximum_leaf_mass_absolute_change": {
+      "leaf": 19,
+      "value": 0.006799999624490738
+    },
+    "dominant_category_stable_leaf_count": 22,
+    "final_leaf_count": 25
+  },
+  "scheduled_renyi_rebuild": {
+    "status": "aborted_before_completion",
+    "objective": "Shannon-to-Renyi-2 schedule, temperature 2.0 to 0.25, 15% minimum-child-mass constraint, and late routing-hardness penalty.",
+    "first_attempt": "Stopped at a depth-three node whose soft routing assigned mass to both children but whose hard threshold sent every training example to one child.",
+    "second_attempt": "Added a sharper hard-routing-aware size surrogate, passed focused tests, and was then stopped at the user's request.",
+    "canonical_test_evaluated": false,
+    "checkpoints_written": false
+  },
+  "frozen_state_audit": {
+    "all_ancestors_unchanged_during_descendant_training": true,
+    "all_splitters_unchanged_during_canonical_test_evaluation": true
+  },
+  "artifact_status": {
+    "source_code": "removed after the investigation was closed",
+    "checkpoints_and_generated_summaries": "intentionally deleted after numerical results were archived",
+    "historical_summary_sha256": {
+      "depth_four": "24d0596e96288a6f27b8d3b75c8e94837fdaf8f34ec6432f1b900d1467e157b1",
+      "depth_five": "c3800eb49d1aabcbe2fa4cc5d0c3913ef72deca9fe22696f1fce0076d61f4ccc"
+    }
+  },
+  "conclusion": "The neural splitter primitive generalized, but repeated greedy expansion showed strong diminishing returns. Doubling the tree from 12 to 24 splitters improved total canonical-test impurity reduction by only 0.94 percentage points, from 34.49% to 35.43%. The investigation is complete and no classifier system was retained."
+}

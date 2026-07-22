@@ -1108,6 +1108,48 @@ head edges past every fine-tuned model.
     matrices and six checkpoint hashes are in the
     [residual-tree reproduction record](../results/reproductions/2026-07-21-neural-impurity-tree-depth-three-entropy.json).
 
+31. **Deeper greedy splitting confirms diminishing returns.** Two further
+    training-selected routing depths reused the unchanged 2,497-parameter
+    residual splitter. Every ancestor remained frozen, every new node trained
+    only on examples hard-routed to its parent, and canonical test was loaded
+    only after each complete layer was fixed.
+
+    | hard routing | root | four leaves | seven leaves | thirteen leaves | twenty-five leaves |
+    |---|---:|---:|---:|---:|---:|
+    | train | 12.72% | 28.94% | 31.14% | 32.49% | **33.20%** |
+    | canonical test | 13.67% | 30.83% | 33.17% | 34.49% | **35.43%** |
+
+    The fourth depth added 1.32 percentage points of total test impurity
+    reduction while doubling the tree from 6 to 12 nodes. The fifth added only
+    0.94 points while doubling it again from 12 to 24 nodes. All twelve
+    fifth-depth splitters had positive local test gains, but these ranged from
+    only 0.41% to 2.83%. The train/test increment remained aligned, so the
+    limitation was not conventional overfitting: repeated small local
+    splitters were fragmenting already mixed leaves without isolating classes
+    efficiently.
+
+    Final train/test routing was still broadly similar. Mean per-digit route
+    total variation was 6.68 points and digit `6` was largest at 11.54 points.
+    Twenty-two of twenty-five leaves retained the same dominant digit, mean
+    leaf-composition total variation was 6.77 points, and the maximum leaf-mass
+    change was 0.68 points. Every frozen model fingerprint matched before and
+    after held-out evaluation.
+
+32. **A purity-focused rebuild was stopped before held-out evaluation.** A
+    fresh five-depth rebuild was started with a scheduled Shannon-to-Renyi-2
+    objective, annealed sigmoid temperature, a 15% minimum-child-mass term, and
+    late routing hardening. The first attempt exposed a mismatch between soft
+    and hard routing: one depth-three node assigned nonzero soft mass to both
+    children while every logit remained on the same side of the hard routing
+    threshold. A sharper size surrogate was implemented and its focused tests
+    passed, but the rerun was deliberately stopped before completion. No
+    canonical-test metrics or checkpoints were produced, so it is recorded as
+    an aborted diagnostic rather than a result.
+
+    The decision-tree/neural-network investigation is now closed. Source code,
+    executable entry points, tests, and generated checkpoints were removed;
+    the numerical record remains in the reproduction JSON files and this log.
+
 **Caveat now flips to the task.** With the epoch confound removed, MNIST's ~97%
 pixel floor leaves little room to separate these pretexts, but the explicit goal
 is now to push the unsupervised MNIST pipeline past **99.7%**. The best
