@@ -8,7 +8,7 @@ from torch import nn
 from mnist_ssl.baselines.impurity_convnet import (
     ResidualConvSplitter,
     leaf_memberships,
-    weighted_leaf_impurity,
+    weighted_leaf_entropy,
 )
 from mnist_ssl.baselines.impurity_tree import (
     assemble_tree_memberships,
@@ -46,9 +46,7 @@ def test_entropy_backpropagates_through_both_residual_convolutions() -> None:
     images = torch.randn(20, 1, 28, 28)
     labels = torch.arange(20) % 10
 
-    loss = weighted_leaf_impurity(
-        leaf_memberships(model(images)), labels, "entropy"
-    )
+    loss = weighted_leaf_entropy(leaf_memberships(model(images)), labels)
     loss.backward()
 
     assert model.conv1.weight.grad is not None
@@ -101,7 +99,7 @@ def test_second_level_split_reports_incremental_impurity_reduction() -> None:
     root = torch.tensor([[1.0, 0.0]] * 4 + [[0.0, 1.0]] * 4)
     tree = torch.eye(4).repeat_interleave(2, dim=0)
 
-    metrics = hierarchy_statistics(root, tree, labels, "entropy")
+    metrics = hierarchy_statistics(root, tree, labels)
 
     assert metrics["root_hard"]["child_weighted_impurity"] > 0
     assert metrics["depth_two"]["hard"]["child_weighted_impurity"] < 1e-6

@@ -48,7 +48,6 @@ from mnist_ssl.baselines.impurity_tree import (
 from mnist_ssl.paths import DATASET_DIR, OUT_DIR
 
 
-CRITERION = "entropy"
 MODEL_KIND = "two_conv_residual_binary_splitter"
 N_DEPTH_TWO_LEAVES = 4
 N_FINAL_LEAVES = 7
@@ -148,12 +147,10 @@ def full_tree_statistics(
         root_memberships,
         depth_two_memberships,
         labels,
-        CRITERION,
     )
     depth_three = tree_statistics(
         depth_three_memberships,
         labels,
-        CRITERION,
         final_leaf_names(terminal_leaf),
     )
     for mode in ("soft", "hard"):
@@ -187,7 +184,6 @@ def _train_node(
     history = train_splitter(
         model,
         make_loader(training_dataset, config, shuffle=True),
-        CRITERION,
         config,
         device,
     )
@@ -272,7 +268,6 @@ def _train_complete_tree(
                     "train": split_statistics(
                         memberships[selected],
                         train_labels[selected],
-                        CRITERION,
                     )
                 },
             }
@@ -290,7 +285,6 @@ def _train_complete_tree(
         root_memberships,
         depth_two_memberships,
         train_labels,
-        CRITERION,
     )
     terminal_leaf = choose_terminal_leaf(depth_two_metrics["depth_two"]["hard"])
     expanded_leaves = expanded_depth_two_leaves(terminal_leaf)
@@ -328,7 +322,6 @@ def _train_complete_tree(
                     "train": split_statistics(
                         memberships[selected],
                         train_labels[selected],
-                        CRITERION,
                     )
                 },
             }
@@ -351,7 +344,7 @@ def _train_complete_tree(
         "root": root,
         "root_history": root_history,
         "root_metrics": {
-            "train": split_statistics(root_memberships, train_labels, CRITERION)
+            "train": split_statistics(root_memberships, train_labels)
         },
         "root_state_after_training": root_state_after_training,
         "depth_two_children": depth_two_children,
@@ -386,7 +379,7 @@ def _save_node(
 ) -> str:
     torch.save(
         {
-            "criterion": CRITERION,
+            "criterion": "entropy",
             "model_kind": MODEL_KIND,
             "tree_level": level,
             "parent_leaf": parent_leaf,
@@ -418,7 +411,6 @@ def _finalize(
     state["root_metrics"]["canonical_test"] = split_statistics(
         root_memberships,
         test_labels,
-        CRITERION,
     )
 
     depth_two_memberships_by_parent = {}
@@ -435,7 +427,7 @@ def _finalize(
         selected = root_routes == parent_leaf
         record["test_examples"] = int(selected.sum().item())
         record["metrics"]["canonical_test"] = split_statistics(
-            memberships[selected], test_labels[selected], CRITERION
+            memberships[selected], test_labels[selected]
         )
         depth_two_memberships_by_parent[parent_leaf] = memberships
 
@@ -459,7 +451,7 @@ def _finalize(
         selected = depth_two_routes == parent_leaf
         record["test_examples"] = int(selected.sum().item())
         record["metrics"]["canonical_test"] = split_statistics(
-            memberships[selected], test_labels[selected], CRITERION
+            memberships[selected], test_labels[selected]
         )
         depth_three_memberships_by_parent[parent_leaf] = memberships
 
@@ -539,7 +531,7 @@ def _finalize(
         flush=True,
     )
     return {
-        "criterion": CRITERION,
+        "criterion": "entropy",
         "model_kind": MODEL_KIND,
         "parameter_count_each": residual_parameter_count(),
         "splitter_count": 6,

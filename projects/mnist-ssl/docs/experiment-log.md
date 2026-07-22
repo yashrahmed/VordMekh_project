@@ -967,44 +967,34 @@ head edges past every fine-tuned model.
 28. **One neural binary splitter reduces held-out class impurity.** Built a
     23,361-parameter CNN with exactly one sigmoid routing output and two leaves.
     There is no ten-class head and the leaves do not predict digits. The only
-    label-dependent objective is the sample-weighted Gini or normalized Shannon
-    impurity of the two differentiable leaf distributions; a small label-free
-    balance term discourages an empty leaf. Both seed-0 models used AdamW for a
-    fixed 20 epochs on all 60K training images, followed by one canonical-test
-    impurity measurement.
+    label-dependent objective is the sample-weighted normalized Shannon entropy
+    of the two differentiable leaf distributions; a small label-free balance
+    term discourages an empty leaf. The seed-0 model used AdamW for a fixed 20
+    epochs on all 60K training images, followed by one canonical-test entropy
+    measurement.
 
     | criterion / routing | test parent | test children | absolute reduction | relative reduction | left/right mass |
     |---|---:|---:|---:|---:|---:|
-    | Gini, soft | 0.89965 | 0.79170 | 0.10795 | 12.00% | 88.75% / 11.25% |
-    | **Gini, hard** | 0.89965 | **0.79093** | **0.10872** | **12.08%** | 88.75% / 11.25% |
     | entropy, soft | 0.99925 | 0.79644 | 0.20280 | 20.30% | 52.85% / 47.15% |
     | **entropy, hard** | 0.99925 | **0.78963** | **0.20961** | **20.98%** | 52.82% / 47.18% |
 
-    The objectives discovered qualitatively different useful questions. Gini
-    isolated digit `1`: 98.33% of test ones routed right, the right leaf was
-    99.20% ones, and almost every other digit stayed left. Entropy favored a
-    balanced grouping. Its right-routing rates were 99.30% for `1`, 98.57% for
-    `4`, 61.06% for `6`, 92.61% for `7`, and 90.29% for `9`; digits `0`, `2`,
-    `3`, `5`, and `8` mostly routed left. Train and test reductions closely
-    matched for both criteria, showing that the learned questions generalized.
+    The entropy objective discovered a balanced grouping. Its right-routing
+    rates were 99.30% for `1`, 98.57% for `4`, 61.06% for `6`, 92.61% for `7`,
+    and 90.29% for `9`; digits `0`, `2`, `3`, `5`, and `8` mostly routed left.
 
-    A frozen train-versus-test audit confirmed both the entropy and category
-    structure. Test weighted Shannon entropy was slightly *lower* than train
-    for both learned questions, while the majority-side digit assignments were
-    identical:
+    A frozen train-versus-test audit confirmed both the entropy reduction and
+    category structure. Test weighted Shannon entropy was slightly *lower* than
+    train, while the majority-side digit assignments were identical:
 
     | splitter | train/test weighted Shannon entropy | criterion-relative reduction, train -> test | per-digit routing correlation | mean / max routing change | majority-side grouping stable? |
     |---|---:|---:|---:|---:|---:|
-    | Gini | 0.85954 / 0.85346 | 11.74% -> 12.08% | 0.999999 | 0.20 / 1.62 pt | yes |
     | entropy | 0.79638 / 0.78963 | 20.31% -> 20.98% | 0.999117 | 1.34 / 5.12 pt | yes |
 
-    For Gini, both splits assigned only digit `1` to the right by majority. For
-    entropy, both assigned `{1,4,6,7,9}` right and `{0,2,3,5,8}` left. Digit
-    `6` accounted for entropy's largest train/test routing change (55.95% ->
-    61.06% right), but did not change sides. Train/test total-variation distance
-    between the full leaf label distributions was below 0.009 for either Gini
-    leaf and below 0.017 for either entropy leaf. No threshold or model choice
-    was changed after inspecting test.
+    Both splits assigned `{1,4,6,7,9}` right and `{0,2,3,5,8}` left. Digit `6`
+    accounted for the largest train/test routing change (55.95% -> 61.06%
+    right), but did not change sides. Train/test total-variation distance between
+    the full leaf label distributions was below 0.017 for either leaf. No
+    threshold or model choice was changed after inspecting test.
 
     This establishes the intended primitive: a single neural net can act as an
     impurity-reducing splitter without performing multiclass classification.
@@ -1023,22 +1013,18 @@ head edges past every fine-tuned model.
 
     | criterion / routing | 3-conv test reduction | 2-conv test reduction | change | 2-conv left/right mass |
     |---|---:|---:|---:|---:|
-    | Gini, soft | 12.00% | 11.17% | -0.83 pt | 11.23% / 88.77% |
-    | **Gini, hard** | **12.08%** | **11.61%** | **-0.47 pt** | 11.22% / 88.78% |
     | entropy, soft | 20.30% | 13.15% | -7.15 pt | 46.22% / 53.78% |
     | **entropy, hard** | **20.98%** | **13.90%** | **-7.07 pt** | 46.39% / 53.61% |
 
-    The smaller Gini model still isolated digit `1`, with leaf orientation
-    reversed. The smaller entropy model also recovered the same majority
-    partition up to orientation: `{0,2,3,5,8}` versus `{1,4,6,7,9}`. Its
-    routing was less decisive, however, so its leaves remained substantially
-    more mixed. Train and test hard reductions agreed closely (Gini 11.31% ->
-    11.61%; entropy 13.01% -> 13.90%), providing no sign of failed optimization
-    or overfitting.
+    The smaller entropy model recovered the same majority partition up to
+    orientation: `{0,2,3,5,8}` versus `{1,4,6,7,9}`. Its routing was less
+    decisive, however, so its leaves remained substantially more mixed. Train
+    and test hard reductions agreed closely (13.01% -> 13.90%), providing no
+    sign of failed optimization or overfitting.
 
     No residual path was added. Gradients were nonzero through both
-    convolutions, training improved smoothly, and both category-level
-    questions were recovered. A skip connection would not replace the removed
+    convolutions, training improved smoothly, and the category-level question
+    was recovered. A skip connection would not replace the removed
     convolution's representational capacity or receptive field. The
     three-convolution model therefore remains preferable when split quality is
     more important than its extra 18,528 parameters. Exact metrics and hashes
@@ -1071,6 +1057,39 @@ head edges past every fine-tuned model.
     | leaf 0 | 14,588 / 2,435 | 3.95% | **3.97%** |
     | leaf 1 | 17,206 / 2,843 | 1.08% | **1.06%** |
     | leaf 2 | 21,410 / 3,576 | 4.12% | **4.74%** |
+
+    The fixed test tree and its dominant leaf categories are:
+
+    ```mermaid
+    flowchart TD
+        R["Root residual entropy splitter<br/>Test mass: 100% · Gain: 13.67%"]
+
+        R -- "Left · 52.78%" --> C0["Residual splitter<br/>Local gain: 16.96%"]
+        R -- "Right · 47.22%" --> C1["Residual splitter<br/>Local gain: 23.32%"]
+
+        C0 -- "Leaf 0 · 24.35%" --> G0["Residual splitter<br/>Local gain: 3.97%"]
+        C0 -- "Leaf 1 · 28.43%" --> G1["Residual splitter<br/>Local gain: 1.06%"]
+
+        C1 -- "Leaf 2 · 35.76%" --> G2["Residual splitter<br/>Local gain: 4.74%"]
+        C1 -- "Leaf 3 · 11.46%" --> F6["Final leaf 6 · terminal<br/>Digit 1: 94.50%<br/>Digit 7: 3.05%"]
+
+        G0 -- "Left" --> F0["Final leaf 0 · 13.30%<br/>0: 37.89% · 8: 21.73%<br/>2: 13.76% · 6: 13.23%"]
+        G0 -- "Right" --> F1["Final leaf 1 · 11.05%<br/>8: 38.91% · 9: 18.10%<br/>6: 13.48% · 0: 10.68%"]
+
+        G1 -- "Left" --> F2["Final leaf 2 · 15.04%<br/>3: 34.71% · 2: 27.33%<br/>5: 25.40%"]
+        G1 -- "Right" --> F3["Final leaf 3 · 13.39%<br/>5: 34.13% · 3: 28.23%<br/>2: 18.89%"]
+
+        G2 -- "Left" --> F4["Final leaf 4 · 14.59%<br/>4: 25.15% · 6: 23.30%<br/>0: 17.82% · 9: 13.37%"]
+        G2 -- "Right" --> F5["Final leaf 5 · 21.17%<br/>7: 30.18% · 4: 23.85%<br/>9: 21.82% · 6: 10.96%"]
+
+        classDef splitter fill:#dbeafe,stroke:#2563eb,color:#172554
+        classDef leaf fill:#dcfce7,stroke:#16a34a,color:#052e16
+        classDef terminal fill:#fef3c7,stroke:#d97706,color:#451a03
+
+        class R,C0,C1,G0,G1,G2 splitter
+        class F0,F1,F2,F3,F4,F5 leaf
+        class F6 terminal
+    ```
 
     Test performance is slightly better than train at every depth, so the
     shortfall is not overfitting. Per-node training objectives also plateaued.

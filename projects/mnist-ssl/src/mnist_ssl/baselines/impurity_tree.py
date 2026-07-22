@@ -14,7 +14,7 @@ from torchvision import datasets, transforms
 from mnist_ssl.baselines.impurity_convnet import (
     N_CLASSES,
     ExperimentConfig,
-    _class_impurity,
+    _class_entropy,
     leaf_memberships,
     split_statistics,
 )
@@ -137,7 +137,6 @@ def assemble_tree_memberships(
 def _multi_leaf_partition_statistics(
     memberships: torch.Tensor,
     labels: torch.Tensor,
-    criterion: str,
 ) -> dict:
     if memberships.ndim != 2 or memberships.shape[1] < 2:
         raise ValueError("memberships must contain at least two leaves")
@@ -149,7 +148,7 @@ def _multi_leaf_partition_statistics(
     masses = counts.sum(dim=1)
     total_mass = masses.sum().clamp_min(1e-8)
     distributions = counts / masses.unsqueeze(1).clamp_min(1e-8)
-    leaf_impurities = _class_impurity(distributions, criterion)
+    leaf_impurities = _class_entropy(distributions)
     leaf_impurities = torch.where(
         masses > 0, leaf_impurities, torch.zeros_like(leaf_impurities)
     )
@@ -157,7 +156,7 @@ def _multi_leaf_partition_statistics(
 
     parent_counts = torch.bincount(labels, minlength=N_CLASSES).to(torch.float32)
     parent_distribution = parent_counts / parent_counts.sum().clamp_min(1.0)
-    parent = _class_impurity(parent_distribution, criterion)
+    parent = _class_entropy(parent_distribution)
     reduction = parent - child
 
     per_digit_leaf_fraction = []
@@ -183,7 +182,6 @@ def _multi_leaf_partition_statistics(
 def tree_statistics(
     memberships: torch.Tensor,
     labels: torch.Tensor,
-    criterion: str,
     leaf_names: tuple[str, ...],
 ) -> dict:
     """Report soft-gate and hard-route statistics for a multi-leaf tree."""
@@ -191,7 +189,7 @@ def tree_statistics(
     if len(leaf_names) != memberships.shape[1]:
         raise ValueError("leaf_names must contain one name per membership column")
 
-    soft = _multi_leaf_partition_statistics(memberships, labels, criterion)
+    soft = _multi_leaf_partition_statistics(memberships, labels)
     hard_leaf = memberships.argmax(dim=1)
     hard = F.one_hot(hard_leaf, num_classes=memberships.shape[1]).to(
         memberships.dtype
@@ -199,7 +197,7 @@ def tree_statistics(
     return {
         "leaf_names": leaf_names,
         "soft": soft,
-        "hard": _multi_leaf_partition_statistics(hard, labels, criterion),
+        "hard": _multi_leaf_partition_statistics(hard, labels),
     }
 
 
@@ -207,18 +205,16 @@ def hierarchy_statistics(
     root_memberships: torch.Tensor,
     tree_memberships: torch.Tensor,
     labels: torch.Tensor,
-    criterion: str,
 ) -> dict:
     """Compare one two-leaf root with its resulting four-leaf tree."""
 
     root_hard = F.one_hot(hard_routes(root_memberships), num_classes=2).to(
         tree_memberships.dtype
     )
-    root = split_statistics(root_hard, labels, criterion)["hard"]
+    root = split_statistics(root_hard, labels)["hard"]
     depth_two = tree_statistics(
         tree_memberships,
         labels,
-        criterion,
         DEPTH_TWO_LEAVES,
     )
     for mode in ("soft", "hard"):

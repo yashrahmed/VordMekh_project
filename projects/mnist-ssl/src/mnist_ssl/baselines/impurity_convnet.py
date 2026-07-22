@@ -5,12 +5,12 @@ CNN emits one scalar per image.  Its sigmoid is the differentiable probability
 of routing the image to the right leaf; the complement routes it left.  There
 is no ten-class head and neither leaf predicts a digit.
 
-Training minimizes the sample-weighted class impurity of the two leaves.  The
-available criteria are CART Gini impurity and normalized Shannon entropy.  A
-small label-free balance penalty discourages the trivial all-left/all-right
-solution.  Evaluation reports how much the split reduces impurity, its balance,
-and the label distribution it induces.  Test labels are used only for the final
-measurement after the fixed training horizon.
+Training minimizes the sample-weighted normalized Shannon entropy of the two
+leaf class distributions.  A small label-free balance penalty discourages the
+trivial all-left/all-right solution.  Evaluation reports how much the split
+reduces entropy, its balance, and the label distribution it induces.  Test
+labels are used only for the final measurement after the fixed training
+horizon.
 """
 
 from __future__ import annotations
@@ -23,8 +23,6 @@ import random
 import time
 from dataclasses import asdict, dataclass
 from pathlib import Path
-from typing import Iterable
-
 import numpy as np
 import torch
 import torch.nn as nn
@@ -36,12 +34,11 @@ from mnist_ssl.paths import DATASET_DIR, OUT_DIR
 
 
 N_CLASSES = 10
-CRITERIA = ("gini", "entropy")
 
 
 @dataclass(frozen=True)
 class ExperimentConfig:
-    """Fixed settings shared by the Gini and entropy stump runs."""
+    """Fixed settings for one entropy splitter run."""
 
     epochs: int = 20
     batch_size: int = 1024
@@ -111,21 +108,18 @@ def leaf_memberships(split_logits: torch.Tensor) -> torch.Tensor:
     return torch.stack((1.0 - right, right), dim=1)
 
 
-def _class_impurity(distribution: torch.Tensor, criterion: str) -> torch.Tensor:
-    if criterion == "gini":
-        return 1.0 - distribution.square().sum(dim=-1)
-    if criterion == "entropy":
-        safe = distribution.clamp_min(1e-8)
-        return -(distribution * safe.log()).sum(dim=-1) / math.log(N_CLASSES)
-    raise ValueError(f"unknown impurity criterion: {criterion}")
+def _class_entropy(distribution: torch.Tensor) -> torch.Tensor:
+    """Normalized Shannon entropy, or self-cross-entropy, over digit labels."""
+
+    safe = distribution.clamp_min(1e-8)
+    return -(distribution * safe.log()).sum(dim=-1) / math.log(N_CLASSES)
 
 
-def partition_tensors(
+def entropy_partition_tensors(
     memberships: torch.Tensor,
     labels: torch.Tensor,
-    criterion: str,
 ) -> tuple[torch.Tensor, torch.Tensor, torch.Tensor, torch.Tensor]:
-    """Return weighted impurity, masses, distributions, and leaf impurities."""
+    """Return weighted entropy, masses, distributions, and leaf entropies."""
 
     if memberships.ndim != 2 or memberships.shape[1] != 2:
         raise ValueError("memberships must have shape (examples, 2)")
@@ -136,38 +130,36 @@ def partition_tensors(
     counts = memberships.transpose(0, 1) @ targets
     masses = counts.sum(dim=1)
     distributions = counts / masses.unsqueeze(1).clamp_min(1e-8)
-    leaf_impurities = _class_impurity(distributions, criterion)
+    leaf_impurities = _class_entropy(distributions)
     weighted = (
         masses / masses.sum().clamp_min(1e-8) * leaf_impurities
     ).sum()
     return weighted, masses, distributions, leaf_impurities
 
 
-def weighted_leaf_impurity(
+def weighted_leaf_entropy(
     memberships: torch.Tensor,
     labels: torch.Tensor,
-    criterion: str,
 ) -> torch.Tensor:
-    """Differentiable CART-style impurity of this two-leaf partition."""
+    """Differentiable normalized entropy of this two-leaf partition."""
 
-    return partition_tensors(memberships, labels, criterion)[0]
+    return entropy_partition_tensors(memberships, labels)[0]
 
 
-def _parent_impurity(labels: torch.Tensor, criterion: str) -> torch.Tensor:
+def _parent_entropy(labels: torch.Tensor) -> torch.Tensor:
     counts = torch.bincount(labels, minlength=N_CLASSES).to(torch.float32)
     distribution = counts / counts.sum().clamp_min(1.0)
-    return _class_impurity(distribution, criterion)
+    return _class_entropy(distribution)
 
 
 def _partition_statistics(
     memberships: torch.Tensor,
     labels: torch.Tensor,
-    criterion: str,
 ) -> dict:
-    child, masses, distributions, leaf_impurities = partition_tensors(
-        memberships, labels, criterion
+    child, masses, distributions, leaf_impurities = entropy_partition_tensors(
+        memberships, labels
     )
-    parent = _parent_impurity(labels, criterion)
+    parent = _parent_entropy(labels)
     reduction = parent - child
     per_class_right = []
     for digit in range(N_CLASSES):
@@ -192,16 +184,15 @@ def _partition_statistics(
 def split_statistics(
     memberships: torch.Tensor,
     labels: torch.Tensor,
-    criterion: str,
 ) -> dict:
     """Summarize both differentiable and thresholded versions of one split."""
 
-    soft = _partition_statistics(memberships, labels, criterion)
+    soft = _partition_statistics(memberships, labels)
     hard_right = (memberships[:, 1] >= 0.5).long()
     hard = F.one_hot(hard_right, num_classes=2).to(memberships.dtype)
     return {
         "soft": soft,
-        "hard": _partition_statistics(hard, labels, criterion),
+        "hard": _partition_statistics(hard, labels),
     }
 
 
@@ -229,7 +220,6 @@ def mnist_loaders(config: ExperimentConfig) -> tuple[DataLoader, DataLoader]:
 def train_splitter(
     model: nn.Module,
     loader: DataLoader,
-    criterion: str,
     config: ExperimentConfig,
     device: torch.device,
 ) -> list[dict[str, float]]:
@@ -249,7 +239,7 @@ def train_splitter(
         for images, labels in loader:
             images, labels = images.to(device), labels.to(device)
             memberships = leaf_memberships(model(images))
-            impurity = weighted_leaf_impurity(memberships, labels, criterion)
+            impurity = weighted_leaf_entropy(memberships, labels)
             balance = (memberships[:, 1].mean() - 0.5).square()
             loss = impurity + config.balance_weight * balance
 
@@ -270,7 +260,7 @@ def train_splitter(
         history.append(record)
         if epoch == 1 or epoch == config.epochs or epoch % 5 == 0:
             print(
-                f"{criterion:>7s} epoch {epoch:02d}/{config.epochs}  "
+                f"entropy epoch {epoch:02d}/{config.epochs}  "
                 f"loss={record['loss']:.6f}  "
                 f"impurity={record['impurity']:.6f}  "
                 f"balance={record['balance_penalty']:.6f}"
@@ -301,8 +291,7 @@ def _sha256(path: Path) -> str:
     return digest.hexdigest()
 
 
-def run_criterion(
-    criterion: str,
+def run_entropy(
     config: ExperimentConfig,
     device: torch.device,
     output_dir: Path,
@@ -311,23 +300,21 @@ def run_criterion(
     train_loader, test_loader = mnist_loaders(config)
     model = ResidualConvSplitter().to(device)
     started = time.monotonic()
-    history = train_splitter(model, train_loader, criterion, config, device)
+    history = train_splitter(model, train_loader, config, device)
 
     train_memberships, train_labels = collect_memberships(
         model, train_loader, device
     )
     test_memberships, test_labels = collect_memberships(model, test_loader, device)
     metrics = {
-        "train": split_statistics(train_memberships, train_labels, criterion),
-        "canonical_test": split_statistics(
-            test_memberships, test_labels, criterion
-        ),
+        "train": split_statistics(train_memberships, train_labels),
+        "canonical_test": split_statistics(test_memberships, test_labels),
     }
 
-    checkpoint_path = output_dir / f"{criterion}.pt"
+    checkpoint_path = output_dir / "entropy.pt"
     torch.save(
         {
-            "criterion": criterion,
+            "criterion": "entropy",
             "model_kind": "two_conv_residual_binary_splitter",
             "config": asdict(config),
             "model_state_dict": model.state_dict(),
@@ -337,7 +324,7 @@ def run_criterion(
         checkpoint_path,
     )
     result = {
-        "criterion": criterion,
+        "criterion": "entropy",
         "model_kind": "two_conv_residual_binary_splitter",
         "parameter_count": sum(p.numel() for p in model.parameters()),
         "elapsed_seconds": time.monotonic() - started,
@@ -349,7 +336,7 @@ def run_criterion(
     test_soft = metrics["canonical_test"]["soft"]
     test_hard = metrics["canonical_test"]["hard"]
     print(
-        f"{criterion} test impurity reduction: "
+        "entropy test impurity reduction: "
         f"soft={test_soft['impurity_reduction']:.6f} "
         f"({test_soft['relative_impurity_reduction']:.2%}), "
         f"hard={test_hard['impurity_reduction']:.6f} "
@@ -359,44 +346,30 @@ def run_criterion(
 
 
 def run_experiment(
-    criteria: Iterable[str],
     config: ExperimentConfig,
     output_dir: Path,
 ) -> dict:
-    criteria = tuple(criteria)
-    unknown = sorted(set(criteria) - set(CRITERIA))
-    if unknown:
-        raise ValueError(f"unknown criteria: {', '.join(unknown)}")
-    if not criteria:
-        raise ValueError("at least one criterion is required")
-
     output_dir.mkdir(parents=True, exist_ok=True)
     device = pick_device(config.device)
     print(f"device={device}  output={output_dir}")
-    results = [
-        run_criterion(criterion, config, device, output_dir)
-        for criterion in criteria
-    ]
+    result = run_entropy(config, device, output_dir)
     summary = {
-        "experiment": "mnist_two_conv_binary_impurity_splitter",
+        "experiment": "mnist_two_conv_binary_entropy_splitter",
         "architecture": (
             "two convolutions, one identity residual addition around the "
             "second convolution, one sigmoid binary decision, two leaves, "
             "and no classifier head"
         ),
-        "criterion_definition": {
-            "gini": "sample-weighted CART Gini impurity across two leaves",
-            "entropy": (
-                "sample-weighted normalized Shannon entropy across two leaves"
-            ),
-        },
+        "objective": (
+            "sample-weighted normalized Shannon entropy across two leaves"
+        ),
         "test_policy": (
             "fixed-horizon training on MNIST train; canonical MNIST test used "
             "once for final impurity-reduction measurement"
         ),
         "config": asdict(config),
         "device": str(device),
-        "results": results,
+        "result": result,
     }
     summary_path = output_dir / "summary.json"
     summary_path.write_text(json.dumps(summary, indent=2, sort_keys=True) + "\n")
@@ -404,24 +377,8 @@ def run_experiment(
     return summary
 
 
-def parse_criteria(value: str) -> tuple[str, ...]:
-    criteria = tuple(item.strip() for item in value.split(",") if item.strip())
-    unknown = sorted(set(criteria) - set(CRITERIA))
-    if unknown:
-        raise argparse.ArgumentTypeError(
-            f"unknown criteria {', '.join(unknown)}; choose from {CRITERIA}"
-        )
-    return criteria
-
-
 def main() -> None:
     parser = argparse.ArgumentParser(description=__doc__)
-    parser.add_argument(
-        "--criteria",
-        type=parse_criteria,
-        default=CRITERIA,
-        help="Comma-separated subset of gini,entropy.",
-    )
     parser.add_argument("--epochs", type=int, default=20)
     parser.add_argument("--batch-size", type=int, default=1024)
     parser.add_argument("--learning-rate", type=float, default=1e-3)
@@ -451,7 +408,7 @@ def main() -> None:
         num_workers=args.num_workers,
         device=args.device,
     )
-    run_experiment(args.criteria, config, args.output_dir)
+    run_experiment(config, args.output_dir)
 
 
 if __name__ == "__main__":
