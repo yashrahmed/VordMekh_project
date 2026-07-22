@@ -89,36 +89,24 @@ Run the complete LoRA backbone/probe matrix. The command follows fixed
 caffeinate -i uv run python scripts/analysis/train_lora_backbone_probes.py
 ```
 
-Run the two-convolution neural decision-stump comparison. Each model emits one
-binary split and is trained only to reduce the label impurity of its two leaves;
-there is no digit-classification head:
+Run the two-convolution residual neural decision-stump comparison. Each model
+emits one binary split and is trained only to reduce the label impurity of its
+two leaves; there is no digit-classification head:
 
 ```bash
 caffeinate -i uv run python scripts/analysis/train_impurity_convnet.py \
   --criteria gini,entropy --epochs 20 --batch-size 1024 --seed 0 --device cpu
 ```
 
-Grow both original three-convolution stumps by one level without end-to-end
-training. The roots remain frozen and one fresh child is trained independently
-on each hard-routed training subset:
-
-```bash
-caffeinate -i uv run python scripts/analysis/train_impurity_tree_depth_two.py \
-  --criteria gini,entropy --epochs 20 --batch-size 1024 --seed 0 --device cpu \
-  --root-checkpoint-dir out/neural_impurity_stump_2026-07-21 \
-  --output-dir out/neural_impurity_tree_depth_two_2026-07-21
-```
-
-Grow the three mixed leaves of the frozen entropy tree one more level. Leaf 3,
-which is already almost entirely digit `1`, remains terminal; all three new
-splitters finish training before the test set is loaded:
+Train the complete seven-leaf entropy tree from a uniform two-convolution
+residual architecture. The root is trained from scratch; every node is frozen
+before descendants train, and the test set is loaded only after all six
+splitters and the training-selected terminal leaf are fixed:
 
 ```bash
 caffeinate -i uv run python scripts/analysis/train_impurity_tree_depth_three.py \
   --epochs 20 --batch-size 1024 --seed 0 --device cpu \
-  --root-checkpoint out/neural_impurity_stump_2026-07-21/entropy.pt \
-  --depth-two-checkpoint-dir out/neural_impurity_tree_depth_two_2026-07-21 \
-  --output-dir out/neural_impurity_tree_depth_three_entropy_2026-07-21
+  --output-dir out/neural_impurity_tree_residual_entropy_2026-07-21
 ```
 
 Re-run the current train-selected comparison:

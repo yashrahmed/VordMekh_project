@@ -1,47 +1,74 @@
-"""Checks for independently grown depth-two neural impurity trees."""
+"""Checks for the shared residual splitter and tree routing utilities."""
 
 from __future__ import annotations
-
-from pathlib import Path
 
 import torch
 from torch import nn
 
-from mnist_ssl.baselines.impurity_convnet import OriginalConvSplitter
+from mnist_ssl.baselines.impurity_convnet import (
+    ResidualConvSplitter,
+    leaf_memberships,
+    weighted_leaf_impurity,
+)
 from mnist_ssl.baselines.impurity_tree import (
     assemble_tree_memberships,
+    freeze_splitter,
     hierarchy_statistics,
-    load_frozen_root,
     model_state_sha256,
 )
 
 
-def test_original_splitter_has_three_convolutions_and_one_gate() -> None:
-    model = OriginalConvSplitter()
+def test_residual_splitter_has_exactly_two_convolutions_and_one_gate() -> None:
+    model = ResidualConvSplitter()
     logits = model(torch.randn(5, 1, 28, 28))
 
     assert logits.shape == (5,)
-    assert sum(isinstance(layer, nn.Conv2d) for layer in model.modules()) == 3
-    assert sum(parameter.numel() for parameter in model.parameters()) == 23_361
+    assert sum(isinstance(layer, nn.Conv2d) for layer in model.modules()) == 2
+    assert sum(parameter.numel() for parameter in model.parameters()) == 2_497
+    assert model.conv1.out_channels == model.conv2.in_channels
+    assert model.conv2.in_channels == model.conv2.out_channels
 
 
-def test_root_checkpoint_is_loaded_frozen(tmp_path: Path) -> None:
-    source = OriginalConvSplitter()
-    checkpoint = tmp_path / "gini.pt"
-    torch.save(
-        {
-            "criterion": "gini",
-            "model_kind": "small_conv_binary_splitter",
-            "model_state_dict": source.state_dict(),
-        },
-        checkpoint,
+def test_residual_path_adds_first_stage_features_to_second_convolution() -> None:
+    model = ResidualConvSplitter().eval()
+    images = torch.randn(4, 1, 28, 28)
+    with torch.no_grad():
+        first = model.pool(torch.relu(model.conv1(images)))
+        expected = torch.relu(model.conv2(first) + first)
+        expected = model.split(model.global_pool(expected).flatten(1)).squeeze(1)
+
+    assert torch.allclose(model(images), expected)
+
+
+def test_entropy_backpropagates_through_both_residual_convolutions() -> None:
+    torch.manual_seed(0)
+    model = ResidualConvSplitter()
+    images = torch.randn(20, 1, 28, 28)
+    labels = torch.arange(20) % 10
+
+    loss = weighted_leaf_impurity(
+        leaf_memberships(model(images)), labels, "entropy"
     )
+    loss.backward()
 
-    root = load_frozen_root(checkpoint, "gini", torch.device("cpu"))
+    assert model.conv1.weight.grad is not None
+    assert model.conv1.weight.grad.abs().sum() > 0
+    assert model.conv2.weight.grad is not None
+    assert model.conv2.weight.grad.abs().sum() > 0
+    assert model.split.weight.grad is not None
+    assert model.split.weight.grad.abs().sum() > 0
 
-    assert model_state_sha256(root) == model_state_sha256(source)
-    assert not root.training
-    assert all(not parameter.requires_grad for parameter in root.parameters())
+
+def test_completed_splitter_is_frozen_before_descendant_training() -> None:
+    model = ResidualConvSplitter()
+    before = model_state_sha256(model)
+
+    frozen = freeze_splitter(model)
+
+    assert frozen is model
+    assert model_state_sha256(model) == before
+    assert not model.training
+    assert all(not parameter.requires_grad for parameter in model.parameters())
 
 
 def test_tree_memberships_follow_only_the_selected_root_child() -> None:
@@ -71,9 +98,7 @@ def test_tree_memberships_follow_only_the_selected_root_child() -> None:
 
 def test_second_level_split_reports_incremental_impurity_reduction() -> None:
     labels = torch.tensor([0, 0, 1, 1, 2, 2, 3, 3])
-    root = torch.tensor(
-        [[1.0, 0.0]] * 4 + [[0.0, 1.0]] * 4
-    )
+    root = torch.tensor([[1.0, 0.0]] * 4 + [[0.0, 1.0]] * 4)
     tree = torch.eye(4).repeat_interleave(2, dim=0)
 
     metrics = hierarchy_statistics(root, tree, labels, "entropy")
@@ -81,14 +106,3 @@ def test_second_level_split_reports_incremental_impurity_reduction() -> None:
     assert metrics["root_hard"]["child_weighted_impurity"] > 0
     assert metrics["depth_two"]["hard"]["child_weighted_impurity"] < 1e-6
     assert metrics["depth_two"]["hard"]["incremental_reduction_from_root"] > 0
-
-
-def test_state_fingerprint_changes_only_when_model_changes() -> None:
-    model = OriginalConvSplitter()
-    before = model_state_sha256(model)
-    assert model_state_sha256(model) == before
-
-    with torch.no_grad():
-        model.split.bias.add_(1.0)
-
-    assert model_state_sha256(model) != before

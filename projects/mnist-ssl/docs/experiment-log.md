@@ -1044,82 +1044,50 @@ head edges past every fine-tuned model.
     more important than its extra 18,528 parameters. Exact metrics and hashes
     are in the [reproduction record](../results/reproductions/2026-07-21-neural-impurity-stump.json).
 
-30. **Independent child splitters turn the frozen stumps into useful shallow
-    trees.** Returned to the stronger original 23,361-parameter architecture.
-    For each criterion, the original root was loaded and frozen, MNIST train
-    was hard-routed into its two leaves, and one fresh child CNN was trained on
-    each subset for 20 epochs. The four children were all trained before the
-    canonical test split was loaded. Root tensor fingerprints matched before
-    and after, so this was not end-to-end training.
+30. **A uniform two-convolution residual entropy tree reaches 33.17% held-out
+    impurity reduction.** Corrected the draft tree experiment so every node now
+    uses exactly two convolutions: `1 -> 16`, max-pool, `16 -> 16`, an identity
+    addition around the second convolution, adaptive average pooling, and one
+    routing logit. Each node has 2,497 parameters. The root was retrained from
+    scratch, then frozen; both children and three grandchildren were trained
+    independently and frozen in the same way. The canonical test split was not
+    constructed until all six nodes and the training-selected topology were
+    fixed.
 
-    | criterion / routing | root test reduction | depth-two test reduction | child reduction of impurity remaining after root | final leaf masses |
+    The lowest-entropy depth-two training leaf was leaf 3, so it remained
+    terminal and leaves 0, 1, and 2 received grandchildren. Train and test
+    stage reductions agree closely:
+
+    | hard routing | root | four leaves | seven leaves | reduction of impurity remaining after four leaves |
     |---|---:|---:|---:|---:|
-    | Gini, soft children | 12.08% | 20.88% | 10.01% | 30.21 / 58.54 / 5.62 / 5.63% |
-    | **Gini, hard children** | **12.08%** | **21.12%** | **10.27%** | 30.17 / 58.58 / 4.86 / 6.39% |
-    | entropy, soft children | 20.98% | 42.24% | 26.90% | 23.90 / 28.92 / 35.90 / 11.28% |
-    | **entropy, hard children** | **20.98%** | **42.84%** | **27.66%** | 23.87 / 28.95 / 35.89 / 11.29% |
+    | train | 12.72% | 28.94% | **31.14%** | 3.09% |
+    | canonical test | 13.67% | 30.83% | **33.17%** | 3.38% |
 
-    Local child gains explain the difference:
+    The depth-two nodes remain useful, with 16.96% and 23.32% local test gains.
+    The grandchildren are the bottleneck:
 
-    | tree / parent leaf | train examples | test examples | train hard gain | test hard gain | useful child? |
-    |---|---:|---:|---:|---:|---:|
-    | Gini / left, mixed | 53,418 | 8,875 | 10.16% | 10.30% | yes |
-    | Gini / right, 99.2% digit `1` | 6,582 | 1,125 | 0.16% | 0.03% | **no; prune** |
-    | entropy / left | 31,963 | 5,282 | 24.84% | 26.02% | yes |
-    | entropy / right | 28,037 | 4,718 | 28.92% | 29.65% | yes |
+    | expanded parent | train / test examples | train local gain | test local gain |
+    |---|---:|---:|---:|
+    | leaf 0 | 14,588 / 2,435 | 3.95% | **3.97%** |
+    | leaf 1 | 17,206 / 2,843 | 1.08% | **1.06%** |
+    | leaf 2 | 21,410 / 3,576 | 4.12% | **4.74%** |
 
-    The entropy tree's test leaves form a recognizable hierarchy. Leaf 0 is
-    mostly `0` and `8` (37% each, plus 15% `6`); leaf 1 is mostly `2`, `3`, and
-    `5` (29%, 34%, and 30%); leaf 2 is mostly `4`, `7`, and `9` (27%, 26%, and
-    25%, plus 16% `6`); and leaf 3 is 98.76% digit `1`. Gini's mixed branch
-    separates `{2,3,5}` from `{0,4,6,7,8,9}`, while both children of its other
-    branch remain about 99.2% digit `1`. Forcing a child below an already-pure
-    leaf therefore adds parameters without information gain.
+    Test performance is slightly better than train at every depth, so the
+    shortfall is not overfitting. Per-node training objectives also plateaued.
+    The likely limitation is representational: this architecture is 89.31%
+    smaller per node than the superseded 23,361-parameter three-convolution
+    draft, and global average pooling follows only two spatial convolutions.
+    Because channel width and depth changed together, the experiment does not
+    isolate whether the residual addition itself helps or hurts.
 
-    Train and test agree closely. Every digit chose the same majority final
-    leaf on both splits. Mean per-digit routing total variation was 0.94 points
-    for Gini and 1.95 points for entropy; the maximum changes were 3.31 points
-    for digit `1` under Gini and 5.27 points for digit `6` under entropy. Total
-    hard reduction improved from 20.69% train to 21.12% test for Gini and from
-    41.56% to 42.84% for entropy. This supports independently growing only
-    leaves whose held-out impurity gain clears a stopping threshold. Exact
-    matrices and checkpoint hashes are in the
-    [depth-two reproduction record](../results/reproductions/2026-07-21-neural-impurity-tree-depth-two.json).
-
-31. **Selective entropy growth reaches 55.61% held-out impurity reduction.**
-    Kept the entropy root and both depth-two children frozen, then hard-routed
-    MNIST train through that fixed tree. Three fresh original 23,361-parameter
-    CNN splitters were trained independently below mixed leaves 0, 1, and 2;
-    the 98.76%-digit-`1` leaf 3 stayed terminal. This creates seven final
-    leaves without any end-to-end gradients. All three new nodes completed
-    training before the canonical test split was loaded.
-
-    | new parent | train / test examples | train hard gain | test hard gain | held-out split |
-    |---|---:|---:|---:|---|
-    | leaf 0 (`0/8/6`) | 14,973 / 2,387 | 29.50% | **33.40%** | `0` versus mostly `8/6` |
-    | leaf 1 (`2/3/5`) | 16,990 / 2,895 | 5.46% | **6.37%** | `2` versus mostly `3/5` |
-    | leaf 2 (`4/7/9/6`) | 21,474 / 3,589 | 27.46% | **27.70%** | mostly `4/6/9` versus `7` |
-
-    | routing / split | root reduction | depth-two reduction | depth-three reduction | gain on impurity remaining after depth two |
-    |---|---:|---:|---:|---:|
-    | train, hard | 20.31% | 41.56% | **53.99%** | 21.26% |
-    | test, soft new children | 20.98% | 42.24% | **54.24%** | 19.95% |
-    | **test, hard** | **20.98%** | **42.84%** | **55.61%** | **22.34%** |
-
-    The hard test leaf masses are 9.30%, 14.57%, 12.87%, 16.08%, 24.81%,
-    11.08%, and 11.29%. Their leading categories are respectively `0`
-    (89.89%), `8` (59.92%, with 21.55% `6`), `2` (46.93%), `5` (43.03%),
-    `4` (38.65%, with `9/6`), `7` (82.22%), and `1` (98.76%). The middle
-    `2/3/5` node is a plausible candidate for pruning under a stricter local
-    gain threshold, but it does produce a positive held-out improvement.
-
-    Train and test again describe the same global tree. Every digit has the
-    same majority final leaf in both splits; mean per-digit routing total
-    variation is 3.15 points and the maximum is 6.36 points for digit `2`.
-    Per-leaf train/test label-distribution total variation ranges from 0.58 to
-    4.79 points. Ancestor state fingerprints match before and after training
-    and evaluation. Exact routing matrices and all six checkpoint/state hashes
-    are in the [depth-three entropy reproduction record](../results/reproductions/2026-07-21-neural-impurity-tree-depth-three-entropy.json).
+    Train/test routing remains broadly similar but is less stable than in the
+    larger draft. Mean per-digit final-route total variation is 3.77 points;
+    digit `6` is the only category whose majority final leaf changes (leaf 5 on
+    train versus leaf 4 on test), with 9.40 points total variation. Leaf label
+    distributions differ by at most 6.35 points. All tensor fingerprints match
+    before and after descendant training and canonical evaluation. Exact
+    matrices and six checkpoint hashes are in the
+    [residual-tree reproduction record](../results/reproductions/2026-07-21-neural-impurity-tree-depth-three-entropy.json).
 
 **Caveat now flips to the task.** With the epoch confound removed, MNIST's ~97%
 pixel floor leaves little room to separate these pretexts, but the explicit goal

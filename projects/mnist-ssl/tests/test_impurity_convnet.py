@@ -7,7 +7,7 @@ import torch
 from torch import nn
 
 from mnist_ssl.baselines.impurity_convnet import (
-    SmallConvSplitter,
+    ResidualConvSplitter,
     leaf_memberships,
     pick_device,
     split_statistics,
@@ -20,7 +20,7 @@ def test_explicit_cpu_device_is_respected() -> None:
 
 
 def test_splitter_emits_one_binary_membership_per_image() -> None:
-    model = SmallConvSplitter()
+    model = ResidualConvSplitter()
     logits = model(torch.randn(7, 1, 28, 28))
     memberships = leaf_memberships(logits)
 
@@ -29,7 +29,7 @@ def test_splitter_emits_one_binary_membership_per_image() -> None:
     assert torch.all(memberships >= 0)
     assert torch.allclose(memberships.sum(dim=1), torch.ones(7), atol=1e-6)
     assert sum(isinstance(layer, nn.Conv2d) for layer in model.modules()) == 2
-    assert sum(parameter.numel() for parameter in model.parameters()) == 4_833
+    assert sum(parameter.numel() for parameter in model.parameters()) == 2_497
 
 
 @pytest.mark.parametrize("criterion", ["gini", "entropy"])
@@ -48,7 +48,7 @@ def test_separating_label_groups_reduces_impurity(criterion: str) -> None:
 
 def test_impurity_backpropagates_through_the_single_splitter() -> None:
     torch.manual_seed(0)
-    model = SmallConvSplitter()
+    model = ResidualConvSplitter()
     images = torch.randn(20, 1, 28, 28)
     labels = torch.arange(20) % 10
 
@@ -56,7 +56,7 @@ def test_impurity_backpropagates_through_the_single_splitter() -> None:
     loss = weighted_leaf_impurity(memberships, labels, "gini")
     loss.backward()
 
-    for layer in (model.features[0], model.features[3]):
+    for layer in (model.conv1, model.conv2):
         assert layer.weight.grad is not None
         assert layer.weight.grad.abs().sum() > 0
     assert model.split.weight.grad is not None

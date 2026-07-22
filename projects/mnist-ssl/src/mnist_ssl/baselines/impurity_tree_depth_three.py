@@ -1,15 +1,14 @@
-"""Grow entropy leaves 0, 1, and 2 without updating the existing tree.
+"""Train a complete entropy tree from uniform two-convolution residual nodes.
 
-The frozen entropy root and its two frozen depth-two children define four hard
-routes.  The near-pure digit-1 route (leaf 3) remains terminal.  Three fresh
-three-convolution binary splitters are independently trained on the MNIST-train
-subsets routed to leaves 0, 1, and 2.  Their only label-dependent objective is
-normalized Shannon leaf entropy; there is no classification head and no
-end-to-end optimization.
+The root, both depth-two children, and three depth-three grandchildren all use
+the same residual binary splitter.  Nodes are trained greedily and locally:
+once a node finishes, it is frozen before any descendant is optimized.  After
+the four depth-two leaves are known, the lowest-entropy training leaf remains
+terminal and the other three receive one new splitter each.
 
-All three new splitters finish training before the canonical test split is
-loaded.  Test follows the frozen root, the appropriate frozen child, and then
-the new splitter where one exists.  No test result selects a model or setting.
+The canonical test split is not constructed until all six splitters have
+finished and the topology is fixed.  There is no end-to-end optimization and
+no ten-class classification head.
 """
 
 from __future__ import annotations
@@ -22,25 +21,25 @@ from pathlib import Path
 
 import torch
 import torch.nn as nn
-import torch.nn.functional as F
 from torch.utils.data import Dataset, Subset
 
 from mnist_ssl.baselines.impurity_convnet import (
     ExperimentConfig,
-    OriginalConvSplitter,
+    ResidualConvSplitter,
     pick_device,
     set_seed,
     split_statistics,
     train_splitter,
 )
 from mnist_ssl.baselines.impurity_tree import (
-    FINAL_LEAVES,
+    DEPTH_TWO_LEAVES,
     ROOT_LEAVES,
     assemble_tree_memberships,
     collect_dataset_memberships,
     file_sha256,
+    freeze_splitter,
     hard_routes,
-    load_frozen_root,
+    hierarchy_statistics,
     load_mnist,
     make_loader,
     model_state_sha256,
@@ -50,132 +49,117 @@ from mnist_ssl.paths import DATASET_DIR, OUT_DIR
 
 
 CRITERION = "entropy"
-EXPANDED_LEAVES = (0, 1, 2)
-DEPTH_THREE_LEAVES = (
-    "leaf_0/grandchild_left",
-    "leaf_0/grandchild_right",
-    "leaf_1/grandchild_left",
-    "leaf_1/grandchild_right",
-    "leaf_2/grandchild_left",
-    "leaf_2/grandchild_right",
-    "leaf_3/terminal",
-)
+MODEL_KIND = "two_conv_residual_binary_splitter"
+N_DEPTH_TWO_LEAVES = 4
+N_FINAL_LEAVES = 7
 
 
-def load_frozen_depth_two_child(
-    path: Path,
-    parent_leaf: str,
-    device: torch.device,
-) -> nn.Module:
-    """Load and freeze one child from the completed depth-two experiment."""
+def residual_parameter_count() -> int:
+    return sum(parameter.numel() for parameter in ResidualConvSplitter().parameters())
 
-    payload = torch.load(path, map_location="cpu", weights_only=False)
-    if payload.get("criterion") != CRITERION:
-        raise ValueError("depth-two child must use entropy impurity")
-    if payload.get("parent_leaf") != parent_leaf:
-        raise ValueError(
-            f"parent leaf mismatch: expected {parent_leaf}, "
-            f"found {payload.get('parent_leaf')}"
-        )
-    if payload.get("model_kind") != "original_three_conv_child_splitter":
-        raise ValueError("unexpected depth-two child architecture")
-    model = OriginalConvSplitter()
-    model.load_state_dict(payload["model_state_dict"], strict=True)
-    model.requires_grad_(False)
-    model.eval()
-    return model.to(device)
+
+def final_leaf_names(terminal_leaf: int) -> tuple[str, ...]:
+    """Return seven stable names for three expanded and one terminal parent."""
+
+    if terminal_leaf not in range(N_DEPTH_TWO_LEAVES):
+        raise ValueError("terminal_leaf must be one of the four depth-two leaves")
+    names = []
+    for parent in range(N_DEPTH_TWO_LEAVES):
+        if parent == terminal_leaf:
+            names.append(f"leaf_{parent}/terminal")
+        else:
+            names.extend(
+                (
+                    f"leaf_{parent}/grandchild_left",
+                    f"leaf_{parent}/grandchild_right",
+                )
+            )
+    return tuple(names)
+
+
+def expanded_depth_two_leaves(terminal_leaf: int) -> tuple[int, ...]:
+    return tuple(
+        leaf for leaf in range(N_DEPTH_TWO_LEAVES) if leaf != terminal_leaf
+    )
+
+
+def choose_terminal_leaf(depth_two_hard: dict) -> int:
+    """Select exactly one terminal using only hard-routed training impurity."""
+
+    impurities = depth_two_hard["leaf_impurity"]
+    masses = depth_two_hard["leaf_mass_fraction"]
+    if len(impurities) != N_DEPTH_TWO_LEAVES or len(masses) != N_DEPTH_TWO_LEAVES:
+        raise ValueError("depth-two statistics must describe exactly four leaves")
+    populated = [index for index, mass in enumerate(masses) if mass > 0]
+    if not populated:
+        raise ValueError("at least one depth-two leaf must be populated")
+    return min(populated, key=lambda index: (impurities[index], index))
 
 
 def assemble_depth_three_memberships(
     depth_two_routes: torch.Tensor,
     expanded_memberships: dict[int, torch.Tensor],
+    terminal_leaf: int,
 ) -> torch.Tensor:
-    """Map three expanded parents and one terminal parent to seven leaves."""
+    """Map four hard parent routes into an irregular seven-leaf tree."""
 
     if depth_two_routes.ndim != 1:
         raise ValueError("depth_two_routes must have one entry per example")
-    if not torch.all((depth_two_routes >= 0) & (depth_two_routes <= 3)):
+    if not torch.all(
+        (depth_two_routes >= 0) & (depth_two_routes < N_DEPTH_TWO_LEAVES)
+    ):
         raise ValueError("depth-two routes must contain only 0, 1, 2, or 3")
-    if set(expanded_memberships) != set(EXPANDED_LEAVES):
-        raise ValueError("expanded memberships must be provided for leaves 0, 1, 2")
+    expected_parents = set(expanded_depth_two_leaves(terminal_leaf))
+    if set(expanded_memberships) != expected_parents:
+        raise ValueError("memberships must exist for every non-terminal parent")
 
     n_examples = len(depth_two_routes)
-    reference = expanded_memberships[0]
-    for parent in EXPANDED_LEAVES:
-        if tuple(expanded_memberships[parent].shape) != (n_examples, 2):
+    reference = expanded_memberships[next(iter(sorted(expected_parents)))]
+    output = reference.new_zeros((n_examples, N_FINAL_LEAVES))
+    column = 0
+    for parent in range(N_DEPTH_TWO_LEAVES):
+        selected = depth_two_routes == parent
+        if parent == terminal_leaf:
+            output[selected, column] = 1.0
+            column += 1
+            continue
+        memberships = expanded_memberships[parent]
+        if tuple(memberships.shape) != (n_examples, 2):
             raise ValueError(
                 f"leaf {parent} memberships must have shape {(n_examples, 2)}"
             )
-    output = reference.new_zeros((n_examples, 7))
-    for parent in EXPANDED_LEAVES:
-        selected = depth_two_routes == parent
-        start = 2 * parent
-        output[selected, start : start + 2] = expanded_memberships[parent][selected]
-    output[depth_two_routes == 3, 6] = 1.0
+        output[selected, column : column + 2] = memberships[selected]
+        column += 2
+    if column != N_FINAL_LEAVES:
+        raise RuntimeError("depth-three layout did not produce seven leaves")
     return output
 
 
-@torch.no_grad()
-def collect_depth_two_routes(
-    root: nn.Module,
-    depth_two_children: dict[str, nn.Module],
-    dataset: Dataset,
-    config: ExperimentConfig,
-    device: torch.device,
-) -> tuple[torch.Tensor, torch.Tensor, torch.Tensor, torch.Tensor]:
-    """Return root memberships, four-leaf memberships, hard routes, and labels."""
-
-    root_memberships, labels = collect_dataset_memberships(
-        root, dataset, config, device
-    )
-    root_routes = hard_routes(root_memberships)
-    child_memberships = {}
-    for parent_name in ROOT_LEAVES:
-        memberships, child_labels = collect_dataset_memberships(
-            depth_two_children[parent_name], dataset, config, device
-        )
-        if not torch.equal(child_labels, labels):
-            raise RuntimeError("label order changed during depth-two routing")
-        child_memberships[parent_name] = memberships
-    depth_two_memberships = assemble_tree_memberships(
-        root_routes,
-        child_memberships["left"],
-        child_memberships["right"],
-    )
-    return (
-        root_memberships,
-        depth_two_memberships,
-        depth_two_memberships.argmax(dim=1),
-        labels,
-    )
-
-
-def depth_three_statistics(
+def full_tree_statistics(
     root_memberships: torch.Tensor,
     depth_two_memberships: torch.Tensor,
     depth_three_memberships: torch.Tensor,
     labels: torch.Tensor,
+    terminal_leaf: int,
 ) -> dict:
-    """Compare frozen root, frozen depth two, and the seven-leaf result."""
+    """Measure root, four-leaf, and seven-leaf entropy reductions."""
 
-    root_hard = F.one_hot(hard_routes(root_memberships), num_classes=2).to(
-        depth_three_memberships.dtype
-    )
-    root = split_statistics(root_hard, labels, CRITERION)["hard"]
-    depth_two = tree_statistics(
+    first_two_levels = hierarchy_statistics(
+        root_memberships,
         depth_two_memberships,
         labels,
         CRITERION,
-        FINAL_LEAVES,
     )
     depth_three = tree_statistics(
         depth_three_memberships,
         labels,
         CRITERION,
-        DEPTH_THREE_LEAVES,
+        final_leaf_names(terminal_leaf),
     )
-    baseline = depth_two["hard"]["child_weighted_impurity"]
     for mode in ("soft", "hard"):
+        baseline = first_two_levels["depth_two"][mode][
+            "child_weighted_impurity"
+        ]
         final = depth_three[mode]
         incremental = baseline - final["child_weighted_impurity"]
         final["incremental_reduction_from_depth_two"] = incremental
@@ -183,127 +167,239 @@ def depth_three_statistics(
             incremental / max(baseline, 1e-8)
         )
     return {
-        "root_hard": root,
-        "depth_two": depth_two,
+        "root_hard": first_two_levels["root_hard"],
+        "depth_two": first_two_levels["depth_two"],
         "depth_three": depth_three,
     }
 
 
+def _train_node(
+    name: str,
+    training_dataset: Dataset,
+    evaluation_dataset: Dataset,
+    expected_labels: torch.Tensor | None,
+    config: ExperimentConfig,
+    device: torch.device,
+) -> tuple[nn.Module, torch.Tensor, torch.Tensor, list[dict[str, float]]]:
+    set_seed(config.seed)
+    model = ResidualConvSplitter().to(device)
+    print(f"entropy {name}: training_examples={len(training_dataset)}", flush=True)
+    history = train_splitter(
+        model,
+        make_loader(training_dataset, config, shuffle=True),
+        CRITERION,
+        config,
+        device,
+    )
+    memberships, labels = collect_dataset_memberships(
+        model,
+        evaluation_dataset,
+        config,
+        device,
+    )
+    if expected_labels is not None and not torch.equal(labels, expected_labels):
+        raise RuntimeError(f"label order changed while evaluating {name}")
+    freeze_splitter(model)
+    return model, memberships, labels, history
+
+
 def _fingerprints(
     root: nn.Module,
-    depth_two_children: dict[str, nn.Module],
+    depth_two_children: dict[int, nn.Module],
+    depth_three_children: dict[int, nn.Module] | None = None,
 ) -> dict[str, str]:
-    return {
-        "root": model_state_sha256(root),
-        **{
-            f"depth_two_{name}": model_state_sha256(model)
-            for name, model in depth_two_children.items()
-        },
-    }
+    values = {"root": model_state_sha256(root)}
+    values.update(
+        {
+            f"depth_two_leaf_{leaf}": model_state_sha256(model)
+            for leaf, model in sorted(depth_two_children.items())
+        }
+    )
+    if depth_three_children is not None:
+        values.update(
+            {
+                f"depth_three_leaf_{leaf}": model_state_sha256(model)
+                for leaf, model in sorted(depth_three_children.items())
+            }
+        )
+    return values
 
 
-def _train_expanded_leaves(
-    root_path: Path,
-    depth_two_checkpoint_dir: Path,
+def _train_complete_tree(
     train_dataset: Dataset,
     config: ExperimentConfig,
     device: torch.device,
 ) -> dict:
-    """Train the three new splitters without constructing or reading test."""
+    """Train all six nodes before a canonical test dataset exists."""
 
-    root = load_frozen_root(root_path, CRITERION, device)
-    depth_two_paths = {
-        name: depth_two_checkpoint_dir / f"entropy_root_{name}.pt"
-        for name in ROOT_LEAVES
-    }
-    depth_two_children = {
-        name: load_frozen_depth_two_child(path, name, device)
-        for name, path in depth_two_paths.items()
-    }
-    fingerprints_before = _fingerprints(root, depth_two_children)
-    (
-        root_train_memberships,
-        depth_two_train_memberships,
-        depth_two_train_routes,
-        train_labels,
-    ) = collect_depth_two_routes(
-        root, depth_two_children, train_dataset, config, device
-    )
-
-    expanded_models = {}
-    expanded_train_memberships = {}
-    records = []
     started = time.monotonic()
-    for parent_leaf in EXPANDED_LEAVES:
-        selected = depth_two_train_routes == parent_leaf
+    root, root_memberships, train_labels, root_history = _train_node(
+        "root",
+        train_dataset,
+        train_dataset,
+        None,
+        config,
+        device,
+    )
+    root_routes = hard_routes(root_memberships)
+    root_state_after_training = model_state_sha256(root)
+
+    depth_two_children = {}
+    depth_two_memberships_by_parent = {}
+    depth_two_records = []
+    for parent_leaf, parent_name in enumerate(ROOT_LEAVES):
+        selected = root_routes == parent_leaf
         indices = torch.nonzero(selected, as_tuple=False).flatten()
         if len(indices) < 2:
-            raise ValueError(f"leaf {parent_leaf} has too few training examples")
-        subset = Subset(train_dataset, indices.tolist())
-        set_seed(config.seed)
-        model = OriginalConvSplitter().to(device)
-        print(
-            f"entropy leaf_{parent_leaf}: training_examples={len(subset)}",
-            flush=True,
-        )
-        history = train_splitter(
-            model,
-            make_loader(subset, config, shuffle=True),
-            CRITERION,
+            raise ValueError(f"root {parent_name} has too few training examples")
+        model, memberships, _, history = _train_node(
+            f"depth_two_{parent_name}",
+            Subset(train_dataset, indices.tolist()),
+            train_dataset,
+            train_labels,
             config,
             device,
         )
-        memberships, labels = collect_dataset_memberships(
-            model, train_dataset, config, device
-        )
-        if not torch.equal(labels, train_labels):
-            raise RuntimeError("train label order changed during expanded evaluation")
-        expanded_models[parent_leaf] = model
-        expanded_train_memberships[parent_leaf] = memberships
-        records.append(
+        depth_two_children[parent_leaf] = model
+        depth_two_memberships_by_parent[parent_leaf] = memberships
+        depth_two_records.append(
             {
                 "parent_leaf": parent_leaf,
-                "parameter_count": sum(p.numel() for p in model.parameters()),
+                "parent_name": parent_name,
                 "training_examples": len(indices),
                 "history": history,
                 "metrics": {
                     "train": split_statistics(
-                        memberships[selected], train_labels[selected], CRITERION
+                        memberships[selected],
+                        train_labels[selected],
+                        CRITERION,
                     )
                 },
             }
         )
 
-    fingerprints_after = _fingerprints(root, depth_two_children)
-    if fingerprints_after != fingerprints_before:
-        raise RuntimeError("a frozen ancestor changed during new leaf training")
-    depth_three_train_memberships = assemble_depth_three_memberships(
-        depth_two_train_routes,
-        expanded_train_memberships,
+    if model_state_sha256(root) != root_state_after_training:
+        raise RuntimeError("frozen root changed during depth-two training")
+    depth_two_memberships = assemble_tree_memberships(
+        root_routes,
+        depth_two_memberships_by_parent[0],
+        depth_two_memberships_by_parent[1],
+    )
+    depth_two_routes = depth_two_memberships.argmax(dim=1)
+    depth_two_metrics = hierarchy_statistics(
+        root_memberships,
+        depth_two_memberships,
+        train_labels,
+        CRITERION,
+    )
+    terminal_leaf = choose_terminal_leaf(depth_two_metrics["depth_two"]["hard"])
+    expanded_leaves = expanded_depth_two_leaves(terminal_leaf)
+    print(
+        "training-only topology: "
+        f"terminal_leaf={terminal_leaf} expanded_leaves={expanded_leaves}",
+        flush=True,
+    )
+
+    ancestors_before_depth_three = _fingerprints(root, depth_two_children)
+    depth_three_children = {}
+    depth_three_memberships_by_parent = {}
+    depth_three_records = []
+    for parent_leaf in expanded_leaves:
+        selected = depth_two_routes == parent_leaf
+        indices = torch.nonzero(selected, as_tuple=False).flatten()
+        if len(indices) < 2:
+            raise ValueError(f"depth-two leaf {parent_leaf} has too few examples")
+        model, memberships, _, history = _train_node(
+            f"depth_three_leaf_{parent_leaf}",
+            Subset(train_dataset, indices.tolist()),
+            train_dataset,
+            train_labels,
+            config,
+            device,
+        )
+        depth_three_children[parent_leaf] = model
+        depth_three_memberships_by_parent[parent_leaf] = memberships
+        depth_three_records.append(
+            {
+                "parent_leaf": parent_leaf,
+                "training_examples": len(indices),
+                "history": history,
+                "metrics": {
+                    "train": split_statistics(
+                        memberships[selected],
+                        train_labels[selected],
+                        CRITERION,
+                    )
+                },
+            }
+        )
+
+    ancestors_after_depth_three = _fingerprints(root, depth_two_children)
+    if ancestors_after_depth_three != ancestors_before_depth_three:
+        raise RuntimeError("a frozen ancestor changed during depth-three training")
+    depth_three_memberships = assemble_depth_three_memberships(
+        depth_two_routes,
+        depth_three_memberships_by_parent,
+        terminal_leaf,
+    )
+    all_fingerprints_before_test = _fingerprints(
+        root,
+        depth_two_children,
+        depth_three_children,
     )
     return {
-        "root_path": root_path,
-        "depth_two_paths": depth_two_paths,
-        "ancestor_file_sha256": {
-            "root": file_sha256(root_path),
-            **{
-                f"depth_two_{name}": file_sha256(path)
-                for name, path in depth_two_paths.items()
-            },
-        },
-        "fingerprints_before": fingerprints_before,
         "root": root,
+        "root_history": root_history,
+        "root_metrics": {
+            "train": split_statistics(root_memberships, train_labels, CRITERION)
+        },
+        "root_state_after_training": root_state_after_training,
         "depth_two_children": depth_two_children,
-        "expanded_models": expanded_models,
-        "records": records,
-        "train_metrics": depth_three_statistics(
-            root_train_memberships,
-            depth_two_train_memberships,
-            depth_three_train_memberships,
+        "depth_two_records": depth_two_records,
+        "depth_three_children": depth_three_children,
+        "depth_three_records": depth_three_records,
+        "terminal_leaf": terminal_leaf,
+        "expanded_leaves": expanded_leaves,
+        "ancestor_fingerprints_before_depth_three": ancestors_before_depth_three,
+        "ancestor_fingerprints_after_depth_three": ancestors_after_depth_three,
+        "all_fingerprints_before_test": all_fingerprints_before_test,
+        "train_metrics": full_tree_statistics(
+            root_memberships,
+            depth_two_memberships,
+            depth_three_memberships,
             train_labels,
+            terminal_leaf,
         ),
         "elapsed_training_seconds": time.monotonic() - started,
     }
+
+
+def _save_node(
+    path: Path,
+    model: nn.Module,
+    level: str,
+    parent_leaf: int | None,
+    config: ExperimentConfig,
+    history: list[dict[str, float]],
+    metrics: dict,
+    ancestor_state_sha256: dict[str, str],
+) -> str:
+    torch.save(
+        {
+            "criterion": CRITERION,
+            "model_kind": MODEL_KIND,
+            "tree_level": level,
+            "parent_leaf": parent_leaf,
+            "parameter_count": residual_parameter_count(),
+            "config": asdict(config),
+            "ancestor_state_sha256": ancestor_state_sha256,
+            "model_state_dict": model.state_dict(),
+            "history": history,
+            "metrics": metrics,
+        },
+        path,
+    )
+    return file_sha256(path)
 
 
 def _finalize(
@@ -313,85 +409,165 @@ def _finalize(
     device: torch.device,
     output_dir: Path,
 ) -> dict:
-    (
-        root_test_memberships,
-        depth_two_test_memberships,
-        depth_two_test_routes,
-        test_labels,
-    ) = collect_depth_two_routes(
-        state["root"],
-        state["depth_two_children"],
-        test_dataset,
-        config,
-        device,
+    """Evaluate the fixed tree once, verify freezing, and save all six nodes."""
+
+    root_memberships, test_labels = collect_dataset_memberships(
+        state["root"], test_dataset, config, device
     )
-    expanded_test_memberships = {}
-    for record in state["records"]:
+    root_routes = hard_routes(root_memberships)
+    state["root_metrics"]["canonical_test"] = split_statistics(
+        root_memberships,
+        test_labels,
+        CRITERION,
+    )
+
+    depth_two_memberships_by_parent = {}
+    for record in state["depth_two_records"]:
         parent_leaf = record["parent_leaf"]
-        model = state["expanded_models"][parent_leaf]
         memberships, labels = collect_dataset_memberships(
-            model, test_dataset, config, device
+            state["depth_two_children"][parent_leaf],
+            test_dataset,
+            config,
+            device,
         )
         if not torch.equal(labels, test_labels):
-            raise RuntimeError("test label order changed during expanded evaluation")
-        selected = depth_two_test_routes == parent_leaf
+            raise RuntimeError("test label order changed at depth two")
+        selected = root_routes == parent_leaf
         record["test_examples"] = int(selected.sum().item())
         record["metrics"]["canonical_test"] = split_statistics(
             memberships[selected], test_labels[selected], CRITERION
         )
-        expanded_test_memberships[parent_leaf] = memberships
+        depth_two_memberships_by_parent[parent_leaf] = memberships
 
-        checkpoint_path = output_dir / f"entropy_leaf_{parent_leaf}.pt"
-        torch.save(
-            {
-                "criterion": CRITERION,
-                "parent_leaf": parent_leaf,
-                "model_kind": "original_three_conv_depth_three_splitter",
-                "ancestor_file_sha256": state["ancestor_file_sha256"],
-                "ancestor_state_sha256": state["fingerprints_before"],
-                "config": asdict(config),
-                "model_state_dict": model.state_dict(),
-                "history": record.pop("history"),
-                "metrics": record["metrics"],
-            },
-            checkpoint_path,
+    depth_two_memberships = assemble_tree_memberships(
+        root_routes,
+        depth_two_memberships_by_parent[0],
+        depth_two_memberships_by_parent[1],
+    )
+    depth_two_routes = depth_two_memberships.argmax(dim=1)
+    depth_three_memberships_by_parent = {}
+    for record in state["depth_three_records"]:
+        parent_leaf = record["parent_leaf"]
+        memberships, labels = collect_dataset_memberships(
+            state["depth_three_children"][parent_leaf],
+            test_dataset,
+            config,
+            device,
         )
-        record["checkpoint"] = checkpoint_path.name
-        record["checkpoint_sha256"] = file_sha256(checkpoint_path)
+        if not torch.equal(labels, test_labels):
+            raise RuntimeError("test label order changed at depth three")
+        selected = depth_two_routes == parent_leaf
+        record["test_examples"] = int(selected.sum().item())
+        record["metrics"]["canonical_test"] = split_statistics(
+            memberships[selected], test_labels[selected], CRITERION
+        )
+        depth_three_memberships_by_parent[parent_leaf] = memberships
 
-    depth_three_test_memberships = assemble_depth_three_memberships(
-        depth_two_test_routes,
-        expanded_test_memberships,
+    depth_three_memberships = assemble_depth_three_memberships(
+        depth_two_routes,
+        depth_three_memberships_by_parent,
+        state["terminal_leaf"],
     )
-    test_metrics = depth_three_statistics(
-        root_test_memberships,
-        depth_two_test_memberships,
-        depth_three_test_memberships,
+    test_metrics = full_tree_statistics(
+        root_memberships,
+        depth_two_memberships,
+        depth_three_memberships,
         test_labels,
+        state["terminal_leaf"],
     )
-    fingerprints_final = _fingerprints(
-        state["root"], state["depth_two_children"]
+    fingerprints_after_test = _fingerprints(
+        state["root"],
+        state["depth_two_children"],
+        state["depth_three_children"],
     )
-    if fingerprints_final != state["fingerprints_before"]:
-        raise RuntimeError("a frozen ancestor changed during final evaluation")
+    if fingerprints_after_test != state["all_fingerprints_before_test"]:
+        raise RuntimeError("a frozen splitter changed during canonical evaluation")
+
+    root_path = output_dir / "entropy_root.pt"
+    root_sha = _save_node(
+        root_path,
+        state["root"],
+        "root",
+        None,
+        config,
+        state["root_history"],
+        state["root_metrics"],
+        {},
+    )
+    checkpoint_sha256 = {"root": root_sha}
+    root_ancestor = {"root": state["root_state_after_training"]}
+    for record in state["depth_two_records"]:
+        parent_leaf = record["parent_leaf"]
+        path = output_dir / f"entropy_depth_two_leaf_{parent_leaf}.pt"
+        sha = _save_node(
+            path,
+            state["depth_two_children"][parent_leaf],
+            "depth_two",
+            parent_leaf,
+            config,
+            record.pop("history"),
+            record["metrics"],
+            root_ancestor,
+        )
+        record["checkpoint"] = path.name
+        record["checkpoint_sha256"] = sha
+        checkpoint_sha256[f"depth_two_leaf_{parent_leaf}"] = sha
+
+    depth_two_ancestors = state["ancestor_fingerprints_before_depth_three"]
+    for record in state["depth_three_records"]:
+        parent_leaf = record["parent_leaf"]
+        path = output_dir / f"entropy_depth_three_leaf_{parent_leaf}.pt"
+        sha = _save_node(
+            path,
+            state["depth_three_children"][parent_leaf],
+            "depth_three",
+            parent_leaf,
+            config,
+            record.pop("history"),
+            record["metrics"],
+            depth_two_ancestors,
+        )
+        record["checkpoint"] = path.name
+        record["checkpoint_sha256"] = sha
+        checkpoint_sha256[f"depth_three_leaf_{parent_leaf}"] = sha
 
     hard = test_metrics["depth_three"]["hard"]
     print(
-        "entropy depth-three hard test reduction: "
+        "residual entropy tree hard test reduction: "
         f"total={hard['relative_impurity_reduction']:.2%} "
         f"incremental={hard['relative_incremental_reduction_from_depth_two']:.2%}",
         flush=True,
     )
     return {
         "criterion": CRITERION,
-        "expanded_depth_two_leaves": EXPANDED_LEAVES,
-        "terminal_depth_two_leaf": 3,
-        "ancestor_checkpoint_sha256": state["ancestor_file_sha256"],
-        "ancestor_state_sha256_before": state["fingerprints_before"],
-        "ancestor_state_sha256_after": fingerprints_final,
-        "ancestors_unchanged": True,
+        "model_kind": MODEL_KIND,
+        "parameter_count_each": residual_parameter_count(),
+        "splitter_count": 6,
+        "total_trainable_parameters_across_independent_nodes": (
+            6 * residual_parameter_count()
+        ),
+        "terminal_depth_two_leaf": state["terminal_leaf"],
+        "expanded_depth_two_leaves": state["expanded_leaves"],
+        "terminal_selection": (
+            "lowest hard-routed normalized Shannon leaf impurity on MNIST train; "
+            "ties resolved by lowest leaf index"
+        ),
+        "checkpoint_sha256": checkpoint_sha256,
+        "root_checkpoint": root_path.name,
+        "root_checkpoint_sha256": root_sha,
+        "root_metrics": state["root_metrics"],
+        "depth_two_nodes": state["depth_two_records"],
+        "depth_three_nodes": state["depth_three_records"],
+        "ancestor_fingerprints_before_depth_three": state[
+            "ancestor_fingerprints_before_depth_three"
+        ],
+        "ancestor_fingerprints_after_depth_three": state[
+            "ancestor_fingerprints_after_depth_three"
+        ],
+        "all_fingerprints_before_test": state["all_fingerprints_before_test"],
+        "all_fingerprints_after_test": fingerprints_after_test,
+        "all_frozen_states_unchanged": True,
         "elapsed_training_seconds": state["elapsed_training_seconds"],
-        "new_splitters": state["records"],
         "metrics": {
             "train": state["train_metrics"],
             "canonical_test": test_metrics,
@@ -401,57 +577,47 @@ def _finalize(
 
 def run_experiment(
     config: ExperimentConfig,
-    root_checkpoint: Path,
-    depth_two_checkpoint_dir: Path,
     dataset_dir: Path,
     output_dir: Path,
 ) -> dict:
-    required = [
-        root_checkpoint,
-        *(depth_two_checkpoint_dir / f"entropy_root_{name}.pt" for name in ROOT_LEAVES),
-    ]
-    missing = [str(path) for path in required if not path.is_file()]
-    if missing:
-        raise FileNotFoundError(f"missing ancestor checkpoints: {', '.join(missing)}")
-
     output_dir.mkdir(parents=True, exist_ok=True)
     device = pick_device(config.device)
     print(f"device={device} output={output_dir}", flush=True)
     train_dataset = load_mnist(dataset_dir, train=True)
-    trained = _train_expanded_leaves(
-        root_checkpoint,
-        depth_two_checkpoint_dir,
-        train_dataset,
-        config,
-        device,
+    trained = _train_complete_tree(train_dataset, config, device)
+    print(
+        "all six splitters trained and frozen; loading canonical test split",
+        flush=True,
     )
-    print("all new splitters trained; loading canonical test split", flush=True)
     test_dataset = load_mnist(dataset_dir, train=False)
     result = _finalize(trained, test_dataset, config, device, output_dir)
     summary = {
-        "experiment": "mnist_frozen_entropy_impurity_tree_depth_three",
+        "experiment": "mnist_two_conv_residual_entropy_impurity_tree",
         "architecture": (
-            "frozen root and frozen depth-two splitters; independent original "
-            "three-convolution splitters added only below leaves 0, 1, and 2; "
-            "depth-two leaf 3 remains terminal; seven final leaves"
+            "six independent binary splitters; each has exactly two 3x3 "
+            "convolutions with 16 channels, one identity residual addition "
+            "around the second convolution, adaptive average pooling, and one "
+            "routing logit"
         ),
         "objective": (
             "sample-weighted normalized Shannon entropy of two differentiable "
-            "leaves plus the same label-free balance penalty; no classifier loss"
+            "leaves plus a label-free balance penalty; no classifier loss"
         ),
         "training_policy": (
-            "hard-route MNIST train through all frozen ancestors; train each new "
-            "splitter only on its leaf subset; no end-to-end gradients"
+            "greedy local training from scratch; freeze each node before "
+            "training descendants; no end-to-end gradients"
+        ),
+        "topology_policy": (
+            "after depth two, keep the lowest-entropy training leaf terminal "
+            "and expand the other three"
         ),
         "test_policy": (
-            "train all three new splitters before loading canonical MNIST test; "
-            "no threshold, epoch, architecture, or parameter selected on test"
+            "train and freeze all six splitters and fix topology before loading "
+            "canonical MNIST test; no test selection"
         ),
-        "final_leaf_names": DEPTH_THREE_LEAVES,
+        "final_leaf_names": final_leaf_names(result["terminal_depth_two_leaf"]),
         "config": asdict(config),
         "device": str(device),
-        "root_checkpoint": str(root_checkpoint),
-        "depth_two_checkpoint_dir": str(depth_two_checkpoint_dir),
         "dataset_dir": str(dataset_dir),
         "result": result,
     }
@@ -475,21 +641,11 @@ def main() -> None:
         choices=("auto", "cpu", "mps", "cuda"),
         default="auto",
     )
-    parser.add_argument(
-        "--root-checkpoint",
-        type=Path,
-        default=OUT_DIR / "neural_impurity_stump_2026-07-21" / "entropy.pt",
-    )
-    parser.add_argument(
-        "--depth-two-checkpoint-dir",
-        type=Path,
-        default=OUT_DIR / "neural_impurity_tree_depth_two_2026-07-21",
-    )
     parser.add_argument("--dataset-dir", type=Path, default=DATASET_DIR)
     parser.add_argument(
         "--output-dir",
         type=Path,
-        default=OUT_DIR / "neural_impurity_tree_depth_three_entropy",
+        default=OUT_DIR / "neural_impurity_tree_residual_entropy",
     )
     args = parser.parse_args()
     config = ExperimentConfig(
@@ -502,13 +658,7 @@ def main() -> None:
         num_workers=args.num_workers,
         device=args.device,
     )
-    run_experiment(
-        config,
-        args.root_checkpoint,
-        args.depth_two_checkpoint_dir,
-        args.dataset_dir,
-        args.output_dir,
-    )
+    run_experiment(config, args.dataset_dir, args.output_dir)
 
 
 if __name__ == "__main__":

@@ -76,49 +76,28 @@ def pick_device(requested: str = "auto") -> torch.device:
     return torch.device("cpu")
 
 
-class SmallConvSplitter(nn.Module):
-    """A two-convolution CNN with exactly one learned routing output."""
+class ResidualConvSplitter(nn.Module):
+    """A two-convolution residual CNN with one learned routing output."""
 
     def __init__(self) -> None:
         super().__init__()
-        self.features = nn.Sequential(
-            nn.Conv2d(1, 16, kernel_size=3, padding=1),
-            nn.ReLU(inplace=True),
-            nn.MaxPool2d(2),
-            nn.Conv2d(16, 32, kernel_size=3, padding=1),
-            nn.ReLU(inplace=True),
-            nn.AdaptiveAvgPool2d(1),
-        )
-        self.split = nn.Linear(32, 1)
+        self.conv1 = nn.Conv2d(1, 16, kernel_size=3, padding=1)
+        self.pool = nn.MaxPool2d(2)
+        self.conv2 = nn.Conv2d(16, 16, kernel_size=3, padding=1)
+        self.global_pool = nn.AdaptiveAvgPool2d(1)
+        self.split = nn.Linear(16, 1)
 
     def forward(self, images: torch.Tensor) -> torch.Tensor:
         """Return one unconstrained right-routing logit per image."""
 
-        return self.split(self.features(images).flatten(1)).squeeze(1)
+        features = self.pool(F.relu(self.conv1(images)))
+        features = F.relu(self.conv2(features) + features)
+        return self.split(self.global_pool(features).flatten(1)).squeeze(1)
 
 
-class OriginalConvSplitter(nn.Module):
-    """The original three-convolution, 23,361-parameter splitter."""
-
-    def __init__(self) -> None:
-        super().__init__()
-        self.features = nn.Sequential(
-            nn.Conv2d(1, 16, kernel_size=3, padding=1),
-            nn.ReLU(inplace=True),
-            nn.MaxPool2d(2),
-            nn.Conv2d(16, 32, kernel_size=3, padding=1),
-            nn.ReLU(inplace=True),
-            nn.MaxPool2d(2),
-            nn.Conv2d(32, 64, kernel_size=3, padding=1),
-            nn.ReLU(inplace=True),
-            nn.AdaptiveAvgPool2d(1),
-        )
-        self.split = nn.Linear(64, 1)
-
-    def forward(self, images: torch.Tensor) -> torch.Tensor:
-        """Return one unconstrained right-routing logit per image."""
-
-        return self.split(self.features(images).flatten(1)).squeeze(1)
+# Retain the public name used by the original stump entry point while making
+# every newly trained small splitter use the residual architecture.
+SmallConvSplitter = ResidualConvSplitter
 
 
 def leaf_memberships(split_logits: torch.Tensor) -> torch.Tensor:
@@ -330,7 +309,7 @@ def run_criterion(
 ) -> dict:
     set_seed(config.seed)
     train_loader, test_loader = mnist_loaders(config)
-    model = SmallConvSplitter().to(device)
+    model = ResidualConvSplitter().to(device)
     started = time.monotonic()
     history = train_splitter(model, train_loader, criterion, config, device)
 
@@ -349,7 +328,7 @@ def run_criterion(
     torch.save(
         {
             "criterion": criterion,
-            "model_kind": "two_conv_binary_splitter",
+            "model_kind": "two_conv_residual_binary_splitter",
             "config": asdict(config),
             "model_state_dict": model.state_dict(),
             "history": history,
@@ -359,7 +338,7 @@ def run_criterion(
     )
     result = {
         "criterion": criterion,
-        "model_kind": "two_conv_binary_splitter",
+        "model_kind": "two_conv_residual_binary_splitter",
         "parameter_count": sum(p.numel() for p in model.parameters()),
         "elapsed_seconds": time.monotonic() - started,
         "checkpoint": checkpoint_path.name,
@@ -401,8 +380,9 @@ def run_experiment(
     summary = {
         "experiment": "mnist_two_conv_binary_impurity_splitter",
         "architecture": (
-            "two convolutions, one sigmoid binary decision, two leaves, "
-            "no classifier head, no residual connection"
+            "two convolutions, one identity residual addition around the "
+            "second convolution, one sigmoid binary decision, two leaves, "
+            "and no classifier head"
         ),
         "criterion_definition": {
             "gini": "sample-weighted CART Gini impurity across two leaves",
