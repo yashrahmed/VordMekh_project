@@ -9,7 +9,6 @@ commands, and documentation under [`projects/`](projects/).
 |---|---|---|
 | [MNIST self-supervised learning](projects/mnist-ssl/) | Active | From-scratch DINOv2, I-JEPA, MAE, frozen probes, and ensembles. The current exploratory best is 99.61%. |
 | [ChaiGPT](projects/chai-gpt/) | Historical experiments | Seven conversational-planning prototypes plus an equipment-search experiment. |
-| [Fine-grained object recognition](projects/fine-grained-object-recognition/) | Planned | Sample-efficient aircraft and vehicle recognition. |
 | [VordMekh workbench](projects/vordmekh-workbench/) | Planned | Knowledge synthesis, hypothesis testing, and visualization. |
 
 ## Repository conventions

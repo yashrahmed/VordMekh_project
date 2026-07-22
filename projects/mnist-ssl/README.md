@@ -89,6 +89,26 @@ Run the complete LoRA backbone/probe matrix. The command follows fixed
 caffeinate -i uv run python scripts/analysis/train_lora_backbone_probes.py
 ```
 
+Run the two-convolution residual neural entropy splitter. The model emits one
+binary split and is trained only to reduce the normalized Shannon entropy of
+its two leaves; there is no digit-classification head:
+
+```bash
+caffeinate -i uv run python scripts/analysis/train_impurity_convnet.py \
+  --epochs 20 --batch-size 1024 --seed 0 --device cpu
+```
+
+Train the complete seven-leaf entropy tree from a uniform two-convolution
+residual architecture. The root is trained from scratch; every node is frozen
+before descendants train, and the test set is loaded only after all six
+splitters and the training-selected terminal leaf are fixed:
+
+```bash
+caffeinate -i uv run python scripts/analysis/train_impurity_tree_depth_three.py \
+  --epochs 20 --batch-size 1024 --seed 0 --device cpu \
+  --output-dir out/neural_impurity_tree_residual_entropy_2026-07-21
+```
+
 Re-run the current train-selected comparison:
 
 ```bash
