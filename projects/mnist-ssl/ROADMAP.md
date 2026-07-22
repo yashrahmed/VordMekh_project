@@ -21,7 +21,11 @@ model and ensemble choices and to understand why the members fail differently.
 
 ## Later research directions
 
-- [ ] Explore decision-tree/neural-network hybrids.
+- [x] Explore decision-tree/neural-network hybrids. Greedy residual splitters
+  generalized from train to test, but doubling the tree from 12 to 24 nodes
+  improved held-out impurity reduction by less than one percentage point. The
+  investigation is closed; see the
+  [final result record](results/reproductions/2026-07-22-neural-impurity-tree-final.json).
 - [ ] Test point tracking as a representation-learning signal.
 - [ ] Study action-conditioned V-JEPA and trajectory sampling.
 - [ ] Study VLA systems and latent visual reasoning.
