@@ -18,6 +18,7 @@ individual milestones remain labeled as such.
 | I-JEPA 56x56 flatten, epoch 500 | Individual comparison | 99.34% | 66 |
 | I-JEPA-500 flatten nonlinear-64 probe | Best nonlinear milestone observed | 99.42% | 58 |
 | **I-JEPA-500 flatten + LoRA, nonlinear head (150 epochs)** | **Prespecified milestone observed** | **99.58%** | **42** |
+| DINOv2 + I-JEPA-500 nonlinear LoRA pair | Train-selected weights after test-informed candidate choice | 99.60% | 40 |
 | I-JEPA-only linear-probe triplet | Train-selected logits | 99.42% | 58 |
 | DINOv2 + I-JEPA-300 + I-JEPA-500 linear probes | Train-selected logits | 99.45% | 55 |
 | **DINOv2 + I-JEPA-300 + I-JEPA-500 nonlinear probes** | **Train-selected probabilities** | **99.63%** | **37** |
@@ -70,6 +71,23 @@ The corrected/reviewed view peaks at 99.59% (41 errors) for the 150-epoch DINO
 nonlinear trajectory. Exact train, canonical-test, and reviewed-test
 measurements plus checkpoint and backbone hashes are in the
 [LoRA reproduction record](../results/reproductions/2026-07-20-lora-backbone-probes.json).
+
+### Cross-family LoRA logit pair
+
+The final nonlinear I-JEPA-500 checkpoint was the strongest previously
+observed LoRA individual. DINOv2's final nonlinear checkpoint was the strongest
+independent candidate from another backbone family. A full 1% raw-logit grid
+and 0.1% refinement on MNIST train selected `0.736 * DINOv2 + 0.264 *
+I-JEPA-500`, with zero training errors. The frozen mixture made 40 canonical
+test errors (**99.60%**) and 38 reviewed-label errors among 9,998 examples
+(**99.61992%**).
+
+This pair improves on the members' 46 and 42 canonical errors, but remains
+behind the 37-error nonlinear frozen-probe triplet. Because the candidates were
+located from an already observed test matrix, the pair comparison remains
+test-informed and exploratory; only its scalar mixture weight is strictly
+train-selected. Exact plateaus and hashes are in the
+[LoRA pair reproduction record](../results/reproductions/2026-07-23-lora-logit-pair.json).
 
 ## Pre-DINOv2 I-JEPA ensemble
 
