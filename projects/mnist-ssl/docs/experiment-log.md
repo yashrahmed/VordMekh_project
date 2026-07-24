@@ -1150,40 +1150,28 @@ head edges past every fine-tuned model.
     executable entry points, tests, and generated checkpoints were removed;
     the numerical record remains in the reproduction JSON files and this log.
 
-33. **The best cross-family LoRA pair reaches 99.60%.** Located the final
-    nonlinear I-JEPA-500 checkpoint (42 previously observed canonical errors)
-    and the final nonlinear DINOv2 checkpoint (46) as the strongest independent
-    LoRA ensemble candidates. A raw-logit search used all 60,000 canonical
-    training labels: a full 1% grid followed by 0.1% refinement selected
-    `0.736 * DINOv2 + 0.264 * I-JEPA-500` with zero training errors. The exact
-    zero-error training plateau covered DINOv2 weights from 0.736 through 1.0;
-    the closest-to-equal tie-breaker selected its lower boundary.
+33. **The top-three LoRA classifiers favor two different cross-family
+    pairs.** Corrected the ensemble candidate set to the three best observed
+    individual LoRA measurements: I-JEPA-500 nonlinear epoch 150 (42 canonical
+    errors) and DINOv2 nonlinear epochs 50 and 150 (46 each). A full 1%
+    raw-logit simplex plus 0.1% refinement selected the triplet, while three
+    matching one-dimensional grids selected every pair on all 60,000 canonical
+    training examples. All four rules were frozen before one shared test load.
 
-    The weight was frozen before loading MNIST test. It made 40 errors among
-    10,000 canonical examples (**99.60%**) and 38 errors among 9,998
-    reviewed-label examples (**99.61992%**). This improves both individual
-    members but remains three canonical errors behind the train-selected
-    nonlinear frozen-probe triplet. Candidate identification used the already
-    observed LoRA test matrix, so the result is explicitly exploratory even
-    though test labels did not select the mixture weight. Exact source,
-    training-logit, grid, and frozen-backbone hashes are in the
-    [LoRA pair reproduction record](../results/reproductions/2026-07-23-lora-logit-pair.json).
+    | Ensemble | Weights | Train errors | Canonical errors | Reviewed errors |
+    |---|---|---:|---:|---:|
+    | I-JEPA-500/150 + DINOv2/50 | `0.224/0.776` | 1 | 41 | **37** |
+    | **I-JEPA-500/150 + DINOv2/150** | **`0.264/0.736`** | **0** | **40** | 38 |
+    | DINOv2/50 + DINOv2/150 | `0.500/0.500` | 0 | 42 | 38 |
+    | All three | `0.155/0.376/0.469` | 0 | 42 | 38 |
 
-34. **The complete LoRA triplet does not improve the pair.** Added the final
-    nonlinear I-JEPA-300 checkpoint to the DINOv2/I-JEPA-500 LoRA ensemble.
-    The complete 1% training simplex contained 2,359 zero-error mixtures. A
-    closest-to-equal tie-breaker followed by 0.1% refinement selected
-    `0.334/0.333/0.333` in DINOv2/I-JEPA-300/I-JEPA-500 order; all 1,261
-    refined candidates also made zero training errors.
-
-    Frozen test evaluation produced 42 canonical errors (**99.58%**) and 38
-    reviewed-label errors among 9,998 examples (**99.61992%**). The triplet
-    therefore loses two canonical examples relative to the pair and merely
-    ties its reviewed result. The weaker I-JEPA-300 member makes 51 canonical
-    errors individually, and the training-error plateau offers no signal that
-    it should receive less than an equal share. The exact grid and source
-    hashes are in the
-    [LoRA triplet reproduction record](../results/reproductions/2026-07-23-lora-logit-triplet.json).
+    The epoch-150 cross-family pair is best on canonical labels at **99.60%**.
+    Replacing DINOv2/150 with DINOv2/50 costs one canonical example but improves
+    the reviewed result to **99.62993%**. The full triplet improves neither
+    view. Candidate identification remains test-informed and exploratory, but
+    test labels did not select any mixture weight. Exact source, grid, and
+    frozen-backbone hashes are in the
+    [top-three LoRA ensemble record](../results/reproductions/2026-07-23-lora-top3-ensembles.json).
 
 **Caveat now flips to the task.** With the epoch confound removed, MNIST's ~97%
 pixel floor leaves little room to separate these pretexts, but the explicit goal

@@ -1,0 +1,146 @@
+{
+  "schema_version": 1,
+  "date": "2026-07-23",
+  "experiment": "Train-selected raw-logit ensembles over the top three observed LoRA classifiers",
+  "protocol": {
+    "candidate_selection": "Test-informed exploratory top three individual canonical-test measurements from the audited LoRA matrix",
+    "selection_split": "MNIST train, canonical labels",
+    "selection_examples": 60000,
+    "test_loaded_after_all_weight_selection": true,
+    "test_labels_used_for_weight_selection": false,
+    "score_space": "raw logits",
+    "model_order": [
+      "ijepa_500_e150",
+      "dinov2_e50",
+      "dinov2_e150"
+    ],
+    "coarse_step": 0.01,
+    "refined_step": 0.001,
+    "refinement_radius": 0.02,
+    "tie_breaker": "Minimum canonical-train errors, then closest to equal weights, then ranked model order"
+  },
+  "sources": {
+    "dino_backbone_sha256": "265d5f6bce3432b7de6475fb7533c0ca3fd2234f9148fced1a9d7cb30df7f849",
+    "dino_frozen_backbone_sha256": "518aca8f613af6c3a4e255b9b9dc80f6a9d15120b6a50658d6d374debd3495e7",
+    "dino_e50_adapter_sha256": "7f24c31bd0c232b9f1dbb4e8fce9d30d4a3d9f344d971cb7827d5ec931dcdb66",
+    "dino_e150_adapter_sha256": "da02e9385e123c6b64362aba883ae94904329e5fc068a624d407e09d04dbb436",
+    "ijepa_500_backbone_sha256": "e2dbeafdd3c2bdb37b7bf29ce39b1cfcb73e4e2716bf02785b14ee27c54b73a1",
+    "ijepa_500_frozen_backbone_sha256": "390e8ef1b1fd2c3ee75d1b95fb0814dce3f608be1b68c6d47790dc1e87fa907a",
+    "ijepa_500_e150_adapter_sha256": "2ccb25166b5de36e4ee6c692160534c7458ce0e2a0294bee5e93282fa52e77c7"
+  },
+  "selection": {
+    "individual_training_errors": {
+      "ijepa_500_e150": 8,
+      "dinov2_e50": 3,
+      "dinov2_e150": 0
+    },
+    "triplet": {
+      "coarse_weights_evaluated": 5151,
+      "coarse_best_errors": 0,
+      "coarse_exact_best_count": 1261,
+      "refined_weights_evaluated": 1261,
+      "refined_exact_best_count": 670,
+      "selected_weights": {
+        "ijepa_500_e150": 0.155,
+        "dinov2_e50": 0.376,
+        "dinov2_e150": 0.469
+      },
+      "training_errors": 0
+    },
+    "pairs": {
+      "ijepa_500_e150__dinov2_e50": {
+        "selected_weights": {
+          "ijepa_500_e150": 0.224,
+          "dinov2_e50": 0.776
+        },
+        "training_errors": 1,
+        "coarse_exact_best_count": 18,
+        "refined_exact_best_count": 178
+      },
+      "ijepa_500_e150__dinov2_e150": {
+        "selected_weights": {
+          "ijepa_500_e150": 0.264,
+          "dinov2_e150": 0.736
+        },
+        "training_errors": 0,
+        "coarse_exact_best_count": 27,
+        "refined_exact_best_count": 25
+      },
+      "dinov2_e50__dinov2_e150": {
+        "selected_weights": {
+          "dinov2_e50": 0.5,
+          "dinov2_e150": 0.5
+        },
+        "training_errors": 0,
+        "coarse_exact_best_count": 91,
+        "refined_exact_best_count": 41
+      }
+    }
+  },
+  "evaluation": {
+    "members": {
+      "ijepa_500_e150": {
+        "canonical_errors": 42,
+        "reviewed_errors": 42
+      },
+      "dinov2_e50": {
+        "canonical_errors": 46,
+        "reviewed_errors": 42
+      },
+      "dinov2_e150": {
+        "canonical_errors": 46,
+        "reviewed_errors": 41
+      }
+    },
+    "triplet": {
+      "canonical_test": {
+        "scored_examples": 10000,
+        "errors": 42,
+        "accuracy_percent": 99.58
+      },
+      "reviewed_test": {
+        "scored_examples": 9998,
+        "errors": 38,
+        "accuracy_percent": 99.61992398479695
+      }
+    },
+    "pairs": {
+      "ijepa_500_e150__dinov2_e50": {
+        "canonical_test": {
+          "errors": 41,
+          "accuracy_percent": 99.59
+        },
+        "reviewed_test": {
+          "errors": 37,
+          "accuracy_percent": 99.62992598519704
+        }
+      },
+      "ijepa_500_e150__dinov2_e150": {
+        "canonical_test": {
+          "errors": 40,
+          "accuracy_percent": 99.6
+        },
+        "reviewed_test": {
+          "errors": 38,
+          "accuracy_percent": 99.61992398479695
+        }
+      },
+      "dinov2_e50__dinov2_e150": {
+        "canonical_test": {
+          "errors": 42,
+          "accuracy_percent": 99.58
+        },
+        "reviewed_test": {
+          "errors": 38,
+          "accuracy_percent": 99.61992398479695
+        }
+      }
+    }
+  },
+  "artifacts": {
+    "training_logits_sha256": "76f6826fd046042dbbb19bb0d91aa7bc10a7487a3666c67b8bff0bf2401bbf21",
+    "grid_sha256": "40ab5ea789f5717fb4d49bbe456325fdd438663cdede9d990b47a7b360095948",
+    "raw_summary_sha256": "41d19715c6de139d7ebf542c5f6943952097b130a8c348e62f62bdcd9b6a7194"
+  },
+  "conclusion": "The I-JEPA-500 epoch-150 plus DINOv2 epoch-150 pair is best on canonical labels at 40 errors. Pairing I-JEPA-500 epoch 150 with DINOv2 epoch 50 is best under reviewed labels at 37 errors. The full top-three triplet does not improve either pair."
+}

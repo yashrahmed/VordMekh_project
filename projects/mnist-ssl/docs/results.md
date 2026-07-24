@@ -18,8 +18,10 @@ individual milestones remain labeled as such.
 | I-JEPA 56x56 flatten, epoch 500 | Individual comparison | 99.34% | 66 |
 | I-JEPA-500 flatten nonlinear-64 probe | Best nonlinear milestone observed | 99.42% | 58 |
 | **I-JEPA-500 flatten + LoRA, nonlinear head (150 epochs)** | **Prespecified milestone observed** | **99.58%** | **42** |
-| DINOv2 + I-JEPA-500 nonlinear LoRA pair | Train-selected weights after test-informed candidate choice | 99.60% | 40 |
-| DINOv2 + I-JEPA-300 + I-JEPA-500 nonlinear LoRA triplet | Train-selected logits | 99.58% | 42 |
+| I-JEPA-500/150 + DINOv2/50 nonlinear LoRA pair | Train-selected weights after test-informed candidate choice | 99.59% | 41 |
+| I-JEPA-500/150 + DINOv2/150 nonlinear LoRA pair | Train-selected weights after test-informed candidate choice | 99.60% | 40 |
+| DINOv2/50 + DINOv2/150 nonlinear LoRA pair | Train-selected weights after test-informed candidate choice | 99.58% | 42 |
+| Top-three nonlinear LoRA triplet | Train-selected weights after test-informed candidate choice | 99.58% | 42 |
 | I-JEPA-only linear-probe triplet | Train-selected logits | 99.42% | 58 |
 | DINOv2 + I-JEPA-300 + I-JEPA-500 linear probes | Train-selected logits | 99.45% | 55 |
 | **DINOv2 + I-JEPA-300 + I-JEPA-500 nonlinear probes** | **Train-selected probabilities** | **99.63%** | **37** |
@@ -73,31 +75,27 @@ nonlinear trajectory. Exact train, canonical-test, and reviewed-test
 measurements plus checkpoint and backbone hashes are in the
 [LoRA reproduction record](../results/reproductions/2026-07-20-lora-backbone-probes.json).
 
-### Cross-family LoRA logit pair
+### Top-three LoRA logit ensembles
 
-The final nonlinear I-JEPA-500 checkpoint was the strongest previously
-observed LoRA individual. DINOv2's final nonlinear checkpoint was the strongest
-independent candidate from another backbone family. A full 1% raw-logit grid
-and 0.1% refinement on MNIST train selected `0.736 * DINOv2 + 0.264 *
-I-JEPA-500`, with zero training errors. The frozen mixture made 40 canonical
-test errors (**99.60%**) and 38 reviewed-label errors among 9,998 examples
-(**99.61992%**).
+The top three observed individual LoRA measurements are I-JEPA-500 nonlinear
+epoch 150 and DINOv2 nonlinear epochs 50 and 150. One full 1% raw-logit simplex
+plus 0.1% refinement selected their triplet, and matching one-dimensional
+grids selected all three pairs. Every weight was fixed on MNIST train before a
+shared test evaluation:
 
-This pair improves on the members' 46 and 42 canonical errors, but remains
-behind the 37-error nonlinear frozen-probe triplet. Because the candidates were
-located from an already observed test matrix, the pair comparison remains
-test-informed and exploratory; only its scalar mixture weight is strictly
-train-selected. Exact plateaus and hashes are in the
-[LoRA pair reproduction record](../results/reproductions/2026-07-23-lora-logit-pair.json).
+| Ensemble | Train-selected weights | Train errors | Canonical test | Reviewed test |
+|---|---|---:|---:|---:|
+| I-JEPA-500/150 + DINOv2/50 | `0.224/0.776` | 1 | 99.59% (41) | **99.62993% (37)** |
+| **I-JEPA-500/150 + DINOv2/150** | **`0.264/0.736`** | **0** | **99.60% (40)** | 99.61992% (38) |
+| DINOv2/50 + DINOv2/150 | `0.500/0.500` | 0 | 99.58% (42) | 99.61992% (38) |
+| All three | `0.155/0.376/0.469` | 0 | 99.58% (42) | 99.61992% (38) |
 
-Adding the final I-JEPA-300 nonlinear LoRA checkpoint produced a complete
-three-family search. The 1% grid contained 2,359 zero-training-error mixtures;
-the closest-to-equal tie-breaker and 0.1% refinement selected
-`0.334/0.333/0.333` in DINOv2/I-JEPA-300/I-JEPA-500 order. The triplet made 42
-canonical errors (**99.58%**) and 38 reviewed-label errors (**99.61992%**).
-It therefore loses two canonical examples relative to the pair and ties its
-reviewed result. Exact metrics and hashes are in the
-[LoRA triplet reproduction record](../results/reproductions/2026-07-23-lora-logit-triplet.json).
+The epoch-150 cross-family pair remains best on canonical labels, while the
+epoch-50 cross-family pair is best under reviewed labels. The triplet does not
+improve either view. Since the top three were identified from already observed
+test measurements, these are exploratory comparisons; only their logit weights
+are strictly train-selected. Exact plateaus and hashes are in the
+[top-three LoRA ensemble record](../results/reproductions/2026-07-23-lora-top3-ensembles.json).
 
 ## Pre-DINOv2 I-JEPA ensemble
 

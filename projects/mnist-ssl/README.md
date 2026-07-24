@@ -29,23 +29,21 @@ excludes two ambiguous examples, the same frozen rule makes **34 errors among
 
 ## LoRA ensemble experiments
 
-The final nonlinear LoRA checkpoints from DINOv2 and I-JEPA-500 were combined
-with raw-logit weights selected on all 60,000 training examples. The frozen
-`0.736/0.264` mixture makes **40 canonical test errors (99.60%)** and **38
-reviewed-label errors among 9,998 examples (99.61992%)**. This improves both
-LoRA members but does not beat the nonlinear-probe triplet above.
+The three best observed LoRA classifiers are I-JEPA-500 nonlinear epoch 150
+and DINOv2 nonlinear epochs 50 and 150. Raw-logit weights for their full
+triplet and all three pairs were selected on MNIST train before test was
+loaded.
 
-The pair itself was chosen from already observed LoRA test results, so this is
-an exploratory, test-informed comparison even though its scalar weight was
-selected without test labels. Exact hashes and metrics are in the
-[LoRA pair reproduction record](results/reproductions/2026-07-23-lora-logit-pair.json).
+The strongest canonical pair is `0.264 * I-JEPA-500/150 + 0.736 *
+DINOv2/150`, with **40 canonical errors (99.60%)**. The reviewed-label view
+instead favors `0.224 * I-JEPA-500/150 + 0.776 * DINOv2/50`, which makes **37
+errors among 9,998 examples (99.62993%)**. The three-member mixture makes 42
+canonical and 38 reviewed errors, so it does not improve either pair.
 
-Adding the final I-JEPA-300 LoRA checkpoint produced an almost equal
-`0.334/0.333/0.333` training-selected triplet. It made **42 canonical errors
-(99.58%)** and the same **38 reviewed-label errors (99.61992%)**. The extra
-member therefore costs two canonical errors without improving the reviewed
-result; details are in the
-[LoRA triplet reproduction record](results/reproductions/2026-07-23-lora-logit-triplet.json).
+Candidate identification used already observed LoRA test results, making the
+comparison exploratory even though every mixture weight was selected without
+test labels. Exact hashes and metrics are in the
+[top-three LoRA ensemble record](results/reproductions/2026-07-23-lora-top3-ensembles.json).
 
 ## Start here
 
@@ -121,18 +119,11 @@ Re-run the current train-selected comparison:
 uv run python scripts/analysis/grid_train_selected_probe_triplets.py
 ```
 
-Re-run the cross-family LoRA logit-pair experiment:
+Re-run the top-three LoRA triplet and all pairwise comparisons:
 
 ```bash
-uv run python scripts/analysis/grid_lora_logit_pair.py \
-  --output-dir out/lora_logit_pair_reproduction
-```
-
-Re-run the complete three-family LoRA triplet:
-
-```bash
-uv run python scripts/analysis/grid_lora_logit_triplet.py \
-  --output-dir out/lora_logit_triplet_reproduction
+uv run python scripts/analysis/grid_lora_top3_ensembles.py \
+  --output-dir out/lora_top3_ensembles_reproduction
 ```
 
 Verify every manifest-pinned artifact:
