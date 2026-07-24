@@ -26,10 +26,7 @@ model and ensemble choices and to understand why the members fail differently.
   improved held-out impurity reduction by less than one percentage point. The
   investigation is closed; see the
   [final result record](results/reproductions/2026-07-22-neural-impurity-tree-final.json).
-- [ ] Test point tracking as a representation-learning signal.
-- [ ] Study action-conditioned V-JEPA and trajectory sampling.
-- [ ] Study VLA systems and latent visual reasoning.
-- [ ] Follow the connection to Le-JEPA and LeWorldModel.
+- [x] V-JEPA, Le-JEPA, LeWorldModel and VLAs will be investigated in an agentic vision project.
 
 ## Completed milestones
 
