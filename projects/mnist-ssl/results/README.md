@@ -7,7 +7,8 @@
   The LoRA matrix record reports every prespecified test milestone and pins the
   exact source-checkpoint and unchanged-base fingerprints.
   The LoRA logit-pair record preserves the subsequent training-only weight
-  search and its one held-out evaluation.
+  search and its one held-out evaluation. The matched LoRA triplet record
+  retains the all-family comparison.
 
 Full grids, logs, checkpoints, and plots belong in the ignored `out/`, `models/`,
 and `images/` directories. See [the artifact policy](../docs/artifact-policy.md)

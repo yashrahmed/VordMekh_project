@@ -27,7 +27,7 @@ excludes two ambiguous examples, the same frozen rule makes **34 errors among
 9,998 scored examples: 99.65993%**. Exact metrics and hashes are preserved in the
 [train-selected reproduction record](results/reproductions/2026-07-18-training-selected-triplets.json).
 
-## LoRA pair experiment
+## LoRA ensemble experiments
 
 The final nonlinear LoRA checkpoints from DINOv2 and I-JEPA-500 were combined
 with raw-logit weights selected on all 60,000 training examples. The frozen
@@ -39,6 +39,13 @@ The pair itself was chosen from already observed LoRA test results, so this is
 an exploratory, test-informed comparison even though its scalar weight was
 selected without test labels. Exact hashes and metrics are in the
 [LoRA pair reproduction record](results/reproductions/2026-07-23-lora-logit-pair.json).
+
+Adding the final I-JEPA-300 LoRA checkpoint produced an almost equal
+`0.334/0.333/0.333` training-selected triplet. It made **42 canonical errors
+(99.58%)** and the same **38 reviewed-label errors (99.61992%)**. The extra
+member therefore costs two canonical errors without improving the reviewed
+result; details are in the
+[LoRA triplet reproduction record](results/reproductions/2026-07-23-lora-logit-triplet.json).
 
 ## Start here
 
@@ -119,6 +126,13 @@ Re-run the cross-family LoRA logit-pair experiment:
 ```bash
 uv run python scripts/analysis/grid_lora_logit_pair.py \
   --output-dir out/lora_logit_pair_reproduction
+```
+
+Re-run the complete three-family LoRA triplet:
+
+```bash
+uv run python scripts/analysis/grid_lora_logit_triplet.py \
+  --output-dir out/lora_logit_triplet_reproduction
 ```
 
 Verify every manifest-pinned artifact:

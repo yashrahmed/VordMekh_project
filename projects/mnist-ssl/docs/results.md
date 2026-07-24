@@ -19,6 +19,7 @@ individual milestones remain labeled as such.
 | I-JEPA-500 flatten nonlinear-64 probe | Best nonlinear milestone observed | 99.42% | 58 |
 | **I-JEPA-500 flatten + LoRA, nonlinear head (150 epochs)** | **Prespecified milestone observed** | **99.58%** | **42** |
 | DINOv2 + I-JEPA-500 nonlinear LoRA pair | Train-selected weights after test-informed candidate choice | 99.60% | 40 |
+| DINOv2 + I-JEPA-300 + I-JEPA-500 nonlinear LoRA triplet | Train-selected logits | 99.58% | 42 |
 | I-JEPA-only linear-probe triplet | Train-selected logits | 99.42% | 58 |
 | DINOv2 + I-JEPA-300 + I-JEPA-500 linear probes | Train-selected logits | 99.45% | 55 |
 | **DINOv2 + I-JEPA-300 + I-JEPA-500 nonlinear probes** | **Train-selected probabilities** | **99.63%** | **37** |
@@ -88,6 +89,15 @@ located from an already observed test matrix, the pair comparison remains
 test-informed and exploratory; only its scalar mixture weight is strictly
 train-selected. Exact plateaus and hashes are in the
 [LoRA pair reproduction record](../results/reproductions/2026-07-23-lora-logit-pair.json).
+
+Adding the final I-JEPA-300 nonlinear LoRA checkpoint produced a complete
+three-family search. The 1% grid contained 2,359 zero-training-error mixtures;
+the closest-to-equal tie-breaker and 0.1% refinement selected
+`0.334/0.333/0.333` in DINOv2/I-JEPA-300/I-JEPA-500 order. The triplet made 42
+canonical errors (**99.58%**) and 38 reviewed-label errors (**99.61992%**).
+It therefore loses two canonical examples relative to the pair and ties its
+reviewed result. Exact metrics and hashes are in the
+[LoRA triplet reproduction record](../results/reproductions/2026-07-23-lora-logit-triplet.json).
 
 ## Pre-DINOv2 I-JEPA ensemble
 

@@ -1169,6 +1169,22 @@ head edges past every fine-tuned model.
     training-logit, grid, and frozen-backbone hashes are in the
     [LoRA pair reproduction record](../results/reproductions/2026-07-23-lora-logit-pair.json).
 
+34. **The complete LoRA triplet does not improve the pair.** Added the final
+    nonlinear I-JEPA-300 checkpoint to the DINOv2/I-JEPA-500 LoRA ensemble.
+    The complete 1% training simplex contained 2,359 zero-error mixtures. A
+    closest-to-equal tie-breaker followed by 0.1% refinement selected
+    `0.334/0.333/0.333` in DINOv2/I-JEPA-300/I-JEPA-500 order; all 1,261
+    refined candidates also made zero training errors.
+
+    Frozen test evaluation produced 42 canonical errors (**99.58%**) and 38
+    reviewed-label errors among 9,998 examples (**99.61992%**). The triplet
+    therefore loses two canonical examples relative to the pair and merely
+    ties its reviewed result. The weaker I-JEPA-300 member makes 51 canonical
+    errors individually, and the training-error plateau offers no signal that
+    it should receive less than an equal share. The exact grid and source
+    hashes are in the
+    [LoRA triplet reproduction record](../results/reproductions/2026-07-23-lora-logit-triplet.json).
+
 **Caveat now flips to the task.** With the epoch confound removed, MNIST's ~97%
 pixel floor leaves little room to separate these pretexts, but the explicit goal
 is now to push the unsupervised MNIST pipeline past **99.7%**. The best

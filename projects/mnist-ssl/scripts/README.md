@@ -52,6 +52,7 @@ generated artifacts.
 | `analysis/calibrate_nonlinear_triplet.py` | Fit training-only temperatures and class-specific diagonal weights over the three nonlinear probes |
 | `analysis/grid_train_selected_probe_triplets.py` | Select scalar linear- and nonlinear-probe triplet mixtures on train, then evaluate test once |
 | `analysis/grid_lora_logit_pair.py` | Select the best cross-family LoRA raw-logit mixture on train, then evaluate test once |
+| `analysis/grid_lora_logit_triplet.py` | Select the complete three-family LoRA raw-logit mixture on train, then evaluate test once |
 | `analysis/train_dino_pairwise_reranker.py` | Cross-fit a linear top-two scorer and select its blend without test tuning |
 | `analysis/train_dino_nonlinear_pairwise_reranker.py` | Cross-fit the matched nonlinear top-two scorer |
 | `analysis/train_dino_normalized_image_reranker.py` | Train an image-only pairwise reranker behind a fixed linear-probe margin gate |
