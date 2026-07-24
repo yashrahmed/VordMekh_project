@@ -27,6 +27,24 @@ excludes two ambiguous examples, the same frozen rule makes **34 errors among
 9,998 scored examples: 99.65993%**. Exact metrics and hashes are preserved in the
 [train-selected reproduction record](results/reproductions/2026-07-18-training-selected-triplets.json).
 
+## LoRA ensemble experiments
+
+The three best observed LoRA classifiers are I-JEPA-500 nonlinear epoch 150
+and DINOv2 nonlinear epochs 50 and 150. Raw-logit weights for their full
+triplet and all three pairs were selected on MNIST train before test was
+loaded.
+
+The strongest canonical pair is `0.264 * I-JEPA-500/150 + 0.736 *
+DINOv2/150`, with **40 canonical errors (99.60%)**. The reviewed-label view
+instead favors `0.224 * I-JEPA-500/150 + 0.776 * DINOv2/50`, which makes **37
+errors among 9,998 examples (99.62993%)**. The three-member mixture makes 42
+canonical and 38 reviewed errors, so it does not improve either pair.
+
+Candidate identification used already observed LoRA test results, making the
+comparison exploratory even though every mixture weight was selected without
+test labels. Exact hashes and metrics are in the
+[top-three LoRA ensemble record](results/reproductions/2026-07-23-lora-top3-ensembles.json).
+
 ## Start here
 
 - [Curated results](docs/results.md)
@@ -99,6 +117,13 @@ Re-run the current train-selected comparison:
 
 ```bash
 uv run python scripts/analysis/grid_train_selected_probe_triplets.py
+```
+
+Re-run the top-three LoRA triplet and all pairwise comparisons:
+
+```bash
+uv run python scripts/analysis/grid_lora_top3_ensembles.py \
+  --output-dir out/lora_top3_ensembles_reproduction
 ```
 
 Verify every manifest-pinned artifact:

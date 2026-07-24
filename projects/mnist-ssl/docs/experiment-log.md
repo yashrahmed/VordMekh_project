@@ -1150,14 +1150,37 @@ head edges past every fine-tuned model.
     executable entry points, tests, and generated checkpoints were removed;
     the numerical record remains in the reproduction JSON files and this log.
 
+33. **The top-three LoRA classifiers favor two different cross-family
+    pairs.** Corrected the ensemble candidate set to the three best observed
+    individual LoRA measurements: I-JEPA-500 nonlinear epoch 150 (42 canonical
+    errors) and DINOv2 nonlinear epochs 50 and 150 (46 each). A full 1%
+    raw-logit simplex plus 0.1% refinement selected the triplet, while three
+    matching one-dimensional grids selected every pair on all 60,000 canonical
+    training examples. All four rules were frozen before one shared test load.
+
+    | Ensemble | Weights | Train errors | Canonical errors | Reviewed errors |
+    |---|---|---:|---:|---:|
+    | I-JEPA-500/150 + DINOv2/50 | `0.224/0.776` | 1 | 41 | **37** |
+    | **I-JEPA-500/150 + DINOv2/150** | **`0.264/0.736`** | **0** | **40** | 38 |
+    | DINOv2/50 + DINOv2/150 | `0.500/0.500` | 0 | 42 | 38 |
+    | All three | `0.155/0.376/0.469` | 0 | 42 | 38 |
+
+    The epoch-150 cross-family pair is best on canonical labels at **99.60%**.
+    Replacing DINOv2/150 with DINOv2/50 costs one canonical example but improves
+    the reviewed result to **99.62993%**. The full triplet improves neither
+    view. Candidate identification remains test-informed and exploratory, but
+    test labels did not select any mixture weight. Exact source, grid, and
+    frozen-backbone hashes are in the
+    [top-three LoRA ensemble record](../results/reproductions/2026-07-23-lora-top3-ensembles.json).
+
 **Caveat now flips to the task.** With the epoch confound removed, MNIST's ~97%
 pixel floor leaves little room to separate these pretexts, but the explicit goal
 is now to push the unsupervised MNIST pipeline past **99.7%**. The best
 individual frozen representation plus nonlinear head is 99.52%, the strongest
-LoRA-adapted individual observed is 99.58%, and the train-selected nonlinear
-triplet reaches 99.63%. Future work should focus on representation/objective
-changes that can close the reported gap, while accounting for known MNIST label
-errors.
+LoRA-adapted individual observed is 99.58%, the exploratory LoRA pair reaches
+99.60%, and the train-selected nonlinear triplet reaches 99.63%. Future work
+should focus on representation/objective changes that can close the reported
+gap, while accounting for known MNIST label errors.
 
 ## Original intent
 

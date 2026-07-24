@@ -8,6 +8,10 @@ I-JEPA 56x56 epoch-500 flatten nonlinear-64 probe,best nonlinear I-JEPA-500 mile
 DINOv2 plus I-JEPA-300 equal-logit pair,prespecified weights,99.47,53,0.50/0.50 weights
 DINOv2 plus I-JEPA-300 plus I-JEPA-500 linear-probe triplet,train-selected weights,99.45,55,raw logits; 0.248/0.541/0.211 weights
 DINOv2 plus I-JEPA-300 plus I-JEPA-500 nonlinear-probe triplet,train-selected weights,99.63,37,probabilities; 0.556/0.222/0.222 weights
+I-JEPA-500 epoch-150 plus DINOv2 epoch-50 nonlinear LoRA pair,train-selected weights after test-informed candidate choice,99.59,41,raw logits; 0.224/0.776 weights; exploratory
+I-JEPA-500 epoch-150 plus DINOv2 epoch-150 nonlinear LoRA pair,train-selected weights after test-informed candidate choice,99.60,40,raw logits; 0.264/0.736 weights; exploratory
+DINOv2 epoch-50 plus epoch-150 nonlinear LoRA pair,train-selected weights after test-informed candidate choice,99.58,42,raw logits; 0.500/0.500 weights; exploratory
+Top-three nonlinear LoRA triplet,train-selected weights after test-informed candidate choice,99.58,42,raw logits; I-JEPA-500-150/DINOv2-50/DINOv2-150 weights 0.155/0.376/0.469; exploratory
 I-JEPA-only linear-probe triplet,train-selected weights,99.42,58,raw logits; old28/new56-300/new56-500 weights 0.278/0.472/0.250
 DINOv2 epoch-75 CLS plus LoRA linear head,prespecified epoch-100 milestone observed,99.51,49,rank 8; base backbone unchanged; seed 0
 DINOv2 epoch-75 CLS plus LoRA nonlinear-64 head,prespecified epoch-50/150 milestones observed,99.54,46,rank 8; base backbone unchanged; seed 0
