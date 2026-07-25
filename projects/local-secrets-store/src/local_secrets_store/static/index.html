@@ -1,0 +1,97 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <title>Local Secrets Store</title>
+    <link rel="stylesheet" href="/styles.css">
+  </head>
+  <body>
+    <main class="shell">
+      <header class="brand">
+        <div class="brand-mark" aria-hidden="true">◆</div>
+        <div>
+          <h1>Local Secrets</h1>
+          <p>Encrypted on this device</p>
+        </div>
+      </header>
+
+      <section id="loading-view" class="panel centered">
+        <p>Opening your vault…</p>
+      </section>
+
+      <section id="setup-view" class="panel auth-panel hidden">
+        <p class="eyebrow">First-time setup</p>
+        <h2>Create your 4-digit PIN</h2>
+        <p class="muted">This PIN encrypts and unlocks your local vault.</p>
+        <form id="setup-form">
+          <label for="setup-pin">PIN</label>
+          <input id="setup-pin" name="pin" type="password" inputmode="numeric"
+                 autocomplete="new-password" pattern="[0-9]{4}" maxlength="4" required>
+          <label for="confirm-pin">Confirm PIN</label>
+          <input id="confirm-pin" name="confirmPin" type="password" inputmode="numeric"
+                 autocomplete="new-password" pattern="[0-9]{4}" maxlength="4" required>
+          <button class="primary" type="submit">Create vault</button>
+          <p class="warning">A 4-digit PIN has only 10,000 combinations. Keep your computer account and disk protected too.</p>
+        </form>
+      </section>
+
+      <section id="unlock-view" class="panel auth-panel hidden">
+        <p class="eyebrow">Vault locked</p>
+        <h2>Enter your PIN</h2>
+        <form id="unlock-form">
+          <label for="unlock-pin">4-digit PIN</label>
+          <input id="unlock-pin" name="pin" type="password" inputmode="numeric"
+                 autocomplete="current-password" pattern="[0-9]{4}" maxlength="4" autofocus required>
+          <button class="primary" type="submit">Unlock</button>
+        </form>
+      </section>
+
+      <section id="vault-view" class="hidden">
+        <div class="toolbar">
+          <div>
+            <p class="eyebrow">Your vault</p>
+            <h2>Secrets</h2>
+          </div>
+          <div class="toolbar-actions">
+            <button id="add-button" class="primary" type="button">Add secret</button>
+            <button id="lock-button" class="secondary" type="button">Lock</button>
+          </div>
+        </div>
+        <p id="empty-state" class="panel centered hidden">No secrets yet. Add your first one.</p>
+        <div id="secret-list" class="secret-grid" aria-live="polite"></div>
+      </section>
+
+      <p id="message" class="message hidden" role="status"></p>
+    </main>
+
+    <dialog id="secret-dialog">
+      <form id="secret-form">
+        <div class="dialog-heading">
+          <h2 id="dialog-title">Add secret</h2>
+          <button id="close-dialog" class="icon-button" type="button" aria-label="Close">×</button>
+        </div>
+        <input id="secret-id" type="hidden">
+        <label for="secret-name">Name</label>
+        <input id="secret-name" maxlength="200" placeholder="e.g. Personal email" required>
+        <label for="secret-username">Username or account</label>
+        <input id="secret-username" maxlength="500" autocomplete="off">
+        <label for="secret-value">Secret</label>
+        <div class="secret-input-row">
+          <input id="secret-value" type="password" maxlength="20000" autocomplete="off">
+          <button id="toggle-form-secret" class="secondary compact" type="button">Show</button>
+        </div>
+        <label for="secret-notes">Notes</label>
+        <textarea id="secret-notes" maxlength="20000" rows="4"></textarea>
+        <div class="dialog-actions">
+          <button id="delete-secret" class="danger hidden" type="button">Delete</button>
+          <span class="dialog-spacer"></span>
+          <button id="cancel-dialog" class="secondary" type="button">Cancel</button>
+          <button class="primary" type="submit">Save</button>
+        </div>
+      </form>
+    </dialog>
+
+    <script src="/app.js"></script>
+  </body>
+</html>

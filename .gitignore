@@ -178,5 +178,13 @@ cython_debug/
 
 **/keys-config.yml
 
+# macOS metadata
+.DS_Store
+
+# Local Secrets Store runtime data
+**/.personal-creds/
+projects/local-secrets-store/vault.enc
+projects/local-secrets-store/.vault-*.tmp
+
 # Next JS
 **/.next/
