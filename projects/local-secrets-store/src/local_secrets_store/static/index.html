@@ -7,22 +7,40 @@
     <link rel="stylesheet" href="/styles.css">
   </head>
   <body>
+    <div class="screen-grain" aria-hidden="true"></div>
+    <div class="edge-rail edge-rail-left" aria-hidden="true">
+      <span>PRV // NODE_07</span>
+    </div>
+    <div class="edge-rail edge-rail-right" aria-hidden="true">
+      <span>ENCRYPTED // LOCAL</span>
+    </div>
+
     <main class="shell">
       <header class="brand">
-        <div class="brand-mark" aria-hidden="true">◆</div>
-        <div>
-          <h1>Local Secrets</h1>
-          <p>Encrypted on this device</p>
+        <div class="brand-mark" aria-hidden="true">
+          <span>PV</span>
+        </div>
+        <div class="brand-copy">
+          <p class="brand-kicker">Secure local node // 07</p>
+          <h1>Personal Vault</h1>
+          <p>Encrypted credential archive</p>
+        </div>
+        <div class="system-readout" aria-hidden="true">
+          <span><b>AES</b> 256</span>
+          <span><b>LINK</b> LOCAL</span>
+          <span><b>SYNC</b> OFF</span>
         </div>
       </header>
 
       <section id="loading-view" class="panel centered">
-        <p>Opening your vault…</p>
+        <p class="panel-code" aria-hidden="true">SYS_BOOT // 00</p>
+        <p class="loading-copy">Opening secure channel<span class="loading-dots">…</span></p>
       </section>
 
       <section id="setup-view" class="panel auth-panel hidden">
+        <p class="panel-code" aria-hidden="true">INIT_PROTOCOL // PIN_04</p>
         <p class="eyebrow">First-time setup</p>
-        <h2>Create your 4-digit PIN</h2>
+        <h2>Create access code</h2>
         <p class="muted">This PIN encrypts and unlocks your local vault.</p>
         <form id="setup-form">
           <label for="setup-pin">PIN</label>
@@ -37,8 +55,9 @@
       </section>
 
       <section id="unlock-view" class="panel auth-panel hidden">
+        <p class="panel-code" aria-hidden="true">AUTH_GATE // LOCKED</p>
         <p class="eyebrow">Vault locked</p>
-        <h2>Enter your PIN</h2>
+        <h2>Enter access code</h2>
         <form id="unlock-form">
           <label for="unlock-pin">4-digit PIN</label>
           <input id="unlock-pin" name="pin" type="password" inputmode="numeric"
@@ -50,23 +69,37 @@
       <section id="vault-view" class="hidden">
         <div class="toolbar">
           <div>
-            <p class="eyebrow">Your vault</p>
-            <h2>Secrets</h2>
+            <p class="eyebrow">Access granted // local archive</p>
+            <h2>Vault index</h2>
           </div>
           <div class="toolbar-actions">
             <button id="add-button" class="primary" type="button">Add secret</button>
             <button id="lock-button" class="secondary" type="button">Lock</button>
           </div>
         </div>
-        <p id="empty-state" class="panel centered hidden">No secrets yet. Add your first one.</p>
+        <div class="vault-status" aria-hidden="true">
+          <span>Encryption <b>active</b></span>
+          <span>Storage <b>in memory</b></span>
+          <span>Network <b>loopback</b></span>
+        </div>
+        <p id="empty-state" class="panel centered hidden">
+          <span class="empty-code">NO_RECORDS_FOUND</span>
+          Your archive is empty. Add the first secret.
+        </p>
         <div id="secret-list" class="secret-grid" aria-live="polite"></div>
       </section>
 
       <p id="message" class="message hidden" role="status"></p>
+
+      <footer class="system-footer" aria-hidden="true">
+        <span>PRV_OS // BUILD 0.1.0</span>
+        <span>127.0.0.1 // EYES ONLY</span>
+      </footer>
     </main>
 
     <dialog id="secret-dialog">
       <form id="secret-form">
+        <p class="panel-code" aria-hidden="true">RECORD_EDITOR // WRITE MODE</p>
         <div class="dialog-heading">
           <h2 id="dialog-title">Add secret</h2>
           <button id="close-dialog" class="icon-button" type="button" aria-label="Close">×</button>
