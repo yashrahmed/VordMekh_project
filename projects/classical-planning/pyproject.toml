@@ -1,0 +1,8 @@
+[project]
+name = "classical-planning"
+version = "0.1.0"
+description = "Experiments in classical planning."
+requires-python = ">=3.13"
+dependencies = [
+    "unified-planning>=1.2.0",
+]

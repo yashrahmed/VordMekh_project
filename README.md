@@ -10,6 +10,12 @@ commands, and documentation under [`projects/`](projects/).
 | [MNIST self-supervised learning](projects/mnist-ssl/) | Active | From-scratch DINOv2, I-JEPA, MAE, frozen probes, and ensembles. The current exploratory best is 99.61%. |
 | [ChaiGPT](projects/chai-gpt/) | Historical experiments | Seven conversational-planning prototypes plus an equipment-search experiment. |
 | [Local Secrets Store](projects/local-secrets-store/) | Local utility | PIN-locked, encrypted credentials vault with an HTML interface. |
+| [Logic Programming](projects/logic-programming/) | Planned | Logic-programming experiments with Clingo. |
+| [Classical Planning](projects/classical-planning/) | Planned | Classical-planning experiments with Unified Planning. |
+| [3D Modeling](projects/3d-modeling/) | Placeholder | Future 3D-modeling work. |
+| [Building Reasoning Models](projects/building-reasoning-models/) | Placeholder | Future reasoning-model work. |
+| [Graphic Design](projects/graphic-design/) | Placeholder | Future graphic-design work. |
+| [Claude Code Clone](projects/claude-code-clone/) | Reference | Notes and source material for a Claude Code clone. |
 
 ## Repository conventions
 
