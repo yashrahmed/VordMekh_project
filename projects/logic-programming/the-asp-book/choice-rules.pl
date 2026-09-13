@@ -26,4 +26,9 @@ eligible(ann; dan; fred).
 % Adding the following eliminates, models where dan gets elected.
 :- elected(dan).
 
+% _ can be used as a 'don\'t care' or 'ignore this' equivalent. The official term is anonymous variable.
+% filled(1, 2, c).
+% filled(1, 3, c).
+% R1 = R2 :- filled(R1,_,X), filled(R2,_,X).
+
 #show elected/1.
