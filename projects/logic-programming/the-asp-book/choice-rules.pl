@@ -22,4 +22,8 @@ eligible(ann; dan; fred).
 % A variable is "Local" if it appears ONLY between {} i.e. in aggregations or conditions aka the atoms after ':' in a choice rule.
 % ANY variable not "Local" is "Global".
 
+% The following rule is a constraint i.e. a rule without head. Read this as False :- conditions.
+% Adding the following eliminates, models where dan gets elected.
+:- elected(dan).
+
 #show elected/1.
