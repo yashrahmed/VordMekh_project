@@ -4,7 +4,7 @@ Learning plan for building verifiable world models for LLM agents: explicit
 models of state and actions that a solver can check an agent's proposed actions
 and plans against.
 
-ASP exercises live in [`logic-programming`](../logic-programming/), planner
+ASP exercises live in [`logic-programming`](logic-programming/), planner
 experiments in [`classical-planning`](../classical-planning/). For general
 background, see the [Handbook of knowledge representation](https://openresearch-repository.anu.edu.au/server/api/core/bitstreams/a75cd087-878c-44ec-999c-0a0f6499f596/content).
 

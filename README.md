@@ -10,7 +10,7 @@ commands, and documentation under [`projects/`](projects/).
 | [MNIST self-supervised learning](projects/mnist-ssl/) | Active | From-scratch DINOv2, I-JEPA, MAE, frozen probes, and ensembles. The current exploratory best is 99.61%. |
 | [ChaiGPT](projects/chai-gpt/) | Historical experiments | Seven conversational-planning prototypes plus an equipment-search experiment. |
 | [Local Secrets Store](projects/local-secrets-store/) | Local utility | PIN-locked, encrypted credentials vault with an HTML interface. |
-| [Logic Programming](projects/logic-programming/) | Planned | Logic-programming experiments with Clingo. |
+| [Logic Programming](projects/krr/logic-programming/) | Planned | Logic-programming experiments with Clingo. |
 | [KRR](projects/krr/) | Reference | Knowledge representation and reasoning resources. |
 | [Classical Planning](projects/classical-planning/) | Planned | Classical-planning experiments with Unified Planning. |
 | [3D Modeling](projects/3d-modeling/) | Placeholder | Future 3D-modeling work. |
