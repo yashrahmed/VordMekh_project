@@ -14,7 +14,7 @@ background, see the [Handbook of knowledge representation](https://openresearch-
 
 - [ ] Read Vladimir Lifschitz's [Answer Set Programming](https://www.cs.utexas.edu/~vl/teaching/378/ASP.pdf).
   - [x] Chapter 2 for the input language of Clingo.
-  - [ ] Chapter 3 for combinatorial search. Done up to 3.6 (sequence covering arrays).
+  - [x] Chapter 3 for combinatorial search.
   - [ ] Chapter 6 for counting, optimization, and symbolic functions.
   - [ ] Chapters 4-5 for the theory of stable models. Skip initially if they slow down practical progress.
 - [ ] Work through Potassco's [Answer Set Solving in Practice](https://teaching.potassco.org/) course:
