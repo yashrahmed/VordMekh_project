@@ -1,0 +1,162 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Self-Learning Program</title>
+<style>
+  :root { --bg:#fbfaf7; --fg:#1d1d1b; --dim:#6b6a63; --link:#1a56b8; --rule:#dcd9cf; }
+  @media (prefers-color-scheme: dark) {
+    :root { --bg:#17171a; --fg:#e8e6df; --dim:#9b9a92; --link:#7fb0ff; --rule:#34343a; }
+  }
+  body { background:var(--bg); color:var(--fg); font:16px/1.5 system-ui, sans-serif; margin:0; padding:32px 16px; }
+  main { max-width:960px; margin:0 auto; }
+  h1 { font-size:1.5rem; margin:0 0 4px; }
+  p.sub { color:var(--dim); margin:0 0 24px; }
+  pre { font:14px/1.6 ui-monospace, Menlo, Consolas, monospace; overflow-x:auto; margin:0;
+        padding:20px; border:1px solid var(--rule); border-radius:8px; }
+  a { color:var(--link); text-decoration:none; }
+  a:hover { text-decoration:underline; }
+  .c { color:var(--dim); }
+  h2 { font-size:1.1rem; margin:32px 0 8px; }
+  ul { padding-left:20px; }
+  li { margin:4px 0; }
+</style>
+</head>
+<body>
+<main>
+<h1>Self-Learning Program</h1>
+<p class="sub">Five tracks plus a side track. Every topic gets <code>notes/</code>, <code>internals/</code> and <code>skills/</code> (design uses <code>projects/</code> instead of <code>internals/</code>).</p>
+
+<pre>
+self-learning-program/
+│
+├── 1-llms/
+│   ├── 1.1-reasoning-models/
+│   │   ├── <a href="https://github.com/rasbt/reasoning-from-scratch">rasbt/reasoning-from-scratch</a>      <span class="c"># Raschka's "Build a Reasoning Model (From Scratch)" repo</span>
+│   │   ├── notes/
+│   │   ├── internals/
+│   │   └── skills/
+│   │
+│   └── 1.2-llm-inference/
+│       ├── <a href="https://arxiv.org/abs/2309.06180">vLLM PagedAttention paper</a>         <span class="c"># canonical KV-cache and serving resource</span>
+│       ├── <a href="https://huggingface.co/docs/transformers/en/cache_explanation">Hugging Face: cache explanation</a>   <span class="c"># gentler KV-cache intro</span>
+│       ├── <a href="https://github.com/deepseek-ai/DeepInfer">deepseek-ai/DeepInfer</a>               <span class="c"># case study; no KV cache system, released Oct 2026</span>
+│       ├── notes/
+│       ├── internals/                        <span class="c"># kv-caching, batching, serving</span>
+│       └── skills/
+│
+├── 2-agents/
+│   ├── 2.1-claude-code-internals/
+│   │   ├── <a href="https://code.claude.com/docs/en/agent-sdk/agent-loop">Anthropic: agent loop</a>              <span class="c"># official</span>
+│   │   ├── <a href="https://github.com/VILA-Lab/Dive-into-Claude-Code">VILA-Lab/Dive-into-Claude-Code</a>      <span class="c"># unofficial, based on leaked source</span>
+│   │   ├── notes/
+│   │   ├── internals/
+│   │   └── skills/
+│   │
+│   ├── 2.2-autonomous-agents/
+│   │   ├── <a href="https://github.com/openclaw/openclaw">openclaw/openclaw</a>                <span class="c"># OpenClaw only, for now</span>
+│   │   ├── <a href="https://rdi.berkeley.edu/education">Berkeley Agentic AI MOOC</a>           <span class="c"># Fall 2025, CS294/194-196</span>
+│   │   ├── notes/
+│   │   ├── internals/
+│   │   └── skills/
+│   │
+│   ├── 2.3-agent-skills/
+│   │   ├── <a href="https://github.com/mattpocock/skills">mattpocock/skills</a>
+│   │   ├── <a href="https://github.com/michael-denyer/pstack-claude">michael-denyer/pstack-claude</a>      <span class="c"># Claude Code port of Lauren Tan's pstack</span>
+│   │   ├── notes/
+│   │   └── skills/
+│   │
+│   └── 2.4-agent-tooling/                    <span class="c"># general tooling agents use</span>
+│       ├── mcp/
+│       │   └── <a href="https://modelcontextprotocol.io">Model Context Protocol</a>          <span class="c"># official docs; spec repo: modelcontextprotocol/modelcontextprotocol</span>
+│       ├── browser-use/                      <span class="c"># how agents use browsers effectively</span>
+│       │   ├── <a href="https://github.com/browser-use/browser-use">browser-use/browser-use</a>
+│       │   └── <a href="https://github.com/microsoft/playwright-mcp">microsoft/playwright-mcp</a>        <span class="c"># browser control over MCP</span>
+│       ├── notes/
+│       ├── internals/
+│       └── skills/
+│
+├── 3-systems/
+│   ├── 3.1-algorithms/
+│   │   ├── <a href="https://jeffe.cs.illinois.edu/teaching/algorithms/">Erickson, Algorithms</a>           <span class="c"># free book, CC BY 4.0</span>
+│   │   ├── notes/
+│   │   ├── internals/
+│   │   └── skills/
+│   │
+│   ├── 3.2-distributed-systems/
+│   │   ├── <a href="https://pdos.csail.mit.edu/6.824">MIT 6.5840</a>                       <span class="c"># lectures, papers, Go labs</span>
+│   │   ├── notes/
+│   │   ├── internals/
+│   │   └── skills/
+│   │
+│   ├── 3.3-database-systems/
+│   │   ├── <a href="https://15445.courses.cs.cmu.edu/">CMU 15-445</a>                       <span class="c"># Andy Pavlo; lectures on YouTube, BusTub labs</span>
+│   │   ├── notes/
+│   │   ├── internals/
+│   │   └── skills/
+│   │
+│   └── 3.4-browsers/
+│       ├── rendering/
+│       │   └── <a href="https://developer.chrome.com/blog/inside-browser-part1">Inside look at modern web browser</a>   <span class="c"># Chrome's 4-part series</span>
+│       ├── wasm/
+│       │   └── <a href="https://developer.mozilla.org/en-US/docs/WebAssembly">MDN: WebAssembly</a>
+│       ├── agent-standards/
+│       │   └── <a href="https://github.com/webmachinelearning/webmcp">webmachinelearning/webmcp</a>       <span class="c"># WebMCP, W3C Community Group draft</span>
+│       ├── notes/
+│       └── skills/
+│
+├── 4-formal-methods-and-planning/
+│   ├── 4.1-pddl/
+│   │   ├── <a href="https://planning.wiki">planning.wiki</a>                       <span class="c"># maintained guide + reference</span>
+│   │   ├── notes/
+│   │   └── skills/
+│   │
+│   ├── 4.2-answer-set-programming/
+│   │   ├── <a href="https://www.cs.utexas.edu/~vl/teaching/378/ASP.pdf">Lifschitz, Answer Set Programming</a>   <span class="c"># "the ASP book"; your exercises are in VordMekh_project/projects/krr</span>
+│   │   ├── notes/
+│   │   └── skills/
+│   │
+│   └── 4.3-tla-plus/
+│       ├── <a href="https://learntla.com">learntla.com</a>                       <span class="c"># start here</span>
+│       ├── <a href="https://lamport.org/tla/learning.html">Lamport: learning TLA+</a>           <span class="c"># video lectures</span>
+│       ├── <a href="https://github.com/tlaplus/Examples">tlaplus/Examples</a>                  <span class="c"># reference specs</span>
+│       ├── notes/
+│       └── skills/
+│
+├── 5-languages/
+│   ├── rust/
+│   │   └── <a href="https://doc.rust-lang.org/book/">The Rust Programming Language</a>
+│   ├── python/
+│   │   └── <a href="https://docs.python.org/3/tutorial/">The Python Tutorial</a>
+│   ├── java-25/
+│   │   └── <a href="https://openjdk.org/projects/jdk/25">OpenJDK JDK 25</a>                 <span class="c"># latest LTS, GA Sept 2025</span>
+│   └── bend/
+│       └── <a href="https://github.com/HigherOrderCO/Bend">HigherOrderCO/Bend</a>               <span class="c"># parallel language on HVM2</span>
+│
+├── 6-graphic-and-3d-design/                  <span class="c"># beginner side track</span>
+│   ├── <a href="https://docs.blender.org/manual/en/latest/getting_started/index.html">Blender manual: getting started</a>
+│   ├── notes/
+│   └── projects/
+│
+└── _meta/
+    ├── roadmap.md
+    └── skills-index.md                       <span class="c"># every skill written, across topics</span>
+</pre>
+
+<h2>Things to check</h2>
+<ul>
+  <li><strong>1.1:</strong> the reasoning-models book is by Sebastian <em>Raschka</em>, not Ruder (<a href="https://www.manning.com/books/build-a-reasoning-model-from-scratch">Manning page</a>).</li>
+  <li><strong>1.2:</strong> DeepInfer is Apache 2.0, only about four days old, and supports only DeepSeek-V4.1-Flash on Nvidia SM100 and Huawei Ascend 950. It ships without a KV cache system, so use the PagedAttention paper for that. Confirm the repo URL resolves (<a href="https://thenextweb.com/news/deepseek-deepinfer-open-source-inference-engine">coverage</a>).</li>
+  <li><strong>2.1:</strong> I didn't find a specific Claude Code internals PDF. The VILA-Lab repo analyzes leaked source, so treat it as unofficial and possibly out of date. If you have the PDF's name, send it.</li>
+  <li><strong>2.2:</strong> I couldn't find a public MIT agents course; the only match (MAS.664) is behind a Canvas login. Berkeley's Agentic AI MOOC (Fall 2025) succeeds the Spring 2025 Advanced LLM Agents course. OpenClaw's ClawHub registry had a malware problem: Koi Security flagged 341 of 2,857 skills as malicious in February 2026, and later counts were higher. Review anything before installing it.</li>
+  <li><strong>2.3:</strong> pstack is Lauren Tan's. <code>github.com/poteto/pstack</code> returns 404, so I linked michael-denyer's Claude Code port, which resolves and credits the original. Swap in the original repo URL if you know it.</li>
+  <li><strong>4.2:</strong> the ASP link is Vladimir Lifschitz's <em>Answer Set Programming</em>, the book your exercises in <code>VordMekh_project/projects/krr</code> follow. I took the URL from your own krr README rather than a local PDF, since I found no book file on disk. The <a href="https://potassco.org/guide/">Potassco guide</a> is a good syntax reference alongside it.</li>
+  <li><strong>3.2:</strong> the link uses the old 6.824 course number and may redirect to 6.5840.</li>
+  <li><strong>3.4:</strong> the agent-facing browser standard is <strong>WebMCP</strong>. Google and Microsoft co-developed it, and it lets a site expose tools to agents through <code>navigator.modelContext</code>. It's a Community Group draft in a Chrome origin trial, not a finished standard, and despite the name it doesn't use the MCP wire protocol. It pairs with 2.4-agent-tooling.</li>
+  <li><strong>5 / Bend:</strong> the project is early-stage and needs an NVIDIA GPU for the GPU path. A single aggregator reports a "Bend 2" launch with no primary announcement.</li>
+  <li><strong>Unchecked:</strong> the Rust, Python and Blender links are the standard official docs, and the new URLs from the review were not individually opened.</li>
+</ul>
+</main>
+</body>
+</html>
