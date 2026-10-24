@@ -26,7 +26,7 @@
 <body>
 <main>
 <h1>Self-Learning Program</h1>
-<p class="sub">Six tracks plus a side track. Every topic gets <code>notes/</code>, <code>internals/</code> and <code>skills/</code> (design uses <code>projects/</code> instead of <code>internals/</code>).</p>
+<p class="sub">Seven tracks plus a side track. Every topic gets <code>notes/</code>, <code>internals/</code> and <code>skills/</code> (design uses <code>projects/</code> instead of <code>internals/</code>).</p>
 
 <pre>
 self-learning-program/
@@ -156,7 +156,22 @@ self-learning-program/
 │   ├── notes/
 │   └── skills/
 │
-├── 6-languages/
+├── 6-world-models/
+│   ├── 6.1-jepa/                            <span class="c"># LeCun's Joint Embedding Predictive Architecture and its variants</span>
+│   │   ├── <a href="https://github.com/facebookresearch/ijepa">facebookresearch/ijepa</a>          <span class="c"># I-JEPA: images</span>
+│   │   ├── <a href="https://github.com/facebookresearch/jepa">facebookresearch/jepa</a>           <span class="c"># V-JEPA: video (CC BY-NC)</span>
+│   │   ├── <a href="https://github.com/facebookresearch/vjepa2">facebookresearch/vjepa2</a>         <span class="c"># V-JEPA 2, 2.1, and 2-AC for robot planning (MIT)</span>
+│   │   ├── <a href="https://github.com/AbdelStark/awesome-jepa">AbdelStark/awesome-jepa</a>         <span class="c"># index of the wider JEPA family</span>
+│   │   ├── notes/
+│   │   ├── internals/
+│   │   └── skills/
+│   │
+│   └── 6.2-agentic-vision/
+│       ├── <a href="https://blog.google/innovation-and-ai/technology/developers-tools/agentic-vision-gemini-3-flash/">Google: Agentic Vision in Gemini 3 Flash</a>   <span class="c"># think, act with code, observe</span>
+│       ├── notes/
+│       └── skills/
+│
+├── 7-languages/
 │   ├── rust/
 │   │   └── <a href="https://doc.rust-lang.org/book/">The Rust Programming Language</a>
 │   ├── python/
@@ -166,7 +181,7 @@ self-learning-program/
 │   └── bend/
 │       └── <a href="https://github.com/HigherOrderCO/Bend">HigherOrderCO/Bend</a>               <span class="c"># parallel language on HVM2</span>
 │
-├── 7-graphic-and-3d-design/                  <span class="c"># beginner side track</span>
+├── 8-graphic-and-3d-design/                  <span class="c"># beginner side track</span>
 │   ├── <a href="https://docs.blender.org/manual/en/latest/getting_started/index.html">Blender manual: getting started</a>
 │   ├── notes/
 │   └── projects/
@@ -186,7 +201,7 @@ self-learning-program/
   <li><strong>4.2:</strong> the ASP link is Vladimir Lifschitz's <em>Answer Set Programming</em>, the book your exercises in <code>VordMekh_project/projects/krr</code> follow. I took the URL from your own krr README rather than a local PDF, since I found no book file on disk. The <a href="https://potassco.org/guide/">Potassco guide</a> is a good syntax reference alongside it.</li>
   <li><strong>3.2:</strong> the link uses the old 6.824 course number and may redirect to 6.5840.</li>
   <li><strong>3.4:</strong> the agent-facing browser standard is <strong>WebMCP</strong>. Google and Microsoft co-developed it, and it lets a site expose tools to agents through <code>navigator.modelContext</code>. It's a Community Group draft in a Chrome origin trial, not a finished standard, and despite the name it doesn't use the MCP wire protocol. It pairs with 2.4-agent-tooling.</li>
-  <li><strong>6 / Bend:</strong> the project is early-stage and needs an NVIDIA GPU for the GPU path. A single aggregator reports a "Bend 2" launch with no primary announcement.</li>
+  <li><strong>7 / Bend:</strong> the project is early-stage and needs an NVIDIA GPU for the GPU path. A single aggregator reports a "Bend 2" launch with no primary announcement.</li>
   <li><strong>Unchecked:</strong> the Rust, Python and Blender links are the standard official docs, and the new URLs from the review were not individually opened.</li>
 </ul>
 </main>
