@@ -26,7 +26,7 @@
 <body>
 <main>
 <h1>Self-Learning Program</h1>
-<p class="sub">Five tracks plus a side track. Every topic gets <code>notes/</code>, <code>internals/</code> and <code>skills/</code> (design uses <code>projects/</code> instead of <code>internals/</code>).</p>
+<p class="sub">Six tracks plus a side track. Every topic gets <code>notes/</code>, <code>internals/</code> and <code>skills/</code> (design uses <code>projects/</code> instead of <code>internals/</code>).</p>
 
 <pre>
 self-learning-program/
@@ -106,7 +106,7 @@ self-learning-program/
 │       ├── notes/
 │       └── skills/
 │
-├── 4-formal-methods-and-planning/
+├── 4-formal-and-probabilistic-reasoning/
 │   ├── 4.1-pddl/
 │   │   ├── <a href="https://planning.wiki">planning.wiki</a>                       <span class="c"># maintained guide + reference</span>
 │   │   ├── notes/
@@ -117,14 +117,24 @@ self-learning-program/
 │   │   ├── notes/
 │   │   └── skills/
 │   │
-│   └── 4.3-tla-plus/
-│       ├── <a href="https://learntla.com">learntla.com</a>                       <span class="c"># start here</span>
-│       ├── <a href="https://lamport.org/tla/learning.html">Lamport: learning TLA+</a>           <span class="c"># video lectures</span>
-│       ├── <a href="https://github.com/tlaplus/Examples">tlaplus/Examples</a>                  <span class="c"># reference specs</span>
+│   ├── 4.3-tla-plus/
+│   │   ├── <a href="https://learntla.com">learntla.com</a>                       <span class="c"># start here</span>
+│   │   ├── <a href="https://lamport.org/tla/learning.html">Lamport: learning TLA+</a>           <span class="c"># video lectures</span>
+│   │   ├── <a href="https://github.com/tlaplus/Examples">tlaplus/Examples</a>                  <span class="c"># reference specs</span>
+│   │   ├── notes/
+│   │   └── skills/
+│   │
+│   └── 4.4-bayesian-statistics/
+│       ├── <a href="https://allendowney.github.io/ThinkBayes2/">Think Bayes 2</a>                     <span class="c"># Allen Downey, free; code: AllenDowney/ThinkBayes2</span>
 │       ├── notes/
 │       └── skills/
 │
-├── 5-languages/
+├── 5-knowledge-representation/              <span class="c"># topics TBD</span>
+│   ├── <a href="https://openresearch-repository.anu.edu.au/server/api/core/bitstreams/a75cd087-878c-44ec-999c-0a0f6499f596/content">Handbook of Knowledge Representation</a>   <span class="c"># from your krr README</span>
+│   ├── notes/
+│   └── skills/
+│
+├── 6-languages/
 │   ├── rust/
 │   │   └── <a href="https://doc.rust-lang.org/book/">The Rust Programming Language</a>
 │   ├── python/
@@ -134,7 +144,7 @@ self-learning-program/
 │   └── bend/
 │       └── <a href="https://github.com/HigherOrderCO/Bend">HigherOrderCO/Bend</a>               <span class="c"># parallel language on HVM2</span>
 │
-├── 6-graphic-and-3d-design/                  <span class="c"># beginner side track</span>
+├── 7-graphic-and-3d-design/                  <span class="c"># beginner side track</span>
 │   ├── <a href="https://docs.blender.org/manual/en/latest/getting_started/index.html">Blender manual: getting started</a>
 │   ├── notes/
 │   └── projects/
@@ -154,7 +164,7 @@ self-learning-program/
   <li><strong>4.2:</strong> the ASP link is Vladimir Lifschitz's <em>Answer Set Programming</em>, the book your exercises in <code>VordMekh_project/projects/krr</code> follow. I took the URL from your own krr README rather than a local PDF, since I found no book file on disk. The <a href="https://potassco.org/guide/">Potassco guide</a> is a good syntax reference alongside it.</li>
   <li><strong>3.2:</strong> the link uses the old 6.824 course number and may redirect to 6.5840.</li>
   <li><strong>3.4:</strong> the agent-facing browser standard is <strong>WebMCP</strong>. Google and Microsoft co-developed it, and it lets a site expose tools to agents through <code>navigator.modelContext</code>. It's a Community Group draft in a Chrome origin trial, not a finished standard, and despite the name it doesn't use the MCP wire protocol. It pairs with 2.4-agent-tooling.</li>
-  <li><strong>5 / Bend:</strong> the project is early-stage and needs an NVIDIA GPU for the GPU path. A single aggregator reports a "Bend 2" launch with no primary announcement.</li>
+  <li><strong>6 / Bend:</strong> the project is early-stage and needs an NVIDIA GPU for the GPU path. A single aggregator reports a "Bend 2" launch with no primary announcement.</li>
   <li><strong>Unchecked:</strong> the Rust, Python and Blender links are the standard official docs, and the new URLs from the review were not individually opened.</li>
 </ul>
 </main>
